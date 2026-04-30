@@ -34,7 +34,3 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# User excluded directories
-/src/app/dueno
-/src/app/delivery
-/src/app/cocina
