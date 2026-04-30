@@ -44,7 +44,7 @@ function KpiCard({ title, value, icon: Icon, color, trend }: {
 }
 
 // ── Dashboard Page ──────────────────────────────────────────────────────────
-export default function DuenoDashboardPage() {
+export default function GerenciaDashboardPage() {
   const [orders, setOrders] = useState<MockOrder[]>(() => mockOrdersStore.getSnapshot());
 
   useEffect(() => {

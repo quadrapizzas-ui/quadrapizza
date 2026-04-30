@@ -3,18 +3,18 @@ const path = require('path');
 
 const srcApp = path.join(__dirname, 'src', 'app');
 
-// Move (admin) to dueño
+// Move (admin) to gerencia
 const adminDir = path.join(srcApp, '(admin)');
-const duenoDir = path.join(srcApp, 'dueño');
+const gerenciaDir = path.join(srcApp, 'gerencia');
 
 if (fs.existsSync(adminDir)) {
-  fs.mkdirSync(duenoDir, { recursive: true });
+  fs.mkdirSync(gerenciaDir, { recursive: true });
   const adminDirs = fs.readdirSync(adminDir);
   adminDirs.forEach(item => {
-    fs.renameSync(path.join(adminDir, item), path.join(duenoDir, item));
+    fs.renameSync(path.join(adminDir, item), path.join(gerenciaDir, item));
   });
   fs.rmdirSync(adminDir);
-  console.log('Migrated (admin) to dueño');
+  console.log('Migrated (admin) to gerencia');
 } else {
   console.log('(admin) already migrated or missing');
 }

@@ -2,7 +2,7 @@
 import { PinPadLogin } from "@/components/shared/PinPadLogin";
 import { useEffect } from "react";
 
-export default function DuenoLoginPage() {
+export default function GerenciaLoginPage() {
   
   useEffect(() => {
     const style = document.createElement("style");
@@ -23,11 +23,11 @@ export default function DuenoLoginPage() {
   return (
     <div className="min-h-screen bg-black/95">
       <PinPadLogin 
-        moduleName="Dueño" 
+        moduleName="Gerencia" 
         moduleColor="text-purple-500"
-        onSuccessRedirect="/dueno/dashboard" 
+        onSuccessRedirect="/gerencia/dashboard" 
         expectedPin="1234" 
-        storageKey="quadra_dueno_auth"
+        storageKey="quadra_gerencia_auth"
       />
     </div>
   );

@@ -3,7 +3,7 @@ const path = require('path');
 
 const srcApp = path.join(__dirname, 'src', 'app');
 const dirs = fs.readdirSync(srcApp);
-const target = dirs.find(d => d.startsWith('due') && d !== 'dueno');
+const target = dirs.find(d => d.startsWith('due') && d !== 'gerencia');
 
 if (target) {
     const oldPath = path.join(srcApp, target);

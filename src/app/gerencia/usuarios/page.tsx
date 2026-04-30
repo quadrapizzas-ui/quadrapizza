@@ -13,17 +13,17 @@ import {
 } from "lucide-react";
 
 const INITIAL_USERS = [
-  { id: 1, name: "Hector Zanier", role: "Dueño", email: "hector@quadrapizza.com", pin: "****", active: true },
+  { id: 1, name: "Hector Zanier", role: "Gerencia", email: "hector@quadrapizza.com", pin: "****", active: true },
   { id: 2, name: "Ana Maria", role: "Recepción", email: "ana@quadrapizza.com", pin: "1234", active: true },
   { id: 3, name: "Carlos Gomez", role: "Cocina", email: "carlos@quadrapizza.com", pin: "1234", active: true },
   { id: 4, name: "Mario Rossi", role: "Delivery", email: "mario@quadrapizza.com", pin: "1234", active: false },
 ];
 
-export default function DuenoUsuariosPage() {
+export default function GerenciaUsuariosPage() {
   const [users, setUsers] = useState(INITIAL_USERS);
 
   const roleColors: Record<string, string> = {
-    "Dueño": "bg-purple-500/10 text-purple-400 border-purple-500/20",
+    "Gerencia": "bg-purple-500/10 text-purple-400 border-purple-500/20",
     "Recepción": "bg-sky-500/10 text-sky-400 border-sky-500/20",
     "Cocina": "bg-orange-500/10 text-orange-400 border-orange-500/20",
     "Delivery": "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",

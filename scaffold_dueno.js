@@ -4,12 +4,12 @@ const path = require('path');
 const srcApp = path.join(__dirname, 'src', 'app');
 
 const routes = {
-  dueño: [
+  gerencia: [
     { path: 'inventario', name: 'Gestor de Stock' },
     { path: 'ventas', name: 'Reportes de Ventas' },
     { path: 'finanzas', name: 'Flujo de Caja' },
     { path: 'usuarios', name: 'Usuarios y Permisos' },
-    { path: 'perfil', name: 'Perfil de Dueño' }
+    { path: 'perfil', name: 'Perfil de Gerencia' }
   ]
 };
 

@@ -17,36 +17,36 @@ import {
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  { href: "/dueno/dashboard", label: "Dashboard",   icon: LayoutDashboard },
-  { href: "/dueno/ventas",    label: "Ventas",      icon: History         },
-  { href: "/dueno/finanzas",  label: "Finanzas",    icon: TrendingUp      },
-  { href: "/dueno/inventario",label: "Inventario",  icon: Box             },
-  { href: "/dueno/usuarios",  label: "Usuarios",    icon: Users           },
-  { href: "/dueno/catalogo",  label: "Catálogo",    icon: BookOpen        },
+  { href: "/gerencia/dashboard", label: "Dashboard",   icon: LayoutDashboard },
+  { href: "/gerencia/ventas",    label: "Ventas",      icon: History         },
+  { href: "/gerencia/finanzas",  label: "Finanzas",    icon: TrendingUp      },
+  { href: "/gerencia/inventario",label: "Inventario",  icon: Box             },
+  { href: "/gerencia/usuarios",  label: "Usuarios",    icon: Users           },
+  { href: "/gerencia/catalogo",  label: "Catálogo",    icon: BookOpen        },
 ];
 
-export default function DuenoLayout({ children }: { children: React.ReactNode }) {
+export default function GerenciaLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    if (pathname === "/dueno/login") {
+    if (pathname === "/gerencia/login") {
       setIsAuthorized(true);
       return;
     }
-    const auth = localStorage.getItem("quadra_dueno_auth");
+    const auth = localStorage.getItem("quadra_gerencia_auth");
     if (!auth) {
-      router.push("/dueno/login");
+      router.push("/gerencia/login");
     } else {
       setIsAuthorized(true);
     }
   }, [pathname, router]);
 
   const handleLogout = () => {
-    localStorage.removeItem("quadra_dueno_auth");
-    router.push("/dueno/login");
+    localStorage.removeItem("quadra_gerencia_auth");
+    router.push("/gerencia/login");
   };
 
   if (!isAuthorized) {
@@ -57,7 +57,7 @@ export default function DuenoLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  if (pathname === "/dueno/login") {
+  if (pathname === "/gerencia/login") {
     return (
       <div className="fixed-layout bg-zinc-950 text-zinc-50">
         <main className="flex-1 w-full overflow-hidden flex flex-col">{children}</main>
@@ -116,7 +116,7 @@ export default function DuenoLayout({ children }: { children: React.ReactNode })
                     D
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-bold text-white leading-none">Dueño</span>
+                    <span className="text-sm font-bold text-white leading-none">Gerencia</span>
                     <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Administrador</span>
                   </div>
                 </div>

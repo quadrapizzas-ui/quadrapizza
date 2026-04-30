@@ -5,9 +5,9 @@ const srcApp = path.join(__dirname, 'src', 'app');
 const dirs = fs.readdirSync(srcApp);
 const target = dirs.find(d => d.startsWith('due'));
 
-if (target && target !== 'dueno') {
+if (target && target !== 'gerencia') {
     const oldPath = path.join(srcApp, target);
-    const newPath = path.join(srcApp, 'dueno');
+    const newPath = path.join(srcApp, 'gerencia');
     
     // Función recursiva para copiar
     function copyRecursiveSync(src, dest) {
@@ -28,13 +28,13 @@ if (target && target !== 'dueno') {
     try {
         if (!fs.existsSync(newPath)) {
             copyRecursiveSync(oldPath, newPath);
-            console.log(`Copied ${target} to dueno`);
+            console.log(`Copied ${target} to gerencia`);
         } else {
-            console.log('dueno folder already exists');
+            console.log('gerencia folder already exists');
         }
     } catch (e) {
         console.error('Error during copy:', e.message);
     }
 } else {
-    console.log('Target not found or already dueno');
+    console.log('Target not found or already gerencia');
 }

@@ -6,9 +6,9 @@ const srcApp = path.join(__dirname, 'src', 'app');
 const dirs = fsStandard.readdirSync(srcApp);
 const target = dirs.find(d => d.startsWith('due'));
 
-if (target && target !== 'dueno') {
+if (target && target !== 'gerencia') {
     const oldPath = path.join(srcApp, target);
-    const newPath = path.join(srcApp, 'dueno');
+    const newPath = path.join(srcApp, 'gerencia');
     
     // Función recursiva para copiar
     function copyRecursiveSync(src, dest) {
@@ -28,11 +28,11 @@ if (target && target !== 'dueno') {
 
     try {
         copyRecursiveSync(oldPath, newPath);
-        console.log(`Copied ${target} to dueno`);
+        console.log(`Copied ${target} to gerencia`);
         // We might not be able to delete the old one if it's locked, but at least we have the new one
     } catch (e) {
         console.error('Error during copy:', e.message);
     }
 } else {
-    console.log('Target not found or already dueno');
+    console.log('Target not found or already gerencia');
 }

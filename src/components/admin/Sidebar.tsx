@@ -59,7 +59,7 @@ export default function Sidebar({ isOpen = false, onClose }: { isOpen?: boolean;
              </div>
              <div className="flex flex-col">
                <span className="text-sm font-bold text-white">Hector Zanier</span>
-               <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest mt-0.5">Dueño</span>
+               <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest mt-0.5">Gerencia</span>
              </div>
            </div>
            <button title="Cerrar Sesión" className="p-2 text-zinc-500 hover:text-orange-500 hover:bg-zinc-900 rounded-lg transition-colors">

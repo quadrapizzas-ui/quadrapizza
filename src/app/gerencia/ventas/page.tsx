@@ -18,7 +18,7 @@ function fmtARS(n: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
 }
 
-export default function DuenoVentasPage() {
+export default function GerenciaVentasPage() {
   const [orders, setOrders] = useState<MockOrder[]>(() => mockOrdersStore.getSnapshot());
   const [search, setSearch] = useState("");
 

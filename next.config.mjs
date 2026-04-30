@@ -7,18 +7,5 @@ const nextConfig = {
         hostname: 'images.unsplash.com',
       },
     ],
-  },
-  async rewrites() {
-    return [
-      {
-        source: '/dueño',
-        destination: '/dueno',
-      },
-      {
-        source: '/dueño/:path*',
-        destination: '/dueno/:path*',
-      },
-    ];
-  },
 };
 export default nextConfig;
