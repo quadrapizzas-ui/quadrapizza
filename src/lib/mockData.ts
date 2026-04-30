@@ -174,7 +174,7 @@ class OrdersStore {
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+    return () => { this.listeners.delete(listener); };
   }
 
   getSnapshot = () => {
@@ -268,7 +268,7 @@ class CustomersStore {
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+    return () => { this.listeners.delete(listener); };
   }
 
   getSnapshot = () => {
