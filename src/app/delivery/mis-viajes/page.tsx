@@ -188,7 +188,7 @@ export default function MisViajesPage() {
             </div>
             <div>
               <h2 className="font-black text-xl text-zinc-400">Sin rutas activas</h2>
-              <p className="text-zinc-600 text-sm mt-1">Los pedidos listos en cocina aparecerán aquí</p>
+              <p className="text-zinc-600 text-sm mt-1">Los pedidos listos en preparación aparecerán aquí</p>
             </div>
             <div className="flex items-center gap-2 mt-2">
               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />

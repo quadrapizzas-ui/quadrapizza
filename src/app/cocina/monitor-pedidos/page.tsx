@@ -122,7 +122,7 @@ export default function CocinaMonitorPage() {
             <p className="font-black text-lg text-zinc-300 tabular-nums leading-none">{pendientes.length}</p>
           </div>
           <div className="text-center">
-            <p className="text-[10px] font-bold text-yellow-700 uppercase tracking-wider">En Cocina</p>
+            <p className="text-[10px] font-bold text-yellow-700 uppercase tracking-wider">En Preparación</p>
             <p className="font-black text-lg text-yellow-500 tabular-nums leading-none">{enCocina.length}</p>
           </div>
           <div className="text-center">
@@ -151,8 +151,8 @@ export default function CocinaMonitorPage() {
           ))}
         </KdsColumn>
 
-        {/* Col 2 — En Cocina */}
-        <KdsColumn title="En Cocina" icon={ChefHat} count={enCocina.length} accent="border-yellow-900/60 text-yellow-500">
+        {/* Col 2 — En Preparación */}
+        <KdsColumn title="En Preparación" icon={ChefHat} count={enCocina.length} accent="border-yellow-900/60 text-yellow-500">
           {enCocina.map(o => (
             <KdsCard key={o.id} order={o}
               onAdvance={() => mockOrdersStore.updateOrderStatus(o.id, "listo")}
