@@ -127,7 +127,7 @@ export default function NuevaVentaPage() {
     if (p.saleType !== "unidad") {
       openProdModal(p);
     } else {
-      const unit = p.saleType === "docena" ? "docena" : "unidad";
+      const unit: UnitType = "unidad";
       const key = `${p.id}-${unit}`;
       const unitPriceVal = getPriceForUnit(p, unit);
       setCart(prev => {
