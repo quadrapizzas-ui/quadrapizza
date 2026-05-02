@@ -20,6 +20,7 @@ interface CartItem {
   note?: string;
   quadraSelections?: string[];
   extras?: { name: string; price: number }[];
+  customVariety?: string;
 }
 
 const CATS = [
@@ -28,6 +29,9 @@ const CATS = [
   { id: 2,     label: "Empanadas"   },
   { id: 3,     label: "Sándwiches"  },
   { id: 4,     label: "Bebidas"     },
+  { id: 5,     label: "Postres"     },
+  { id: 6,     label: "Menú del día"},
+  { id: 7,     label: "Almacén"     },
 ];
 
 function parsePrice(str?: string): number {
@@ -77,6 +81,7 @@ export default function NuevaVentaPage() {
   const [modalUnit, setModalUnit] = useState<UnitType>("unidad");
   const [quadraSelections, setQuadraSelections] = useState<string[]>([]);
   const [selectedExtras, setSelectedExtras] = useState<typeof extras>([]);
+  const [selectedCustomVariety, setSelectedCustomVariety] = useState("");
 
   // Autocomplete states
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
@@ -134,10 +139,15 @@ export default function NuevaVentaPage() {
     } else {
       setQuadraSelections([]);
     }
+    if (p.customVarieties && p.customVarieties.length > 0) {
+      setSelectedCustomVariety("");
+    } else {
+      setSelectedCustomVariety("");
+    }
   }
 
   function handleProductClick(p: Product) {
-    if (p.saleType !== "unidad") {
+    if (p.saleType !== "unidad" || (p.customVarieties && p.customVarieties.length > 0)) {
       openProdModal(p);
     } else {
       const unit: UnitType = "unidad";
@@ -165,7 +175,8 @@ export default function NuevaVentaPage() {
     if (!selectedProd) return;
     const selectionsKey = quadraSelections.length > 0 ? `-${quadraSelections.join('-')}` : '';
     const extrasKey = selectedExtras.length > 0 ? `-ext-${selectedExtras.map(e => e.id).join('-')}` : '';
-    const key = `${selectedProd.id}-${modalUnit}${selectionsKey}${extrasKey}`;
+    const varietyKey = selectedCustomVariety ? `-var-${selectedCustomVariety}` : '';
+    const key = `${selectedProd.id}-${modalUnit}${selectionsKey}${extrasKey}${varietyKey}`;
     const unitPriceVal = getPriceForUnit(selectedProd, modalUnit);
     setCart(prev => {
       const idx = prev.findIndex(i => i.key === key);
@@ -183,7 +194,8 @@ export default function NuevaVentaPage() {
         price: unitPriceVal, 
         quantity: modalQty,
         quadraSelections: selectedProd.saleType === 'quadra' ? [...quadraSelections] : undefined,
-        extras: selectedExtras.length > 0 ? [...selectedExtras.map(e => ({ name: e.name, price: e.price }))] : undefined
+        extras: selectedExtras.length > 0 ? [...selectedExtras.map(e => ({ name: e.name, price: e.price }))] : undefined,
+        customVariety: selectedCustomVariety || undefined
       }];
     });
     setSelectedProd(null);
@@ -223,6 +235,9 @@ export default function NuevaVentaPage() {
       let itemName = `${i.name}${i.unitType !== "unidad" ? ` (${i.unitType === "docena" ? "Docena" : "1/2 Doc"})` : ""}`;
       if (i.quadraSelections && i.quadraSelections.length > 0) {
         itemName += ` [${i.quadraSelections.join(', ')}]`;
+      }
+      if (i.customVariety) {
+        itemName += ` [${i.customVariety}]`;
       }
       if (i.extras && i.extras.length > 0) {
         itemName += ` (+ ${i.extras.map(e => e.name).join(', ')})`;
@@ -379,6 +394,11 @@ export default function NuevaVentaPage() {
                   Sabores: {item.quadraSelections.join(', ')}
                 </div>
               )}
+              {item.customVariety && (
+                <div className="text-[11px] text-zinc-400 font-bold italic mt-1 leading-tight">
+                  Variedad: {item.customVariety}
+                </div>
+              )}
               {item.extras && item.extras.length > 0 && (
                 <div className="text-[11px] text-orange-400 font-bold italic mt-1 leading-tight">
                   Extras: {item.extras.map(e => e.name).join(', ')}
@@ -414,133 +434,158 @@ export default function NuevaVentaPage() {
       {/* ═══ PRODUCT UNIT MODAL ══════════════════════════════════════ */}
       {selectedProd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-sm shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-4xl shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] overflow-hidden">
             {/* Header */}
-            <div className="p-5 pb-0">
+            <div className="shrink-0 p-5 pb-4 border-b border-zinc-800/60">
               <div className="flex items-start justify-between">
                 <div>
                   <h2 className="font-black text-xl text-white tracking-tight">Agregar al Pedido</h2>
                   <p className="text-sm font-bold text-zinc-400 mt-1">{selectedProd.name}</p>
                 </div>
-                <button onClick={() => setSelectedProd(null)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition">
+                <button onClick={() => setSelectedProd(null)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition shrink-0">
                   <X size={16} />
                 </button>
               </div>
             </div>
 
-            <div className="p-5 space-y-6">
-              {/* Opciones (Para combo o cualquier empanada) */}
-              {(selectedProd.saleType === "combo" || selectedProd.category === "Empanadas") && (
-                <div>
-                  <p className="font-black text-white text-sm mb-3">¿Cómo querés pedirlo?</p>
-                  <div className="flex bg-zinc-900 rounded-xl border border-zinc-800 p-1 mb-3">
-                    {(["unidad", "media_docena", "docena"] as UnitType[]).map(u => (
-                      <button key={u} onClick={() => setModalUnit(u)}
-                        className={`flex-1 text-xs font-bold py-2.5 rounded-lg transition ${modalUnit === u ? "bg-zinc-950 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"}`}>
-                        {u === "unidad" ? "Por Unidad" : u === "media_docena" ? "1/2 Docena" : "Docena"}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl px-4 py-3 flex items-center">
-                    <span className="text-xs font-bold text-zinc-500">
-                      Precio {modalUnit === "unidad" ? "unidad" : modalUnit === "media_docena" ? "media docena" : "docena"}: 
-                      <span className="text-white ml-1">{fmtARS(getPriceForUnit(selectedProd, modalUnit))}</span>
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Selector Quadra */}
-              {selectedProd.saleType === "quadra" && selectedProd.quadraConfig && (
-                <div>
-                  <p className="font-black text-white text-sm mb-3">Elegí los sabores</p>
-                  <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-4 space-y-3">
-                    {selectedProd.quadraConfig.fixedRows.length > 0 && (
-                      <p className="text-xs text-zinc-400 mb-2">
-                        Fijas: {selectedProd.quadraConfig.fixedRows.map(f => `${f.rowCount}x ${f.variety}`).join(', ')}
-                      </p>
-                    )}
-                    {Array.from({ length: selectedProd.quadraConfig.customizableRowsCount }).map((_, idx) => (
-                      <div key={idx} className="space-y-1.5">
-                        <label className="text-xs font-bold text-zinc-500">Fila #{idx + 1}</label>
-                        <select
-                          value={quadraSelections[idx] || ""}
-                          onChange={e => {
-                            const newSels = [...quadraSelections];
-                            newSels[idx] = e.target.value;
-                            setQuadraSelections(newSels);
-                          }}
-                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-sky-500/60 transition"
-                        >
-                          <option value="" disabled>Seleccionar variedad</option>
-                          {varieties.filter(v => v.available).map(v => (
-                            <option key={v.id} value={v.name}>{v.name}</option>
-                          ))}
-                        </select>
+            <div className="flex-1 overflow-y-auto no-scrollbar p-4 sm:p-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                
+                {/* ══ LEFT COLUMN: VARIETIES & UNIT ══ */}
+                <div className="space-y-6 flex flex-col justify-start">
+                  {/* Opciones (Para combo o cualquier empanada) */}
+                  {(selectedProd.saleType === "combo" || selectedProd.category === "Empanadas") && (
+                    <div>
+                      <p className="font-black text-white text-sm mb-3">¿Cómo querés pedirlo?</p>
+                      <div className="flex bg-zinc-900 rounded-xl border border-zinc-800 p-1 mb-3">
+                        {(["unidad", "media_docena", "docena"] as UnitType[]).map(u => (
+                          <button key={u} onClick={() => setModalUnit(u)}
+                            className={`flex-1 text-xs font-bold py-2.5 rounded-lg transition ${modalUnit === u ? "bg-zinc-950 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"}`}>
+                            {u === "unidad" ? "Por Unidad" : u === "media_docena" ? "1/2 Docena" : "Docena"}
+                          </button>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                      <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl px-4 py-3 flex items-center">
+                        <span className="text-xs font-bold text-zinc-500">
+                          Precio {modalUnit === "unidad" ? "unidad" : modalUnit === "media_docena" ? "media docena" : "docena"}: 
+                          <span className="text-white ml-1">{fmtARS(getPriceForUnit(selectedProd, modalUnit))}</span>
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
-              {/* Extras (para Pizzas) */}
-              {selectedProd.categoryId && [1, 101, 102, 103].includes(selectedProd.categoryId) && (
-                <div>
-                  <p className="font-black text-white text-sm mb-3">Extras</p>
-                  <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3 grid grid-cols-1 gap-2">
-                    {extras.filter(e => e.available).map(extra => {
-                      const isSelected = selectedExtras.some(e => e.id === extra.id);
-                      return (
-                        <label key={extra.id} className={`flex items-center justify-between p-2.5 rounded-lg border transition cursor-pointer select-none ${isSelected ? 'bg-orange-500/10 border-orange-500/50' : 'bg-zinc-900 border-zinc-800'}`}>
-                          <div className="flex items-center gap-3">
-                            <div className={`w-4 h-4 rounded-sm flex items-center justify-center shrink-0 border ${isSelected ? 'bg-orange-500 border-orange-500 text-white' : 'bg-zinc-950 border-zinc-700 text-transparent'}`}>
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={isSelected ? 'opacity-100' : 'opacity-0'}><polyline points="20 6 9 17 4 12"></polyline></svg>
-                            </div>
-                            <span className={`text-sm font-bold ${isSelected ? 'text-zinc-100' : 'text-zinc-300'}`}>{extra.name}</span>
+                  {/* Selector Quadra */}
+                  {selectedProd.saleType === "quadra" && selectedProd.quadraConfig && (
+                    <div>
+                      <p className="font-black text-white text-sm mb-3">Elegí los sabores</p>
+                      <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-4 space-y-3">
+                        {selectedProd.quadraConfig.fixedRows.length > 0 && (
+                          <p className="text-xs text-zinc-400 mb-2">
+                            Fijas: {selectedProd.quadraConfig.fixedRows.map(f => `${f.rowCount}x ${f.variety}`).join(', ')}
+                          </p>
+                        )}
+                        {Array.from({ length: selectedProd.quadraConfig.customizableRowsCount }).map((_, idx) => (
+                          <div key={idx} className="space-y-1.5">
+                            <label className="text-xs font-bold text-zinc-500">Fila #{idx + 1}</label>
+                            <select
+                              value={quadraSelections[idx] || ""}
+                              onChange={e => {
+                                const newSels = [...quadraSelections];
+                                newSels[idx] = e.target.value;
+                                setQuadraSelections(newSels);
+                              }}
+                              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-sky-500/60 transition"
+                            >
+                              <option value="" disabled>Seleccionar variedad</option>
+                              {varieties.filter(v => v.available).map(v => (
+                                <option key={v.id} value={v.name}>{v.name}</option>
+                              ))}
+                            </select>
                           </div>
-                          <span className="text-xs font-black text-orange-400">+{fmtARS(extra.price)}</span>
-                          <input 
-                            type="checkbox" 
-                            className="hidden" 
-                            checked={isSelected}
-                            onChange={(e) => {
-                              if (e.target.checked) setSelectedExtras([...selectedExtras, extra]);
-                              else setSelectedExtras(selectedExtras.filter(e => e.id !== extra.id));
-                            }} 
-                          />
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-              {/* Cantidad */}
-              <div>
-                <p className="font-black text-white text-sm mb-3">
-                  Cantidad ({modalUnit === "unidad" ? "Unidades" : modalUnit === "media_docena" ? "Medias Docenas" : "Docenas"})
-                </p>
-                <div className="flex items-center justify-between">
-                  <button onClick={() => setModalQty(Math.max(1, modalQty - 1))} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition active:scale-95">
-                    <Minus size={20} />
-                  </button>
-                  <div className="flex items-end gap-2">
-                    <span className="font-black text-4xl text-white tabular-nums leading-none">{modalQty}</span>
-                    <span className="font-black text-zinc-500 text-sm mb-1">{modalUnit === "unidad" ? "UN" : modalUnit === "media_docena" ? "MD" : "DOC"}</span>
+                  {/* Selector Custom Variety */}
+                  {selectedProd.customVarieties && selectedProd.customVarieties.length > 0 && (
+                    <div>
+                      <p className="font-black text-white text-sm mb-3">Elegí la variedad</p>
+                      <select
+                        value={selectedCustomVariety}
+                        onChange={(e) => setSelectedCustomVariety(e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-sky-500/60 transition"
+                      >
+                        <option value="" disabled>Seleccionar variedad</option>
+                        {selectedProd.customVarieties.map(v => (
+                          <option key={v} value={v.trim()}>{v.trim()}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  
                   </div>
-                  <button onClick={() => setModalQty(modalQty + 1)} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition active:scale-95">
-                    <Plus size={20} />
-                  </button>
+
+                {/* ══ RIGHT COLUMN: EXTRAS & QUANTITY ══ */}
+                <div className="space-y-6 flex flex-col justify-start">
+                  {/* Extras (para Pizzas) */}
+                  {selectedProd.categoryId && [1, 101, 102, 103].includes(selectedProd.categoryId) && (
+                    <div className="flex-1">
+                      <p className="font-black text-white text-sm mb-3">Extras</p>
+                      <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-2.5 grid grid-cols-2 gap-2 h-fit">
+                        {extras.filter(e => e.available).map(extra => {
+                          const isSelected = selectedExtras.some(e => e.id === extra.id);
+                          return (
+                            <label key={extra.id} className={`flex items-center justify-between p-2.5 rounded-xl border transition cursor-pointer select-none ${isSelected ? 'bg-orange-500/10 border-orange-500/50' : 'bg-zinc-950 border-zinc-800/80'}`}>
+                              <div className="flex items-center gap-3">
+                                <div className={`w-4 h-4 rounded-sm flex items-center justify-center shrink-0 border ${isSelected ? 'bg-orange-500 border-orange-500 text-white' : 'bg-zinc-900 border-zinc-700 text-transparent'}`}>
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={isSelected ? 'opacity-100' : 'opacity-0'}><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                </div>
+                                <span className={`text-sm font-bold leading-none ${isSelected ? 'text-zinc-100' : 'text-zinc-300'}`}>{extra.name}</span>
+                              </div>
+                              <span className="text-xs font-black text-orange-400">+{fmtARS(extra.price)}</span>
+                              <input 
+                                type="checkbox" 
+                                className="hidden" 
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  if (e.target.checked) setSelectedExtras([...selectedExtras, extra]);
+                                  else setSelectedExtras(selectedExtras.filter(e => e.id !== extra.id));
+                                }} 
+                              />
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                 </div>
               </div>
+            </div>
 
-              {/* Botón */}
+            {/* Fixed Footer Botón y Cantidad */}
+            <div className="shrink-0 p-4 sm:p-5 border-t border-zinc-800/60 bg-zinc-950 flex flex-col sm:flex-row items-center gap-4">
+              {/* Controles de Cantidad Compactos */}
+              <div className="flex items-center justify-between w-full sm:w-auto bg-zinc-900 border border-zinc-800/80 rounded-xl p-1.5 shrink-0">
+                <button onClick={() => setModalQty(Math.max(1, modalQty - 1))} className="w-12 h-12 flex items-center justify-center rounded-lg bg-zinc-950 border border-zinc-800/80 text-zinc-400 hover:text-white hover:bg-zinc-800 transition active:scale-95">
+                  <Minus size={20} />
+                </button>
+                <div className="flex flex-col items-center justify-center px-5 min-w-[70px]">
+                  <span className="font-black text-2xl text-white tabular-nums leading-none">{modalQty}</span>
+                  <span className="font-bold text-zinc-500 text-[10px] mt-0.5 uppercase tracking-wider">{modalUnit === "unidad" ? "UN" : modalUnit === "media_docena" ? "1/2 DOC" : "DOC"}</span>
+                </div>
+                <button onClick={() => setModalQty(modalQty + 1)} className="w-12 h-12 flex items-center justify-center rounded-lg bg-zinc-950 border border-zinc-800/80 text-zinc-400 hover:text-white hover:bg-zinc-800 transition active:scale-95">
+                  <Plus size={20} />
+                </button>
+              </div>
+
               <button 
                 onClick={confirmAdd} 
-                disabled={selectedProd.saleType === 'quadra' && quadraSelections.some(s => !s)}
-                className="w-full py-3.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-black text-sm transition active:scale-95 shadow-lg shadow-orange-900/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:active:scale-100 disabled:shadow-none"
+                disabled={(selectedProd.saleType === 'quadra' && quadraSelections.some(s => !s)) || (selectedProd.customVarieties && selectedProd.customVarieties.length > 0 && !selectedCustomVariety)}
+                className="w-full py-4 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-black text-sm transition active:scale-95 shadow-lg shadow-orange-900/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:active:scale-100 disabled:shadow-none flex-1"
               >
-                <ShoppingCart size={16} />
+                <ShoppingCart size={18} />
                 Agregar al Pedido
               </button>
             </div>
@@ -551,7 +596,7 @@ export default function NuevaVentaPage() {
       {/* ═══ CONFIRM ORDER MODAL ═════════════════════════════════════ */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
 
             {/* Header */}
             <div className="shrink-0 px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
@@ -567,176 +612,187 @@ export default function NuevaVentaPage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-4">
-              {/* Nombre y Teléfono */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative">
-                <div className="relative">
-                  <label className="block text-xs font-bold text-zinc-400 mb-1.5">Nombre del cliente *</label>
-                  <input value={customerName} 
-                    onChange={e => {
-                      setCustomerName(e.target.value);
-                      setCustomerId(null);
-                      setCustomerSearchType("name");
-                      setShowCustomerSuggestions(true);
-                    }}
-                    onFocus={() => {
-                      if (customerName.length >= 2) {
-                        setCustomerSearchType("name");
-                        setShowCustomerSuggestions(true);
-                      }
-                    }}
-                    onBlur={() => setTimeout(() => setShowCustomerSuggestions(false), 200)}
-                    autoFocus
-                    placeholder="Ej. Juan García"
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-sky-500/60 transition" />
-                </div>
-                <div className="relative">
-                  <label className="block text-xs font-bold text-zinc-400 mb-1.5">Teléfono *</label>
-                  <input value={customerPhone} 
-                    onChange={e => {
-                      setCustomerPhone(e.target.value);
-                      setCustomerId(null);
-                      setCustomerSearchType("phone");
-                      setShowCustomerSuggestions(true);
-                    }}
-                    onFocus={() => {
-                      if (customerPhone.length >= 2) {
-                        setCustomerSearchType("phone");
-                        setShowCustomerSuggestions(true);
-                      }
-                    }}
-                    onBlur={() => setTimeout(() => setShowCustomerSuggestions(false), 200)}
-                    type="tel"
-                    placeholder="Ej. 3514567890"
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-sky-500/60 transition" />
-                </div>
-
-                {/* Autocomplete Dropdown */}
-                {showCustomerSuggestions && suggestedCustomers.length > 0 && (
-                  <div className="absolute top-[calc(100%+0.5rem)] left-0 right-0 bg-zinc-800 border border-zinc-700 rounded-xl shadow-2xl overflow-hidden z-[60]">
-                    <div className="px-3 py-2 bg-zinc-900 border-b border-zinc-700">
-                      <p className="text-xs font-bold text-zinc-400">Clientes registrados sugeridos</p>
+            <div className="flex-1 overflow-y-auto no-scrollbar p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                {/* ══ LEFT COLUMN: CLIENT & DELIVERY ══ */}
+                <div className="space-y-4">
+                  {/* Nombre y Teléfono */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative">
+                    <div className="relative">
+                      <label className="block text-xs font-bold text-zinc-400 mb-1.5">Nombre del cliente *</label>
+                      <input value={customerName} 
+                        onChange={e => {
+                          setCustomerName(e.target.value);
+                          setCustomerId(null);
+                          setCustomerSearchType("name");
+                          setShowCustomerSuggestions(true);
+                        }}
+                        onFocus={() => {
+                          if (customerName.length >= 2) {
+                            setCustomerSearchType("name");
+                            setShowCustomerSuggestions(true);
+                          }
+                        }}
+                        onBlur={() => setTimeout(() => setShowCustomerSuggestions(false), 200)}
+                        autoFocus
+                        placeholder="Ej. Juan García"
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-sky-500/60 transition" />
                     </div>
-                    {suggestedCustomers.map(c => (
-                      <button key={c.id} onMouseDown={(e) => { e.preventDefault(); selectCustomer(c); }}
-                        className="w-full text-left px-4 py-3 hover:bg-zinc-700 transition flex flex-col gap-1 border-b border-zinc-700/50 last:border-0">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-bold text-white">{c.name}</span>
-                          <span className="text-xs font-bold text-sky-400">{c.phone}</span>
+                    <div className="relative">
+                      <label className="block text-xs font-bold text-zinc-400 mb-1.5">Teléfono *</label>
+                      <input value={customerPhone} 
+                        onChange={e => {
+                          setCustomerPhone(e.target.value);
+                          setCustomerId(null);
+                          setCustomerSearchType("phone");
+                          setShowCustomerSuggestions(true);
+                        }}
+                        onFocus={() => {
+                          if (customerPhone.length >= 2) {
+                            setCustomerSearchType("phone");
+                            setShowCustomerSuggestions(true);
+                          }
+                        }}
+                        onBlur={() => setTimeout(() => setShowCustomerSuggestions(false), 200)}
+                        type="tel"
+                        placeholder="Ej. 3514567890"
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-sky-500/60 transition" />
+                    </div>
+
+                    {/* Autocomplete Dropdown */}
+                    {showCustomerSuggestions && suggestedCustomers.length > 0 && (
+                      <div className="absolute top-[calc(100%+0.5rem)] left-0 right-0 bg-zinc-800 border border-zinc-700 rounded-xl shadow-2xl overflow-hidden z-[60]">
+                        <div className="px-3 py-2 bg-zinc-900 border-b border-zinc-700">
+                          <p className="text-xs font-bold text-zinc-400">Clientes registrados sugeridos</p>
                         </div>
-                        {c.address && (
-                          <span className="text-[11px] text-zinc-400 font-medium truncate">{c.address} {c.addressDetail ? `- ${c.addressDetail}` : ""}</span>
-                        )}
-                      </button>
-                    ))}
+                        {suggestedCustomers.map(c => (
+                          <button key={c.id} onMouseDown={(e) => { e.preventDefault(); selectCustomer(c); }}
+                            className="w-full text-left px-4 py-3 hover:bg-zinc-700 transition flex flex-col gap-1 border-b border-zinc-700/50 last:border-0">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-bold text-white">{c.name}</span>
+                              <span className="text-xs font-bold text-sky-400">{c.phone}</span>
+                            </div>
+                            {c.address && (
+                              <span className="text-[11px] text-zinc-400 font-medium truncate">{c.address} {c.addressDetail ? `- ${c.addressDetail}` : ""}</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Entrega */}
-              <div>
-                <label className="block text-xs font-bold text-zinc-400 mb-1.5">Método de entrega</label>
-                <div className="flex gap-2">
-                  {(["retiro", "envio"] as const).map(m => (
-                    <button key={m} onClick={() => setDeliveryMethod(m)}
-                      className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition ${deliveryMethod === m ? "bg-sky-500/15 border-sky-500/40 text-sky-400" : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300"}`}>
-                      {m === "retiro" ? "🏠 Retiro en local" : "🛵 Envío a domicilio"}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                  {/* Entrega */}
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-400 mb-1.5">Método de entrega</label>
+                    <div className="flex gap-2">
+                      {(["retiro", "envio"] as const).map(m => (
+                        <button key={m} onClick={() => setDeliveryMethod(m)}
+                          className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition ${deliveryMethod === m ? "bg-sky-500/15 border-sky-500/40 text-sky-400" : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300"}`}>
+                          {m === "retiro" ? "🏠 Retiro en local" : "🛵 Envío a domicilio"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-              {deliveryMethod === "envio" && (
-                <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
-                  {neighborhoods.length > 0 && (
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 mb-1.5">Barrio / Zona *</label>
-                      <div className="relative">
-                        <select value={selectedNeighId ?? ""} onChange={e => setSelectedNeighId(Number(e.target.value))}
-                          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold text-zinc-100 outline-none focus:border-sky-500/60 appearance-none transition">
-                          <option value="" disabled className="bg-zinc-900 text-zinc-500">Seleccioná el barrio</option>
-                          {neighborhoods.map(n => (
-                            <option key={n.id} value={n.id} className="bg-zinc-900">{n.name} (+{fmtARS(n.deliveryCost)})</option>
-                          ))}
-                        </select>
-                        <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+                  {deliveryMethod === "envio" && (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                      {neighborhoods.length > 0 && (
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 mb-1.5">Barrio / Zona *</label>
+                          <div className="relative">
+                            <select value={selectedNeighId ?? ""} onChange={e => setSelectedNeighId(Number(e.target.value))}
+                              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold text-zinc-100 outline-none focus:border-sky-500/60 appearance-none transition">
+                              <option value="" disabled className="bg-zinc-900 text-zinc-500">Seleccioná el barrio</option>
+                              {neighborhoods.map(n => (
+                                <option key={n.id} value={n.id} className="bg-zinc-900">{n.name} (+{fmtARS(n.deliveryCost)})</option>
+                              ))}
+                            </select>
+                            <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+                          </div>
+                        </div>
+                      )}
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 mb-1.5">Dirección *</label>
+                        <input value={address} onChange={e => setAddress(e.target.value.toUpperCase())}
+                          placeholder="CALLE, NÚMERO..."
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold uppercase text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-sky-500/60 transition" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 mb-1.5">Detalles (opcional)</label>
+                        <input value={addressDetail} onChange={e => setAddressDetail(e.target.value)}
+                          placeholder="Piso, depto, referencias..."
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-medium text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-sky-500/60 transition" />
                       </div>
                     </div>
                   )}
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-400 mb-1.5">Dirección *</label>
-                    <input value={address} onChange={e => setAddress(e.target.value.toUpperCase())}
-                      placeholder="CALLE, NÚMERO..."
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold uppercase text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-sky-500/60 transition" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-400 mb-1.5">Detalles (opcional)</label>
-                    <input value={addressDetail} onChange={e => setAddressDetail(e.target.value)}
-                      placeholder="Piso, depto, referencias..."
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-medium text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-sky-500/60 transition" />
-                  </div>
                 </div>
-              )}
 
-              {/* Pago */}
-              <div>
-                <label className="block text-xs font-bold text-zinc-400 mb-1.5">Método de pago</label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
-                  {["Efectivo", "Transferencia", "Tarjeta de crédito"].map(m => (
-                    <button key={m} onClick={() => setPayment(m)}
-                      className={`py-2.5 text-xs font-bold rounded-xl border transition ${payment === m ? "bg-sky-500/15 border-sky-500/40 text-sky-400" : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300"}`}>
-                      {m}
-                    </button>
-                  ))}
-                </div>
-                {payment === "Efectivo" && (
-                  <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 mb-1.5">Dinero recibido</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-bold">$</span>
-                        <input 
-                          type="number"
-                          value={dineroRecibido} 
-                          onChange={e => setDineroRecibido(e.target.value)}
-                          placeholder="Ej. 10000"
-                          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-8 pr-4 py-2.5 text-sm font-black text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-sky-500/60 transition" 
-                        />
+                {/* ══ RIGHT COLUMN: PAYMENT & TOTAL ══ */}
+                <div className="space-y-4 flex flex-col justify-start">
+                  {/* Pago */}
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-400 mb-1.5">Método de pago</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+                      {["Efectivo", "Transferencia", "Tarjeta de crédito"].map(m => (
+                        <button key={m} onClick={() => setPayment(m)}
+                          className={`py-2.5 text-xs font-bold rounded-xl border transition ${payment === m ? "bg-sky-500/15 border-sky-500/40 text-sky-400" : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300"}`}>
+                          {m}
+                        </button>
+                      ))}
+                    </div>
+                    {payment === "Efectivo" && (
+                      <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 mb-1.5">Dinero recibido</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-bold">$</span>
+                            <input 
+                              type="number"
+                              value={dineroRecibido} 
+                              onChange={e => setDineroRecibido(e.target.value)}
+                              placeholder="Ej. 10000"
+                              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-8 pr-4 py-2.5 text-sm font-black text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-sky-500/60 transition" 
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 mb-1.5">Vuelto a entregar</label>
+                          <div className={`w-full bg-zinc-900 border ${Number(dineroRecibido) >= total ? "border-emerald-500/40 text-emerald-400" : "border-zinc-800 text-zinc-500"} rounded-xl px-4 py-2.5 text-sm font-black flex items-center h-[42px]`}>
+                            {dineroRecibido && Number(dineroRecibido) >= total 
+                              ? fmtARS(Number(dineroRecibido) - total) 
+                              : "---"}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Total summary at the bottom */}
+                  <div className="mt-auto pt-4">
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-1.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-zinc-500 font-bold uppercase tracking-wide">Subtotal</span>
+                        <span className="text-zinc-300 font-bold">{fmtARS(subtotal)}</span>
+                      </div>
+                      {deliveryCost > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-zinc-500 font-bold uppercase tracking-wide">Envío ({selectedNeigh?.name})</span>
+                          <span className="text-zinc-300 font-bold">{fmtARS(deliveryCost)}</span>
+                        </div>
+                      )}
+                      {creditCardSurcharge > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-zinc-500 font-bold uppercase tracking-wide">Recargo TC (15%)</span>
+                          <span className="text-red-400 font-bold">+{fmtARS(creditCardSurcharge)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between pt-1.5 border-t border-zinc-800">
+                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-wide">Total</span>
+                        <span className="font-black text-xl text-white tabular-nums">{fmtARS(total)}</span>
                       </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 mb-1.5">Vuelto a entregar</label>
-                      <div className={`w-full bg-zinc-900 border ${Number(dineroRecibido) >= total ? "border-emerald-500/40 text-emerald-400" : "border-zinc-800 text-zinc-500"} rounded-xl px-4 py-2.5 text-sm font-black flex items-center h-[42px]`}>
-                        {dineroRecibido && Number(dineroRecibido) >= total 
-                          ? fmtARS(Number(dineroRecibido) - total) 
-                          : "---"}
-                      </div>
-                    </div>
                   </div>
-                )}
-              </div>
-
-              {/* Total */}
-              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-1.5">
-                <div className="flex justify-between text-xs">
-                  <span className="text-zinc-500 font-bold uppercase tracking-wide">Subtotal</span>
-                  <span className="text-zinc-300 font-bold">{fmtARS(subtotal)}</span>
-                </div>
-                {deliveryCost > 0 && (
-                  <div className="flex justify-between text-xs">
-                    <span className="text-zinc-500 font-bold uppercase tracking-wide">Envío ({selectedNeigh?.name})</span>
-                    <span className="text-zinc-300 font-bold">{fmtARS(deliveryCost)}</span>
-                  </div>
-                )}
-                {creditCardSurcharge > 0 && (
-                  <div className="flex justify-between text-xs">
-                    <span className="text-zinc-500 font-bold uppercase tracking-wide">Recargo TC (15%)</span>
-                    <span className="text-red-400 font-bold">+{fmtARS(creditCardSurcharge)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between pt-1.5 border-t border-zinc-800">
-                  <span className="text-xs font-bold text-zinc-400 uppercase tracking-wide">Total</span>
-                  <span className="font-black text-xl text-white tabular-nums">{fmtARS(total)}</span>
                 </div>
               </div>
             </div>

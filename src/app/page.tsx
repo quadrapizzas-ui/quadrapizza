@@ -25,6 +25,7 @@ type CartItem = {
   originalSaleType: "unidad" | "docena" | "combo" | "quadra"; // tipo original de venta
   quadraSelections?: string[]; // opciones seleccionadas para filas modificables
   extras?: { name: string; price: number }[]; // extras agregados
+  customVariety?: string; // variedad elegida (ej. "Dulce", "Pan Árabe")
 };
 
 export default function CatalogPage() {
@@ -38,6 +39,9 @@ export default function CatalogPage() {
     { id: 202, name: "Fritas", parentId: 2 },
     { id: 3, name: "Sándwiches", parentId: null },
     { id: 4, name: "Bebidas", parentId: null },
+    { id: 5, name: "Postres", parentId: null },
+    { id: 6, name: "Menú del día", parentId: null },
+    { id: 7, name: "Almacén", parentId: null },
   ];
 
   const [selectedPath, setSelectedPath] = useState<number[]>([]);
@@ -115,6 +119,7 @@ export default function CatalogPage() {
   const [modalUnitType, setModalUnitType] = useState<'unidad' | 'media_docena' | 'docena'>('unidad');
   const [quadraSelections, setQuadraSelections] = useState<string[]>([]);
   const [selectedExtras, setSelectedExtras] = useState<typeof extras>([]);
+  const [selectedCustomVariety, setSelectedCustomVariety] = useState("");
 
   const openAddToCartModal = (product: Product) => {
     setSelectedProductForCart(product);
@@ -130,6 +135,12 @@ export default function CatalogPage() {
     } else {
       setQuadraSelections([]);
     }
+
+    if (product.customVarieties && product.customVarieties.length > 0) {
+      setSelectedCustomVariety("");
+    } else {
+      setSelectedCustomVariety("");
+    }
   };
 
   const confirmAddToCart = () => {
@@ -138,7 +149,8 @@ export default function CatalogPage() {
     // For quadra, we combine selections to create a unique ID
     const selectionsKey = quadraSelections.length > 0 ? `-${quadraSelections.join('-')}` : '';
     const extrasKey = selectedExtras.length > 0 ? `-ext-${selectedExtras.map(e => e.id).join('-')}` : '';
-    const itemId = `${selectedProductForCart.id}-${modalUnitType}${selectionsKey}${extrasKey}`;
+    const varietyKey = selectedCustomVariety ? `-var-${selectedCustomVariety}` : '';
+    const itemId = `${selectedProductForCart.id}-${modalUnitType}${selectionsKey}${extrasKey}${varietyKey}`;
 
     const existingItemIndex = cartItems.findIndex(
       item => item.id === itemId
@@ -161,6 +173,7 @@ export default function CatalogPage() {
         originalSaleType: selectedProductForCart.saleType,
         quadraSelections: selectedProductForCart.saleType === 'quadra' ? [...quadraSelections] : undefined,
         extras: selectedExtras.length > 0 ? [...selectedExtras.map(e => ({ name: e.name, price: e.price }))] : undefined,
+        customVariety: selectedCustomVariety || undefined,
       };
       setCartItems([...cartItems, newItem]);
     }
@@ -233,6 +246,9 @@ export default function CatalogPage() {
       let itemDetails = '';
       if (item.quadraSelections && item.quadraSelections.length > 0) {
         itemDetails += `\n    (Opciones: ${item.quadraSelections.join(', ')})`;
+      }
+      if (item.customVariety) {
+        itemDetails += `\n    (Variedad: ${item.customVariety})`;
       }
       if (item.extras && item.extras.length > 0) {
         itemDetails += `\n    (Extras: ${item.extras.map(e => e.name).join(', ')})`;
@@ -523,6 +539,25 @@ export default function CatalogPage() {
                 </div>
               )}
 
+              {/* Selector de Variedades Custom (si el producto las tiene) */}
+              {selectedProductForCart.customVarieties && selectedProductForCart.customVarieties.length > 0 && (
+                <div className="space-y-3 bg-zinc-900/40 p-4 rounded-xl border border-zinc-800">
+                  <div className="mb-2">
+                    <h3 className="font-bold text-zinc-200">Elegí la variedad</h3>
+                  </div>
+                  <select
+                    value={selectedCustomVariety}
+                    onChange={(e) => setSelectedCustomVariety(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500 text-zinc-200 appearance-none"
+                  >
+                    <option value="" disabled>Seleccionar variedad</option>
+                    {selectedProductForCart.customVarieties.map(v => (
+                      <option key={v} value={v.trim()}>{v.trim()}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {/* Selector Unidad / Media Docena / Docena — solo para saleType 'combo' */}
               {selectedProductForCart.saleType === 'combo' && (
                 <div>
@@ -604,7 +639,7 @@ export default function CatalogPage() {
               <div className="pt-2">
                 <button
                   onClick={confirmAddToCart}
-                  disabled={selectedProductForCart.saleType === 'quadra' && quadraSelections.some(s => !s)}
+                  disabled={(selectedProductForCart.saleType === 'quadra' && quadraSelections.some(s => !s)) || (selectedProductForCart.customVarieties && selectedProductForCart.customVarieties.length > 0 && !selectedCustomVariety)}
                   className="w-full bg-orange-600 text-white font-bold py-4 rounded-xl hover:bg-orange-500 transition active:scale-95 shadow-lg flex justify-center items-center gap-2 text-sm disabled:opacity-50 disabled:active:scale-100 disabled:shadow-none"
                 >
                   <ShoppingCart size={18} /> Agregar al Pedido
@@ -675,6 +710,11 @@ export default function CatalogPage() {
                             {item.quadraSelections && item.quadraSelections.length > 0 && (
                               <p className="text-[11px] text-zinc-400 italic mb-1 leading-tight">
                                 Opciones: {item.quadraSelections.join(', ')}
+                              </p>
+                            )}
+                            {item.customVariety && (
+                              <p className="text-[11px] text-zinc-400 italic mb-1 leading-tight">
+                                Variedad: {item.customVariety}
                               </p>
                             )}
                             {item.extras && item.extras.length > 0 && (

@@ -31,6 +31,7 @@ export default function ProductosPage() {
   const [pricePerDozen, setPricePerDozen] = useState("");
   const [oldPrice, setOldPrice] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [customVarieties, setCustomVarieties] = useState("");
 
   const { products, toggleProductStock, extras, setExtras, varieties, setVarieties } = useProducts();
 
@@ -72,6 +73,9 @@ export default function ProductosPage() {
     { id: 202, name: "Fritas", parentId: 2 },
     { id: 3, name: "Sándwiches", parentId: null },
     { id: 4, name: "Bebidas", parentId: null },
+    { id: 5, name: "Postres", parentId: null },
+    { id: 6, name: "Menú del día", parentId: null },
+    { id: 7, name: "Almacén", parentId: null },
   ];
 
   const getFlattenedCategories = (parentIdFilter: number | null, depth = 0): { cat: Category; depth: number }[] => {
@@ -120,6 +124,7 @@ export default function ProductosPage() {
               setPricePerDozen("");
               setOldPrice("");
               setImageUrl("");
+              setCustomVarieties("");
               setIsModalOpen(true);
             }}
             className="flex items-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-black rounded-xl transition active:scale-95 shadow-lg shadow-sky-900/30 w-full sm:w-auto justify-center"
@@ -301,6 +306,7 @@ export default function ProductosPage() {
                                 setImageType("upload");
                                 setImageUrl("");
                               }
+                              setCustomVarieties(p.customVarieties ? p.customVarieties.join(", ") : "");
                               setIsModalOpen(true);
                             }}
                             className="p-2 rounded-xl text-zinc-500 hover:text-white hover:bg-zinc-700 transition"
@@ -443,6 +449,12 @@ export default function ProductosPage() {
                 <div>
                   <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Descripción</label>
                   <textarea value={description} onChange={e => setDescription(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 outline-none focus:border-sky-500/60 transition text-sm font-bold resize-none h-20 text-zinc-100 placeholder:text-zinc-600" placeholder="Ingredientes y detalles..." />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Variedades Opcionales (separadas por coma)</label>
+                  <input type="text" value={customVarieties} onChange={e => setCustomVarieties(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 outline-none focus:border-sky-500/60 transition text-sm font-bold text-zinc-100 placeholder:text-zinc-600" placeholder="Ej. Pan Árabe, Pan Francés | Dulce, Salada" />
+                  <p className="text-[10px] text-zinc-500 mt-1.5 font-bold">Si se completa, el cliente deberá elegir una de estas opciones.</p>
                 </div>
 
                 <div>

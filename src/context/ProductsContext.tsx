@@ -16,6 +16,7 @@ export type Product = {
   image: string;
   isOffer: boolean;
   saleType: "unidad" | "docena" | "combo" | "quadra";  // unidad: se vende x unidad, docena: se vende x docena, combo: opciones combinadas, quadra: personalizable por filas
+  customVarieties?: string[]; // Variedades específicas del producto (ej: ["Dulce", "Salada"], ["Pan Árabe", "Pan Francés"])
   quadraConfig?: {
     totalRows: number;
     fixedRows: { variety: string; rowCount: number }[];
@@ -193,7 +194,8 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       stock: true,
       image: "/2.webp",
       isOffer: false,
-      saleType: "combo"
+      saleType: "combo",
+      customVarieties: ["Dulce", "Salada"]
     },
     {
       id: 6,
@@ -207,7 +209,8 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       stock: true,
       image: "/2.webp",
       isOffer: false,
-      saleType: "combo"
+      saleType: "combo",
+      customVarieties: ["Al Horno", "Frita"]
     },
     {
       id: 9,
@@ -234,7 +237,8 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       stock: true,
       image: "/4.webp",
       isOffer: false,
-      saleType: "unidad"
+      saleType: "unidad",
+      customVarieties: ["Pan Árabe", "Pan Francés"]
     },
     {
       id: 10,
@@ -270,6 +274,57 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       categoryId: 4,
       stock: true,
       image: "/cerveza.webp",
+      isOffer: false,
+      saleType: "unidad"
+    },
+    // --- POSTRES ---
+    {
+      id: 20,
+      name: "Flan con Dulce de Leche",
+      description: "Flan casero con una generosa porción de dulce de leche.",
+      price: "$1.500",
+      category: "Postres",
+      categoryId: 5,
+      stock: true,
+      image: "/postre.png",
+      isOffer: false,
+      saleType: "unidad"
+    },
+    {
+      id: 21,
+      name: "Tiramisú",
+      description: "Clásico postre italiano con mascarpone, café y cacao.",
+      price: "$2.200",
+      category: "Postres",
+      categoryId: 5,
+      stock: true,
+      image: "/tiramisu.png",
+      isOffer: false,
+      saleType: "unidad"
+    },
+    // --- MENÚ DEL DÍA ---
+    {
+      id: 22,
+      name: "Suprema de Pollo con Puré",
+      description: "Suprema tierna con puré de papas cremoso.",
+      price: "$4.500",
+      category: "Menú del día",
+      categoryId: 6,
+      stock: true,
+      image: "/menu.png",
+      isOffer: false,
+      saleType: "unidad"
+    },
+    // --- ALMACÉN ---
+    {
+      id: 23,
+      name: "Alfajor Jorgito Chocolate",
+      description: "Clásico alfajor de chocolate relleno con dulce de leche.",
+      price: "$800",
+      category: "Almacén",
+      categoryId: 7,
+      stock: true,
+      image: "/alfajor.png",
       isOffer: false,
       saleType: "unidad"
     },
