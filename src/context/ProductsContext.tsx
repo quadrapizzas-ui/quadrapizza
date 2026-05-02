@@ -15,7 +15,25 @@ export type Product = {
   stock: boolean;
   image: string;
   isOffer: boolean;
-  saleType: "unidad" | "docena" | "combo";  // unidad: se vende x unidad, docena: se vende x docena, combo: opciones combinadas
+  saleType: "unidad" | "docena" | "combo" | "quadra";  // unidad: se vende x unidad, docena: se vende x docena, combo: opciones combinadas, quadra: personalizable por filas
+  quadraConfig?: {
+    totalRows: number;
+    fixedRows: { variety: string; rowCount: number }[];
+    customizableRowsCount: number;
+  };
+};
+
+export type Extra = {
+  id: string;
+  name: string;
+  price: number;
+  available: boolean;
+};
+
+export type Variety = {
+  id: string;
+  name: string;
+  available: boolean;
 };
 
 export type Neighborhood = {
@@ -29,6 +47,10 @@ type ProductsContextType = {
   toggleProductStock: (id: number) => void;
   neighborhoods: Neighborhood[];
   setNeighborhoods: (neighborhoods: Neighborhood[]) => void;
+  extras: Extra[];
+  setExtras: (extras: Extra[]) => void;
+  varieties: Variety[];
+  setVarieties: (varieties: Variety[]) => void;
 };
 
 const ProductsContext = createContext<ProductsContextType | undefined>(undefined);
@@ -38,6 +60,23 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
     { id: 1, name: "Yocsina", deliveryCost: 500 },
     { id: 2, name: "Malagueño", deliveryCost: 1000 },
     { id: 3, name: "La Perla", deliveryCost: 1500 },
+  ]);
+
+  const [extras, setExtras] = useState<Extra[]>([
+    { id: 'huevo', name: 'Huevo duro picado', price: 800, available: true },
+    { id: 'queso', name: 'Extra Muzzarella', price: 1200, available: true },
+    { id: 'aceitunas', name: 'Aceitunas extras', price: 600, available: true },
+    { id: 'roquefort', name: 'Roquefort', price: 1500, available: true },
+    { id: 'anchoas', name: 'Anchoas', price: 1500, available: true },
+  ]);
+
+  const [varieties, setVarieties] = useState<Variety[]>([
+    { id: 'muzza', name: 'Muzzarella', available: true },
+    { id: 'napo', name: 'Napolitana', available: true },
+    { id: 'espe', name: 'Especial', available: true },
+    { id: 'fugazzeta', name: 'Fugazzeta', available: true },
+    { id: 'calabresa', name: 'Calabresa', available: true },
+    { id: 'roque', name: 'Roquefort', available: true },
   ]);
 
   const [products, setProducts] = useState<Product[]>([
@@ -89,6 +128,57 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       image: "/3.webp",
       isOffer: false,
       saleType: "unidad"
+    },
+    {
+      id: 13,
+      name: "Quadra 1 (1 Variedad Extra)",
+      description: "Pizza cuadrada de 9 porciones en 3 filas. 2 filas de Muzzarella y 1 fila a elección.",
+      price: "$9.000",
+      category: "Pizzas",
+      categoryId: 102,
+      stock: true,
+      image: "/5.webp",
+      isOffer: false,
+      saleType: "quadra",
+      quadraConfig: {
+        totalRows: 3,
+        fixedRows: [{ variety: "Muzzarella", rowCount: 2 }],
+        customizableRowsCount: 1,
+      }
+    },
+    {
+      id: 14,
+      name: "Quadra 2 (2 Variedades Extra)",
+      description: "Pizza cuadrada de 9 porciones en 3 filas. 1 fila de Muzzarella y 2 filas a elección.",
+      price: "$10.500",
+      category: "Pizzas",
+      categoryId: 102,
+      stock: true,
+      image: "/1.webp",
+      isOffer: false,
+      saleType: "quadra",
+      quadraConfig: {
+        totalRows: 3,
+        fixedRows: [{ variety: "Muzzarella", rowCount: 1 }],
+        customizableRowsCount: 2,
+      }
+    },
+    {
+      id: 15,
+      name: "Quadra 3 (3 Variedades)",
+      description: "Pizza cuadrada de 9 porciones en 3 filas. Elegí las 3 variedades que más te gusten.",
+      price: "$12.000",
+      category: "Pizzas",
+      categoryId: 102,
+      stock: true,
+      image: "/5.webp",
+      isOffer: false,
+      saleType: "quadra",
+      quadraConfig: {
+        totalRows: 3,
+        fixedRows: [],
+        customizableRowsCount: 3,
+      }
     },
     // --- EMPANADAS ---
     {
@@ -230,7 +320,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ProductsContext.Provider value={{ products, toggleProductStock, neighborhoods, setNeighborhoods }}>
+    <ProductsContext.Provider value={{ products, toggleProductStock, neighborhoods, setNeighborhoods, extras, setExtras, varieties, setVarieties }}>
       {children}
     </ProductsContext.Provider>
   );

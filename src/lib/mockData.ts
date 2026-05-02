@@ -10,6 +10,11 @@ export interface ExtendedProduct extends Product {
   is_promo?: boolean;
   original_price?: number;
   promo_label?: string;
+  is_quadra?: boolean;
+  quadra_customizable_rows?: number;
+  quadra_fixed_rows_count?: number;
+  quadra_fixed_variety?: string;
+  quadra_available_varieties?: string[];
 }
 
 export const MOCK_CATEGORIES: Category[] = [
@@ -76,6 +81,25 @@ export const MOCK_PRODUCTS: ExtendedProduct[] = [
     is_active: true,
     is_menu_del_dia: false,
     stock: 100,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  // Quadra Item
+  {
+    id: "prod-quadra-2",
+    name: "Quadra 2 (2 Variedades)",
+    description: "Pizza cuadrada de 9 porciones. 1 fila de Muzzarella y 2 a elección.",
+    price: 10500,
+    category_id: "cat-1",
+    image_url: "https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?q=80&w=600",
+    is_active: true,
+    is_menu_del_dia: false,
+    stock: null,
+    is_quadra: true,
+    quadra_customizable_rows: 2,
+    quadra_fixed_rows_count: 1,
+    quadra_fixed_variety: "Muzzarella",
+    quadra_available_varieties: ["Jamón y Morrones", "Fugazzeta", "Calabresa", "Palmitos", "Rúcula"],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   }

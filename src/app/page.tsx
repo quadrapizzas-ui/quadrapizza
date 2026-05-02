@@ -22,7 +22,9 @@ type CartItem = {
   price: string;           // precio por unidad
   pricePerHalfDozen?: string; // precio especial por media docena
   pricePerDozen?: string;  // precio especial por docena
-  originalSaleType: "unidad" | "docena" | "combo"; // tipo original de venta
+  originalSaleType: "unidad" | "docena" | "combo" | "quadra"; // tipo original de venta
+  quadraSelections?: string[]; // opciones seleccionadas para filas modificables
+  extras?: { name: string; price: number }[]; // extras agregados
 };
 
 export default function CatalogPage() {
@@ -50,7 +52,7 @@ export default function CatalogPage() {
     }
   };
 
-  const { products, neighborhoods } = useProducts();
+  const { products, neighborhoods, extras, varieties } = useProducts();
   const offers = products.filter(p => p.isOffer);
 
   const getDescendantIds = (catId: number): number[] => {
@@ -111,19 +113,35 @@ export default function CatalogPage() {
   const [selectedProductForCart, setSelectedProductForCart] = useState<Product | null>(null);
   const [modalQuantity, setModalQuantity] = useState(1);
   const [modalUnitType, setModalUnitType] = useState<'unidad' | 'media_docena' | 'docena'>('unidad');
+  const [quadraSelections, setQuadraSelections] = useState<string[]>([]);
+  const [selectedExtras, setSelectedExtras] = useState<typeof extras>([]);
 
   const openAddToCartModal = (product: Product) => {
     setSelectedProductForCart(product);
     setModalQuantity(1);
+    setSelectedExtras([]);
     // Por defecto: si vende por docena solo → arranca en docena; si no → unidad
     setModalUnitType(product.saleType === 'docena' ? 'docena' : 'unidad');
+    
+    if (product.saleType === 'quadra' && product.quadraConfig) {
+      // Initialize with empty strings so the user must select
+      const initialSelections = Array(product.quadraConfig.customizableRowsCount).fill("");
+      setQuadraSelections(initialSelections);
+    } else {
+      setQuadraSelections([]);
+    }
   };
 
   const confirmAddToCart = () => {
     if (!selectedProductForCart) return;
     
+    // For quadra, we combine selections to create a unique ID
+    const selectionsKey = quadraSelections.length > 0 ? `-${quadraSelections.join('-')}` : '';
+    const extrasKey = selectedExtras.length > 0 ? `-ext-${selectedExtras.map(e => e.id).join('-')}` : '';
+    const itemId = `${selectedProductForCart.id}-${modalUnitType}${selectionsKey}${extrasKey}`;
+
     const existingItemIndex = cartItems.findIndex(
-      item => item.productId === selectedProductForCart.id && item.unitType === modalUnitType
+      item => item.id === itemId
     );
 
     if (existingItemIndex >= 0) {
@@ -132,7 +150,7 @@ export default function CatalogPage() {
       setCartItems(updatedCart);
     } else {
       const newItem: CartItem = {
-        id: `${selectedProductForCart.id}-${modalUnitType}`,
+        id: itemId,
         productId: selectedProductForCart.id,
         name: selectedProductForCart.name,
         quantity: modalQuantity,
@@ -141,6 +159,8 @@ export default function CatalogPage() {
         pricePerHalfDozen: selectedProductForCart.pricePerHalfDozen,
         pricePerDozen: selectedProductForCart.pricePerDozen,
         originalSaleType: selectedProductForCart.saleType,
+        quadraSelections: selectedProductForCart.saleType === 'quadra' ? [...quadraSelections] : undefined,
+        extras: selectedExtras.length > 0 ? [...selectedExtras.map(e => ({ name: e.name, price: e.price }))] : undefined,
       };
       setCartItems([...cartItems, newItem]);
     }
@@ -172,16 +192,20 @@ export default function CatalogPage() {
   };
 
   const getItemSubtotal = (item: CartItem) => {
+    let base = 0;
     if (item.unitType === 'docena') {
       if (item.originalSaleType === 'docena') {
-        return parsePrice(item.price) * item.quantity;
+        base = parsePrice(item.price) * item.quantity;
+      } else {
+        base = item.pricePerDozen ? parsePrice(item.pricePerDozen) * item.quantity : parsePrice(item.price) * 12 * item.quantity;
       }
-      return item.pricePerDozen ? parsePrice(item.pricePerDozen) * item.quantity : parsePrice(item.price) * 12 * item.quantity;
+    } else if (item.unitType === 'media_docena') {
+      base = item.pricePerHalfDozen ? parsePrice(item.pricePerHalfDozen) * item.quantity : parsePrice(item.price) * 6 * item.quantity;
+    } else {
+      base = parsePrice(item.price) * item.quantity;
     }
-    if (item.unitType === 'media_docena') {
-      return item.pricePerHalfDozen ? parsePrice(item.pricePerHalfDozen) * item.quantity : parsePrice(item.price) * 6 * item.quantity;
-    }
-    return parsePrice(item.price) * item.quantity;
+    const extrasTotal = item.extras ? item.extras.reduce((acc, e) => acc + e.price, 0) * item.quantity : 0;
+    return base + extrasTotal;
   };
 
   const cartTotal = cartItems.reduce((acc, item) => acc + getItemSubtotal(item), 0);
@@ -206,7 +230,14 @@ export default function CatalogPage() {
         : item.unitType === 'media_docena'
         ? `${item.quantity} media docena(s)`
         : `${item.quantity} unidad(es)`;
-      message += `- ${qLabel} de *${item.name}* -> ${formatPrice(subtotal)}\n`;
+      let itemDetails = '';
+      if (item.quadraSelections && item.quadraSelections.length > 0) {
+        itemDetails += `\n    (Opciones: ${item.quadraSelections.join(', ')})`;
+      }
+      if (item.extras && item.extras.length > 0) {
+        itemDetails += `\n    (Extras: ${item.extras.map(e => e.name).join(', ')})`;
+      }
+      message += `- ${qLabel} de *${item.name}* -> ${formatPrice(subtotal)}${itemDetails}\n`;
     });
 
     message += `\n*TOTAL: ${formatPrice(cartTotal)}*\n`;
@@ -420,7 +451,77 @@ export default function CatalogPage() {
             <h2 className="text-xl font-black tracking-tight pr-8 leading-tight mb-1">Agregar al Pedido</h2>
             <p className="text-sm font-semibold text-zinc-400 mb-6">{selectedProductForCart.name}</p>
 
-            <div className="space-y-5">
+            <div className="space-y-5 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+
+              {/* Selector Quadra (Filas personalizables) */}
+              {selectedProductForCart.saleType === 'quadra' && selectedProductForCart.quadraConfig && (
+                <div className="space-y-4 bg-zinc-900/40 p-4 rounded-xl border border-zinc-800">
+                  <div className="mb-2">
+                    <h3 className="font-bold text-zinc-200">Personalizá tu Quadra</h3>
+                    <p className="text-xs text-zinc-400 mt-1">
+                      {selectedProductForCart.quadraConfig.fixedRows.length > 0 && 
+                        `Incluye ${selectedProductForCart.quadraConfig.fixedRows.map(f => `${f.rowCount} fila(s) de ${f.variety}`).join(', ')}. `
+                      }
+                      Elegí el sabor para {selectedProductForCart.quadraConfig.customizableRowsCount} fila(s) a continuación:
+                    </p>
+                  </div>
+                  
+                  {Array.from({ length: selectedProductForCart.quadraConfig.customizableRowsCount }).map((_, idx) => (
+                    <div key={idx}>
+                      <label className="block text-xs font-bold mb-1.5 text-zinc-300">Fila a elección #{idx + 1}</label>
+                      <select
+                        value={quadraSelections[idx] || ""}
+                        onChange={(e) => {
+                          const newSelections = [...quadraSelections];
+                          newSelections[idx] = e.target.value;
+                          setQuadraSelections(newSelections);
+                        }}
+                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500 text-zinc-200 appearance-none"
+                      >
+                        <option value="" disabled>Seleccionar variedad</option>
+                        {varieties.filter(v => v.available).map(v => (
+                          <option key={v.id} value={v.name}>{v.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Extras (para Pizzas) */}
+              {selectedProductForCart.categoryId && [1, 101, 102, 103].includes(selectedProductForCart.categoryId) && (
+                <div className="space-y-3 bg-zinc-900/40 p-4 rounded-xl border border-zinc-800">
+                  <div className="mb-2">
+                    <h3 className="font-bold text-zinc-200">¿Querés agregar extras?</h3>
+                    <p className="text-xs text-zinc-400 mt-0.5">Podés seleccionar todos los que quieras.</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {extras.filter(e => e.available).map(extra => {
+                      const isSelected = selectedExtras.some(e => e.id === extra.id);
+                      return (
+                        <label key={extra.id} className={`flex items-center gap-3 p-3 rounded-lg border transition cursor-pointer select-none ${isSelected ? 'bg-orange-500/10 border-orange-500/50' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'}`}>
+                          <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 border ${isSelected ? 'bg-orange-500 border-orange-500 text-white' : 'bg-zinc-950 border-zinc-700 text-transparent'}`}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={isSelected ? 'opacity-100' : 'opacity-0'}><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className={`text-sm font-bold ${isSelected ? 'text-zinc-100' : 'text-zinc-300'}`}>{extra.name}</span>
+                            <span className="text-[11px] font-black text-orange-400">+{formatPrice(extra.price)}</span>
+                          </div>
+                          <input 
+                            type="checkbox" 
+                            className="hidden" 
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) setSelectedExtras([...selectedExtras, extra]);
+                              else setSelectedExtras(selectedExtras.filter(e => e.id !== extra.id));
+                            }} 
+                          />
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Selector Unidad / Media Docena / Docena — solo para saleType 'combo' */}
               {selectedProductForCart.saleType === 'combo' && (
@@ -503,7 +604,8 @@ export default function CatalogPage() {
               <div className="pt-2">
                 <button
                   onClick={confirmAddToCart}
-                  className="w-full bg-orange-600 text-white font-bold py-4 rounded-xl hover:bg-orange-500 transition active:scale-95 shadow-lg flex justify-center items-center gap-2 text-sm"
+                  disabled={selectedProductForCart.saleType === 'quadra' && quadraSelections.some(s => !s)}
+                  className="w-full bg-orange-600 text-white font-bold py-4 rounded-xl hover:bg-orange-500 transition active:scale-95 shadow-lg flex justify-center items-center gap-2 text-sm disabled:opacity-50 disabled:active:scale-100 disabled:shadow-none"
                 >
                   <ShoppingCart size={18} /> Agregar al Pedido
                 </button>
@@ -570,7 +672,17 @@ export default function CatalogPage() {
                                 x {item.unitType === 'docena' ? (item.originalSaleType === 'docena' ? item.price : (item.pricePerDozen || formatPrice(parsePrice(item.price) * 12))) : item.unitType === 'media_docena' ? (item.pricePerHalfDozen || formatPrice(parsePrice(item.price) * 6)) : item.price}
                               </span>
                             </div>
-                            <p className="font-black text-sm text-zinc-100">
+                            {item.quadraSelections && item.quadraSelections.length > 0 && (
+                              <p className="text-[11px] text-zinc-400 italic mb-1 leading-tight">
+                                Opciones: {item.quadraSelections.join(', ')}
+                              </p>
+                            )}
+                            {item.extras && item.extras.length > 0 && (
+                              <p className="text-[11px] text-orange-400/80 font-medium italic mb-2 leading-tight">
+                                Extras: {item.extras.map(e => e.name).join(', ')}
+                              </p>
+                            )}
+                            <p className="font-black text-sm text-zinc-100 mt-2">
                               {formatPrice(getItemSubtotal(item))}
                             </p>
                           </div>

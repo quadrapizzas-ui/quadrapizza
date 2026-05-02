@@ -18,6 +18,8 @@ interface CartItem {
   price: number;
   quantity: number;
   note?: string;
+  quadraSelections?: string[];
+  extras?: { name: string; price: number }[];
 }
 
 const CATS = [
@@ -37,11 +39,14 @@ function fmtARS(n: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
 }
 
-function unitPrice(item: CartItem): number { return item.price; }
-function itemSubtotal(item: CartItem): number { return item.price * item.quantity; }
+function itemSubtotal(item: CartItem): number { 
+  const base = item.price * item.quantity;
+  const extrasTotal = item.extras ? item.extras.reduce((acc, e) => acc + e.price, 0) * item.quantity : 0;
+  return base + extrasTotal;
+}
 
 export default function NuevaVentaPage() {
-  const { products, neighborhoods } = useProducts();
+  const { products, neighborhoods, extras, varieties } = useProducts();
 
   const [activeCat, setActiveCat] = useState<number | null>(null);
   const [search, setSearch] = useState("");
@@ -70,6 +75,8 @@ export default function NuevaVentaPage() {
   const [selectedProd, setSelectedProd] = useState<Product | null>(null);
   const [modalQty, setModalQty] = useState(1);
   const [modalUnit, setModalUnit] = useState<UnitType>("unidad");
+  const [quadraSelections, setQuadraSelections] = useState<string[]>([]);
+  const [selectedExtras, setSelectedExtras] = useState<typeof extras>([]);
 
   // Autocomplete states
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
@@ -120,7 +127,13 @@ export default function NuevaVentaPage() {
   function openProdModal(p: Product) {
     setSelectedProd(p);
     setModalQty(1);
+    setSelectedExtras([]);
     setModalUnit(p.saleType === "docena" ? "docena" : "unidad");
+    if (p.saleType === "quadra" && p.quadraConfig) {
+      setQuadraSelections(Array(p.quadraConfig.customizableRowsCount).fill(""));
+    } else {
+      setQuadraSelections([]);
+    }
   }
 
   function handleProductClick(p: Product) {
@@ -150,7 +163,9 @@ export default function NuevaVentaPage() {
 
   function confirmAdd() {
     if (!selectedProd) return;
-    const key = `${selectedProd.id}-${modalUnit}`;
+    const selectionsKey = quadraSelections.length > 0 ? `-${quadraSelections.join('-')}` : '';
+    const extrasKey = selectedExtras.length > 0 ? `-ext-${selectedExtras.map(e => e.id).join('-')}` : '';
+    const key = `${selectedProd.id}-${modalUnit}${selectionsKey}${extrasKey}`;
     const unitPriceVal = getPriceForUnit(selectedProd, modalUnit);
     setCart(prev => {
       const idx = prev.findIndex(i => i.key === key);
@@ -159,7 +174,17 @@ export default function NuevaVentaPage() {
         next[idx] = { ...next[idx], quantity: next[idx].quantity + modalQty };
         return next;
       }
-      return [...prev, { key, productId: selectedProd.id, name: selectedProd.name, image: selectedProd.image, unitType: modalUnit, price: unitPriceVal, quantity: modalQty }];
+      return [...prev, { 
+        key, 
+        productId: selectedProd.id, 
+        name: selectedProd.name, 
+        image: selectedProd.image, 
+        unitType: modalUnit, 
+        price: unitPriceVal, 
+        quantity: modalQty,
+        quadraSelections: selectedProd.saleType === 'quadra' ? [...quadraSelections] : undefined,
+        extras: selectedExtras.length > 0 ? [...selectedExtras.map(e => ({ name: e.name, price: e.price }))] : undefined
+      }];
     });
     setSelectedProd(null);
   }
@@ -194,11 +219,21 @@ export default function NuevaVentaPage() {
       total,
     });
 
-    const itemsForStore = cart.map(i => ({
-      name: `${i.name}${i.unitType !== "unidad" ? ` (${i.unitType === "docena" ? "Docena" : "1/2 Doc"})` : ""}${i.note ? ` - Nota: ${i.note}` : ""}`,
-      quantity: i.quantity,
-      price: i.price,
-    }));
+    const itemsForStore = cart.map(i => {
+      let itemName = `${i.name}${i.unitType !== "unidad" ? ` (${i.unitType === "docena" ? "Docena" : "1/2 Doc"})` : ""}`;
+      if (i.quadraSelections && i.quadraSelections.length > 0) {
+        itemName += ` [${i.quadraSelections.join(', ')}]`;
+      }
+      if (i.extras && i.extras.length > 0) {
+        itemName += ` (+ ${i.extras.map(e => e.name).join(', ')})`;
+      }
+      if (i.note) itemName += ` - Nota: ${i.note}`;
+      return {
+        name: itemName,
+        quantity: i.quantity,
+        price: i.price,
+      };
+    });
 
     mockOrdersStore.addOrder({
       items: itemsForStore,
@@ -339,6 +374,16 @@ export default function NuevaVentaPage() {
                   <button onClick={() => updateQty(item.key, 1)} className="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white rounded-md transition hover:bg-zinc-800 active:scale-95"><Plus size={14} /></button>
                 </div>
               </div>
+              {item.quadraSelections && item.quadraSelections.length > 0 && (
+                <div className="text-[11px] text-zinc-400 font-bold italic mt-1 leading-tight">
+                  Sabores: {item.quadraSelections.join(', ')}
+                </div>
+              )}
+              {item.extras && item.extras.length > 0 && (
+                <div className="text-[11px] text-orange-400 font-bold italic mt-1 leading-tight">
+                  Extras: {item.extras.map(e => e.name).join(', ')}
+                </div>
+              )}
               {item.note && (
                 <div className="bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-bold rounded-lg p-2.5 w-full flex items-start gap-2 leading-tight mt-1">
                   <MessageSquare size={14} className="shrink-0 mt-0.5" />
@@ -405,6 +450,71 @@ export default function NuevaVentaPage() {
                 </div>
               )}
 
+              {/* Selector Quadra */}
+              {selectedProd.saleType === "quadra" && selectedProd.quadraConfig && (
+                <div>
+                  <p className="font-black text-white text-sm mb-3">Elegí los sabores</p>
+                  <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-4 space-y-3">
+                    {selectedProd.quadraConfig.fixedRows.length > 0 && (
+                      <p className="text-xs text-zinc-400 mb-2">
+                        Fijas: {selectedProd.quadraConfig.fixedRows.map(f => `${f.rowCount}x ${f.variety}`).join(', ')}
+                      </p>
+                    )}
+                    {Array.from({ length: selectedProd.quadraConfig.customizableRowsCount }).map((_, idx) => (
+                      <div key={idx} className="space-y-1.5">
+                        <label className="text-xs font-bold text-zinc-500">Fila #{idx + 1}</label>
+                        <select
+                          value={quadraSelections[idx] || ""}
+                          onChange={e => {
+                            const newSels = [...quadraSelections];
+                            newSels[idx] = e.target.value;
+                            setQuadraSelections(newSels);
+                          }}
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-sky-500/60 transition"
+                        >
+                          <option value="" disabled>Seleccionar variedad</option>
+                          {varieties.filter(v => v.available).map(v => (
+                            <option key={v.id} value={v.name}>{v.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Extras (para Pizzas) */}
+              {selectedProd.categoryId && [1, 101, 102, 103].includes(selectedProd.categoryId) && (
+                <div>
+                  <p className="font-black text-white text-sm mb-3">Extras</p>
+                  <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-3 grid grid-cols-1 gap-2">
+                    {extras.filter(e => e.available).map(extra => {
+                      const isSelected = selectedExtras.some(e => e.id === extra.id);
+                      return (
+                        <label key={extra.id} className={`flex items-center justify-between p-2.5 rounded-lg border transition cursor-pointer select-none ${isSelected ? 'bg-orange-500/10 border-orange-500/50' : 'bg-zinc-900 border-zinc-800'}`}>
+                          <div className="flex items-center gap-3">
+                            <div className={`w-4 h-4 rounded-sm flex items-center justify-center shrink-0 border ${isSelected ? 'bg-orange-500 border-orange-500 text-white' : 'bg-zinc-950 border-zinc-700 text-transparent'}`}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={isSelected ? 'opacity-100' : 'opacity-0'}><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            </div>
+                            <span className={`text-sm font-bold ${isSelected ? 'text-zinc-100' : 'text-zinc-300'}`}>{extra.name}</span>
+                          </div>
+                          <span className="text-xs font-black text-orange-400">+{fmtARS(extra.price)}</span>
+                          <input 
+                            type="checkbox" 
+                            className="hidden" 
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) setSelectedExtras([...selectedExtras, extra]);
+                              else setSelectedExtras(selectedExtras.filter(e => e.id !== extra.id));
+                            }} 
+                          />
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Cantidad */}
               <div>
                 <p className="font-black text-white text-sm mb-3">
@@ -425,7 +535,11 @@ export default function NuevaVentaPage() {
               </div>
 
               {/* Botón */}
-              <button onClick={confirmAdd} className="w-full py-3.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-black text-sm transition active:scale-95 shadow-lg shadow-orange-900/20 flex items-center justify-center gap-2">
+              <button 
+                onClick={confirmAdd} 
+                disabled={selectedProd.saleType === 'quadra' && quadraSelections.some(s => !s)}
+                className="w-full py-3.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-black text-sm transition active:scale-95 shadow-lg shadow-orange-900/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:active:scale-100 disabled:shadow-none"
+              >
                 <ShoppingCart size={16} />
                 Agregar al Pedido
               </button>

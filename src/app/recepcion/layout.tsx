@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  ShoppingBasket, ClipboardList, Users, Package, BookOpen, LogOut, Menu, X,
+  ShoppingBasket, ClipboardList, Users, Package, BookOpen, LogOut, Menu, X, FileText
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: "/recepcion/clientes",      label: "Clientes",         icon: Users          },
   { href: "/recepcion/stock-rapido",  label: "Stock Rápido",     icon: Package        },
   { href: "/recepcion/catalogo",      label: "Catálogo",         icon: BookOpen       },
+  { href: "/recepcion/cierre-caja",   label: "Cierre de Caja",   icon: FileText       },
 ];
 
 export default function RecepcionLayout({ children }: { children: React.ReactNode }) {

@@ -12,12 +12,36 @@ export default function ProductosPage() {
   const [imageType, setImageType] = useState("upload");
   const [inStock, setInStock] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [saleType, setSaleType] = useState<"unidad" | "docena" | "combo">("unidad");
+  const [saleType, setSaleType] = useState<"unidad" | "docena" | "combo" | "quadra">("unidad");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const [isQuadra, setIsQuadra] = useState(false);
+  const [quadraCustomizableRows, setQuadraCustomizableRows] = useState(0);
+  const [quadraFixedRowsCount, setQuadraFixedRowsCount] = useState(0);
+  const [quadraFixedVariety, setQuadraFixedVariety] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todas");
   const [statusFilter, setStatusFilter] = useState("todos");
 
-  const { products, toggleProductStock } = useProducts();
+  // Formularios de producto
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [categoryId, setCategoryId] = useState<number | "">("");
+  const [price, setPrice] = useState("");
+  const [pricePerHalfDozen, setPricePerHalfDozen] = useState("");
+  const [pricePerDozen, setPricePerDozen] = useState("");
+  const [oldPrice, setOldPrice] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+
+  const { products, toggleProductStock, extras, setExtras, varieties, setVarieties } = useProducts();
+
+  const [isExtrasManagerOpen, setIsExtrasManagerOpen] = useState(false);
+  const [newExtraName, setNewExtraName] = useState("");
+  const [newExtraPrice, setNewExtraPrice] = useState("");
+  const [editingExtraId, setEditingExtraId] = useState<string | null>(null);
+
+  const [isVarietiesManagerOpen, setIsVarietiesManagerOpen] = useState(false);
+  const [newVarietyName, setNewVarietyName] = useState("");
+  const [editingVarietyId, setEditingVarietyId] = useState<string | null>(null);
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -76,13 +100,48 @@ export default function ProductosPage() {
             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">Catálogo general</p>
           </div>
         </div>
-        <button
-          onClick={() => { setIsEditing(false); setIsOffer(false); setInStock(true); setImageType("upload"); setSaleType("unidad"); setIsModalOpen(true); }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-black rounded-xl transition active:scale-95 shadow-lg shadow-sky-900/30 w-full sm:w-auto justify-center"
-        >
-          <Plus size={14} />
-          Nuevo Producto
-        </button>
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
+          <button
+            onClick={() => {
+              setIsEditing(false);
+              setIsOffer(false);
+              setInStock(true);
+              setImageType("upload");
+              setSaleType("unidad");
+              setIsQuadra(false);
+              setQuadraCustomizableRows(0);
+              setQuadraFixedRowsCount(0);
+              setQuadraFixedVariety("");
+              setName("");
+              setDescription("");
+              setCategoryId("");
+              setPrice("");
+              setPricePerHalfDozen("");
+              setPricePerDozen("");
+              setOldPrice("");
+              setImageUrl("");
+              setIsModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-black rounded-xl transition active:scale-95 shadow-lg shadow-sky-900/30 w-full sm:w-auto justify-center"
+          >
+            <Plus size={14} />
+            Nuevo Producto
+          </button>
+          <button
+            onClick={() => setIsExtrasManagerOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 text-xs font-black rounded-xl transition shadow-sm w-full sm:w-auto justify-center"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Gestionar Extras
+          </button>
+          <button
+            onClick={() => setIsVarietiesManagerOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 text-xs font-black rounded-xl transition shadow-sm w-full sm:w-auto justify-center"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Gestionar Variedades
+          </button>
+        </div>
       </div>
 
       {/* ── Búsqueda ── */}
@@ -212,7 +271,38 @@ export default function ProductosPage() {
                       <td className="sm:p-4 sm:pr-5 mt-3 sm:mt-0 flex sm:table-cell justify-end">
                         <div className="flex items-center justify-end gap-1">
                           <button
-                            onClick={() => { setIsEditing(true); setIsOffer(!!p.isOffer); setInStock(p.stock); setImageType("upload"); setSaleType(p.saleType); setIsModalOpen(true); }}
+                            onClick={() => {
+                              setIsEditing(true);
+                              setIsOffer(!!p.isOffer);
+                              setInStock(p.stock);
+                              setImageType("upload");
+                              setSaleType(p.saleType);
+                              setIsQuadra(p.saleType === 'quadra');
+                              if (p.saleType === 'quadra' && p.quadraConfig) {
+                                setQuadraCustomizableRows(p.quadraConfig.customizableRowsCount);
+                                setQuadraFixedRowsCount(p.quadraConfig.fixedRows[0]?.rowCount || 0);
+                                setQuadraFixedVariety(p.quadraConfig.fixedRows[0]?.variety || "");
+                              } else {
+                                setQuadraCustomizableRows(0);
+                                setQuadraFixedRowsCount(0);
+                                setQuadraFixedVariety("");
+                              }
+                              setName(p.name);
+                              setDescription(p.description || "");
+                              setCategoryId(p.categoryId || "");
+                              setPrice(p.price || "");
+                              setPricePerHalfDozen(p.pricePerHalfDozen || "");
+                              setPricePerDozen(p.pricePerDozen || "");
+                              setOldPrice(p.oldPrice || "");
+                              if (p.image) {
+                                setImageType("url");
+                                setImageUrl(p.image);
+                              } else {
+                                setImageType("upload");
+                                setImageUrl("");
+                              }
+                              setIsModalOpen(true);
+                            }}
                             className="p-2 rounded-xl text-zinc-500 hover:text-white hover:bg-zinc-700 transition"
                           >
                             <Edit2 size={15} />
@@ -277,23 +367,44 @@ export default function ProductosPage() {
                   </div>
 
                   {imageType === "upload" ? (
-                    <div className="border-2 border-dashed border-zinc-700 rounded-2xl aspect-[4/3] flex flex-col items-center justify-center bg-zinc-800/50 hover:border-zinc-600 transition cursor-pointer">
-                      <div className="w-10 h-10 bg-zinc-900 rounded-xl flex items-center justify-center mb-3 border border-zinc-700">
-                        <UploadCloud size={18} className="text-zinc-500" />
+                    <label className="border-2 border-dashed border-zinc-700 rounded-2xl aspect-[4/3] flex flex-col items-center justify-center bg-zinc-800/50 hover:border-zinc-600 transition cursor-pointer relative overflow-hidden group">
+                      <input 
+                        type="file" 
+                        accept="image/webp, image/jpeg, image/png" 
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            // In a real app, you'd upload this file to your server/bucket
+                            // and then set the returned URL. For now, we'll create a local object URL
+                            const localUrl = URL.createObjectURL(file);
+                            setImageUrl(localUrl);
+                            setImageType("url"); // Switch to URL view to see the preview
+                          }
+                        }}
+                      />
+                      <div className="w-10 h-10 bg-zinc-900 rounded-xl flex items-center justify-center mb-3 border border-zinc-700 group-hover:border-sky-500/50 group-hover:text-sky-400 transition-colors">
+                        <UploadCloud size={18} className="text-inherit" />
                       </div>
                       <p className="text-sm font-bold text-zinc-300">Arrastrá una imagen</p>
-                      <p className="text-xs text-zinc-600 mt-1">o hacé clic para explorar</p>
-                      <p className="text-[9px] text-zinc-600 mt-2 font-bold uppercase tracking-widest">PNG, JPG hasta 5MB</p>
-                    </div>
+                      <p className="text-xs text-zinc-600 mt-1 group-hover:text-zinc-400 transition-colors">o hacé clic para explorar</p>
+                      <p className="text-[9px] text-zinc-600 mt-2 font-bold uppercase tracking-widest">WEBP, JPG hasta 5MB</p>
+                    </label>
                   ) : (
                     <div className="space-y-3">
                       <div className="relative">
                         <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" size={14} />
-                        <input type="text" placeholder="https://..." className="w-full pl-9 pr-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl outline-none focus:border-sky-500/60 transition text-sm font-bold text-zinc-100 placeholder:text-zinc-600" />
+                        <input type="text" value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="https://..." className="w-full pl-9 pr-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl outline-none focus:border-sky-500/60 transition text-sm font-bold text-zinc-100 placeholder:text-zinc-600" />
                       </div>
-                      <div className="border border-zinc-700 rounded-2xl aspect-[4/3] flex flex-col items-center justify-center bg-zinc-800/50 text-zinc-600">
-                        <ImageIcon size={28} className="mb-2 opacity-40" />
-                        <span className="text-xs font-bold">Vista Previa</span>
+                      <div className="border border-zinc-700 rounded-2xl aspect-[4/3] flex flex-col items-center justify-center bg-zinc-800/50 text-zinc-600 overflow-hidden relative">
+                        {imageUrl ? (
+                          <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                        ) : (
+                          <>
+                            <ImageIcon size={28} className="mb-2 opacity-40" />
+                            <span className="text-xs font-bold">Vista Previa</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   )}
@@ -326,18 +437,18 @@ export default function ProductosPage() {
               <div className="lg:col-span-3 space-y-4">
                 <div>
                   <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Nombre del Producto</label>
-                  <input type="text" className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 outline-none focus:border-sky-500/60 transition text-sm font-bold text-zinc-100 placeholder:text-zinc-600" placeholder="Ej. Pizza Muzzarella Grande" />
+                  <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 outline-none focus:border-sky-500/60 transition text-sm font-bold text-zinc-100 placeholder:text-zinc-600" placeholder="Ej. Pizza Muzzarella Grande" />
                 </div>
 
                 <div>
                   <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Descripción</label>
-                  <textarea className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 outline-none focus:border-sky-500/60 transition text-sm font-bold resize-none h-20 text-zinc-100 placeholder:text-zinc-600" placeholder="Ingredientes y detalles..." />
+                  <textarea value={description} onChange={e => setDescription(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 outline-none focus:border-sky-500/60 transition text-sm font-bold resize-none h-20 text-zinc-100 placeholder:text-zinc-600" placeholder="Ingredientes y detalles..." />
                 </div>
 
                 <div>
                   <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Categoría / Subcategoría</label>
                   <div className="relative">
-                    <select className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-4 pr-10 py-2.5 appearance-none outline-none focus:border-sky-500/60 transition text-sm font-bold text-zinc-100">
+                    <select value={categoryId} onChange={e => setCategoryId(Number(e.target.value) || "")} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-4 pr-10 py-2.5 appearance-none outline-none focus:border-sky-500/60 transition text-sm font-bold text-zinc-100">
                       <option value="" className="bg-zinc-900 text-zinc-100">Seleccionar categoría...</option>
                       {selectableCategories.map(({ cat, depth }) => (
                         <option key={cat.id} value={cat.id} className="bg-zinc-900 text-zinc-100">
@@ -377,7 +488,7 @@ export default function ProductosPage() {
                     </label>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">$</span>
-                      <input type="text" className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-8 pr-4 py-2.5 outline-none focus:border-sky-500/60 transition text-sm font-bold text-zinc-100 placeholder:text-zinc-600" placeholder="0" />
+                      <input type="text" value={price} onChange={e => setPrice(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-8 pr-4 py-2.5 outline-none focus:border-sky-500/60 transition text-sm font-bold text-zinc-100 placeholder:text-zinc-600" placeholder="0" />
                     </div>
                   </div>
                   {saleType === "combo" && (
@@ -386,14 +497,14 @@ export default function ProductosPage() {
                         <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Media Docena</label>
                         <div className="relative">
                           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">$</span>
-                          <input type="text" className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-8 pr-4 py-2.5 outline-none focus:border-sky-500/60 transition text-sm font-bold text-zinc-100 placeholder:text-zinc-600" placeholder="0" />
+                          <input type="text" value={pricePerHalfDozen} onChange={e => setPricePerHalfDozen(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-8 pr-4 py-2.5 outline-none focus:border-sky-500/60 transition text-sm font-bold text-zinc-100 placeholder:text-zinc-600" placeholder="0" />
                         </div>
                       </div>
                       <div>
                         <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Docena</label>
                         <div className="relative">
                           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">$</span>
-                          <input type="text" className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-8 pr-4 py-2.5 outline-none focus:border-sky-500/60 transition text-sm font-bold text-zinc-100 placeholder:text-zinc-600" placeholder="0" />
+                          <input type="text" value={pricePerDozen} onChange={e => setPricePerDozen(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-8 pr-4 py-2.5 outline-none focus:border-sky-500/60 transition text-sm font-bold text-zinc-100 placeholder:text-zinc-600" placeholder="0" />
                         </div>
                       </div>
                     </>
@@ -407,10 +518,64 @@ export default function ProductosPage() {
                     </label>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">$</span>
-                      <input type="text" className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-8 pr-4 py-2.5 outline-none focus:border-sky-500/60 transition text-sm font-bold text-zinc-100 placeholder:text-zinc-600" placeholder="0" />
+                      <input type="text" value={oldPrice} onChange={e => setOldPrice(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-8 pr-4 py-2.5 outline-none focus:border-sky-500/60 transition text-sm font-bold text-zinc-100 placeholder:text-zinc-600" placeholder="0" />
                     </div>
                   </div>
                 )}
+
+                {/* Configuración Quadra */}
+                <div className="flex flex-col gap-3 pt-3 border-t border-zinc-800">
+                  <div className="flex items-center justify-between bg-zinc-900/50 p-3 rounded-xl border border-zinc-800/50">
+                    <div>
+                      <div className="text-sm font-bold text-zinc-200">Producto Quadra (Filas Editables)</div>
+                      <div className="text-[10px] text-zinc-400">Permite al cliente elegir variedades por fila</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !isQuadra;
+                        setIsQuadra(next);
+                        if (next) setSaleType("quadra");
+                      }}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isQuadra ? "bg-sky-500" : "bg-zinc-600"}`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isQuadra ? "translate-x-6" : "translate-x-1"}`} />
+                    </button>
+                  </div>
+
+                  {isQuadra && (
+                    <div className="grid grid-cols-2 gap-3 bg-zinc-800/30 p-4 rounded-xl border border-sky-500/30 shadow-inner">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest pl-1">Filas Editables</label>
+                        <input
+                          type="number"
+                          value={quadraCustomizableRows}
+                          onChange={(e) => setQuadraCustomizableRows(Number(e.target.value))}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500/60 text-zinc-100"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest pl-1">Filas Fijas</label>
+                        <input
+                          type="number"
+                          value={quadraFixedRowsCount}
+                          onChange={(e) => setQuadraFixedRowsCount(Number(e.target.value))}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500/60 text-zinc-100"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5 col-span-2">
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest pl-1">Sabor de Filas Fijas</label>
+                        <input
+                          type="text"
+                          placeholder="Ej. Muzzarella"
+                          value={quadraFixedVariety}
+                          onChange={(e) => setQuadraFixedVariety(e.target.value)}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500/60 text-zinc-100"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 <div className="pt-2">
                   <button
@@ -421,6 +586,245 @@ export default function ProductosPage() {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* MODAL: Administrador de Extras */}
+      {isExtrasManagerOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsExtrasManagerOpen(false)} />
+          <div className="relative bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-black text-zinc-100 tracking-tight">Administrar Extras</h2>
+                <p className="text-xs text-zinc-500 mt-1">Configurá los extras adicionales para las pizzas</p>
+              </div>
+              <button 
+                onClick={() => setIsExtrasManagerOpen(false)}
+                className="w-8 h-8 flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 rounded-xl transition"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Listado de Extras */}
+            <div className="overflow-y-auto pr-2 no-scrollbar mb-6 flex-1 min-h-0 space-y-2">
+              {extras.map(extra => (
+                <div key={extra.id} className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${extra.available ? 'bg-zinc-900/50 border-zinc-800/50' : 'bg-zinc-900/20 border-zinc-800/30 opacity-60'}`}>
+                  
+                  {editingExtraId === extra.id ? (
+                    <div className="flex-1 flex items-center gap-2 mr-2">
+                      <input 
+                        type="text" 
+                        value={newExtraName} 
+                        onChange={(e) => setNewExtraName(e.target.value)}
+                        className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm font-bold text-white focus:outline-none focus:border-sky-500"
+                        autoFocus
+                      />
+                      <input 
+                        type="number" 
+                        value={newExtraPrice} 
+                        onChange={(e) => setNewExtraPrice(e.target.value)}
+                        className="w-24 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm font-bold text-white focus:outline-none focus:border-sky-500"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex-1">
+                      <span className="font-bold text-zinc-200 text-sm">{extra.name}</span>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs font-black text-sky-400">${extra.price}</span>
+                        {!extra.available && <span className="text-[10px] uppercase font-bold text-red-500 bg-red-500/10 px-1.5 rounded-md">Oculto</span>}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    {editingExtraId === extra.id ? (
+                      <button 
+                        onClick={() => {
+                          setExtras(extras.map(e => e.id === extra.id ? { ...e, name: newExtraName, price: Number(newExtraPrice) } : e));
+                          setEditingExtraId(null);
+                        }}
+                        className="p-2 text-green-500 hover:bg-green-500/10 rounded-lg transition"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      </button>
+                    ) : (
+                      <>
+                        <button 
+                          onClick={() => {
+                            setExtras(extras.map(e => e.id === extra.id ? { ...e, available: !e.available } : e));
+                          }}
+                          className={`p-2 rounded-lg transition ${extra.available ? 'text-zinc-500 hover:text-sky-400 hover:bg-zinc-800' : 'text-green-500 hover:bg-green-500/10'}`}
+                          title={extra.available ? "Ocultar extra" : "Mostrar extra"}
+                        >
+                          {extra.available ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setNewExtraName(extra.name);
+                            setNewExtraPrice(extra.price.toString());
+                            setEditingExtraId(extra.id);
+                          }}
+                          className="p-2 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button 
+                          onClick={() => setExtras(extras.filter(e => e.id !== extra.id))}
+                          className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Crear nuevo */}
+            <div className="flex gap-2 border-t border-zinc-800 pt-6 mt-auto">
+              <input 
+                type="text" 
+                placeholder="Nombre del extra..."
+                id="addExtraName"
+                className="flex-[2] bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:border-sky-500 text-zinc-100 transition placeholder:text-zinc-600 placeholder:font-normal"
+              />
+              <input 
+                type="number" 
+                placeholder="$ Precio"
+                id="addExtraPrice"
+                className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:border-sky-500 text-zinc-100 transition placeholder:text-zinc-600 placeholder:font-normal"
+              />
+              <button 
+                onClick={() => {
+                  const nameEl = document.getElementById('addExtraName') as HTMLInputElement;
+                  const priceEl = document.getElementById('addExtraPrice') as HTMLInputElement;
+                  if (nameEl.value && priceEl.value) {
+                    setExtras([...extras, { id: Date.now().toString(), name: nameEl.value, price: Number(priceEl.value), available: true }]);
+                    nameEl.value = '';
+                    priceEl.value = '';
+                  }
+                }}
+                className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-4 rounded-xl flex items-center justify-center transition-colors shadow-lg shadow-sky-900/20 active:scale-95 shrink-0"
+              >
+                <Plus size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Administrador de Variedades */}
+      {isVarietiesManagerOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsVarietiesManagerOpen(false)} />
+          <div className="relative bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-black text-zinc-100 tracking-tight">Administrar Variedades</h2>
+                <p className="text-xs text-zinc-500 mt-1">Configurá las variedades globales (sabores) disponibles para los productos Quadra.</p>
+              </div>
+              <button 
+                onClick={() => setIsVarietiesManagerOpen(false)}
+                className="w-8 h-8 flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 rounded-xl transition"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Listado de Variedades */}
+            <div className="overflow-y-auto pr-2 no-scrollbar mb-6 flex-1 min-h-0 space-y-2">
+              {varieties.map(variety => (
+                <div key={variety.id} className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${variety.available ? 'bg-zinc-900/50 border-zinc-800/50' : 'bg-zinc-900/20 border-zinc-800/30 opacity-60'}`}>
+                  
+                  {editingVarietyId === variety.id ? (
+                    <div className="flex-1 flex items-center gap-2 mr-2">
+                      <input 
+                        type="text" 
+                        value={newVarietyName} 
+                        onChange={(e) => setNewVarietyName(e.target.value)}
+                        className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm font-bold text-white focus:outline-none focus:border-sky-500"
+                        autoFocus
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex-1">
+                      <span className="font-bold text-zinc-200 text-sm">{variety.name}</span>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {!variety.available && <span className="text-[10px] uppercase font-bold text-red-500 bg-red-500/10 px-1.5 rounded-md">Oculto</span>}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    {editingVarietyId === variety.id ? (
+                      <button 
+                        onClick={() => {
+                          setVarieties(varieties.map(v => v.id === variety.id ? { ...v, name: newVarietyName } : v));
+                          setEditingVarietyId(null);
+                        }}
+                        className="p-2 text-green-500 hover:bg-green-500/10 rounded-lg transition"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      </button>
+                    ) : (
+                      <>
+                        <button 
+                          onClick={() => {
+                            setVarieties(varieties.map(v => v.id === variety.id ? { ...v, available: !v.available } : v));
+                          }}
+                          className={`p-2 rounded-lg transition ${variety.available ? 'text-zinc-500 hover:text-sky-400 hover:bg-zinc-800' : 'text-green-500 hover:bg-green-500/10'}`}
+                          title={variety.available ? "Ocultar variedad" : "Mostrar variedad"}
+                        >
+                          {variety.available ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setNewVarietyName(variety.name);
+                            setEditingVarietyId(variety.id);
+                          }}
+                          className="p-2 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button 
+                          onClick={() => setVarieties(varieties.filter(v => v.id !== variety.id))}
+                          className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Crear nuevo */}
+            <div className="flex gap-2 border-t border-zinc-800 pt-6 mt-auto">
+              <input 
+                type="text" 
+                placeholder="Nombre de la variedad (Sabor)..."
+                id="addVarietyName"
+                className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:border-sky-500 text-zinc-100 transition placeholder:text-zinc-600 placeholder:font-normal"
+              />
+              <button 
+                onClick={() => {
+                  const nameEl = document.getElementById('addVarietyName') as HTMLInputElement;
+                  if (nameEl.value) {
+                    setVarieties([...varieties, { id: Date.now().toString(), name: nameEl.value, available: true }]);
+                    nameEl.value = '';
+                  }
+                }}
+                className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-4 rounded-xl flex items-center justify-center transition-colors shadow-lg shadow-sky-900/20 active:scale-95 shrink-0"
+              >
+                <Plus size={20} />
+              </button>
             </div>
           </div>
         </div>
