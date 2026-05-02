@@ -23,16 +23,30 @@ interface CartItem {
   customVariety?: string;
 }
 
-const CATS = [
-  { id: null,  label: "Todos"       },
-  { id: 1,     label: "Pizzas"      },
-  { id: 2,     label: "Empanadas"   },
-  { id: 3,     label: "Sándwiches"  },
-  { id: 4,     label: "Bebidas"     },
-  { id: 5,     label: "Postres"     },
-  { id: 6,     label: "Menú del día"},
-  { id: 7,     label: "Almacén"     },
+// ── Two-level category hierarchy ──────────────────────────────────────────────
+type HCat = { id: number; name: string; parentId: number | null };
+
+const HCATS: HCat[] = [
+  { id: 1,   name: "Pizzas",        parentId: null },
+  { id: 101, name: "Tradicionales",  parentId: 1 },
+  { id: 102, name: "Especiales",     parentId: 1 },
+  { id: 103, name: "Rellenas",       parentId: 1 },
+  { id: 2,   name: "Empanadas",      parentId: null },
+  { id: 201, name: "Al Horno",       parentId: 2 },
+  { id: 202, name: "Fritas",         parentId: 2 },
+  { id: 3,   name: "Sándwiches",     parentId: null },
+  { id: 4,   name: "Bebidas",        parentId: null },
+  { id: 5,   name: "Postres",        parentId: null },
+  { id: 6,   name: "Menú del día",   parentId: null },
+  { id: 7,   name: "Almacén",        parentId: null },
 ];
+
+const PARENT_CATS = HCATS.filter(c => c.parentId === null);
+
+function getSubCatsNV(parentName: string): HCat[] {
+  const parent = HCATS.find(c => c.name === parentName);
+  return parent ? HCATS.filter(c => c.parentId === parent.id) : [];
+}
 
 function parsePrice(str?: string): number {
   if (!str) return 0;
@@ -52,7 +66,8 @@ function itemSubtotal(item: CartItem): number {
 export default function NuevaVentaPage() {
   const { products, neighborhoods, extras, varieties } = useProducts();
 
-  const [activeCat, setActiveCat] = useState<number | null>(null);
+  const [selectedParent, setSelectedParent] = useState("Todos");
+  const [selectedSub, setSelectedSub] = useState("Todas");
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
 
@@ -70,6 +85,9 @@ export default function NuevaVentaPage() {
   const [payment, setPayment] = useState("Efectivo");
   const [dineroRecibido, setDineroRecibido] = useState("");
   const [sending, setSending] = useState(false);
+
+  // Mobile layout state
+  const [showMobileCart, setShowMobileCart] = useState(false);
 
   // Item note modal
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -115,18 +133,41 @@ export default function NuevaVentaPage() {
     setCustomerSearchType(null);
   }
 
+  const subCatsNV = useMemo(() => getSubCatsNV(selectedParent), [selectedParent]);
+  const hasSubCatsNV = subCatsNV.length > 0;
+
+  const handleParentSelect = (name: string) => {
+    setSelectedParent(name);
+    setSelectedSub("Todas");
+  };
+
   // --- Filtered products ---
   const filtered = useMemo(() => {
     return products.filter(p => {
       if (!p.stock) return false;
-      if (activeCat !== null && p.categoryId !== activeCat) return false;
+
+      // Category filtering
+      if (selectedParent !== "Todos") {
+        const subs = getSubCatsNV(selectedParent);
+        const hasSubs = subs.length > 0;
+        if (hasSubs && selectedSub !== "Todas") {
+          const subObj = HCATS.find(c => c.name === selectedSub);
+          if (p.categoryId !== subObj?.id) return false;
+        } else if (hasSubs) {
+          const childIds = subs.map(c => c.id);
+          if (p.category !== selectedParent && !childIds.includes(p.categoryId ?? -1)) return false;
+        } else {
+          if (p.category !== selectedParent) return false;
+        }
+      }
+
       if (search.trim().length >= 2) {
         const q = search.toLowerCase();
         return p.name.toLowerCase().includes(q) || (p.description || "").toLowerCase().includes(q);
       }
       return true;
     });
-  }, [products, activeCat, search]);
+  }, [products, selectedParent, selectedSub, search]);
 
   // --- Cart helpers ---
   function openProdModal(p: Product) {
@@ -177,7 +218,8 @@ export default function NuevaVentaPage() {
     const extrasKey = selectedExtras.length > 0 ? `-ext-${selectedExtras.map(e => e.id).join('-')}` : '';
     const varietyKey = selectedCustomVariety ? `-var-${selectedCustomVariety}` : '';
     const key = `${selectedProd.id}-${modalUnit}${selectionsKey}${extrasKey}${varietyKey}`;
-    const unitPriceVal = getPriceForUnit(selectedProd, modalUnit);
+    const customVarietyData = selectedProd.customVarieties?.find(v => v.name === selectedCustomVariety);
+    const unitPriceVal = getPriceForUnit(selectedProd, modalUnit) + (customVarietyData?.price || 0);
     setCart(prev => {
       const idx = prev.findIndex(i => i.key === key);
       if (idx >= 0) {
@@ -287,19 +329,57 @@ export default function NuevaVentaPage() {
               className="w-full pl-9 pr-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-sm font-medium text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-sky-500/60 transition"
             />
           </div>
+          {/* Level 1: parent categories */}
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
-            {CATS.map(c => (
+            <button
+              onClick={() => handleParentSelect("Todos")}
+              className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold border transition ${
+                selectedParent === "Todos"
+                  ? "bg-sky-500 text-white border-sky-500"
+                  : "bg-transparent border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300"
+              }`}
+            >Todos</button>
+            {PARENT_CATS.map(cat => (
               <button
-                key={String(c.id)}
-                onClick={() => setActiveCat(c.id)}
+                key={cat.id}
+                onClick={() => handleParentSelect(cat.name)}
                 className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold border transition ${
-                  activeCat === c.id
-                    ? "bg-sky-500/20 border-sky-500/50 text-sky-400"
+                  selectedParent === cat.name
+                    ? "bg-orange-500 text-white border-orange-500"
                     : "bg-transparent border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300"
                 }`}
-              >{c.label}</button>
+              >{cat.name}</button>
             ))}
           </div>
+
+          {/* Level 2: subcategories (only when parent has children) */}
+          {hasSubCatsNV && (
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+              <span className="shrink-0 text-[9px] font-black text-zinc-600 uppercase tracking-widest flex items-center gap-1">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                Nivel 2:
+              </span>
+              <button
+                onClick={() => setSelectedSub("Todas")}
+                className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold border transition ${
+                  selectedSub === "Todas"
+                    ? "bg-zinc-700 text-white border-zinc-600"
+                    : "bg-transparent border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300"
+                }`}
+              >Todas</button>
+              {subCatsNV.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedSub(cat.name)}
+                  className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold border transition ${
+                    selectedSub === cat.name
+                      ? "bg-zinc-700 text-white border-zinc-600"
+                      : "bg-transparent border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300"
+                  }`}
+                >{cat.name}</button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Product grid */}
@@ -339,17 +419,32 @@ export default function NuevaVentaPage() {
       </div>
 
       {/* ═══ RIGHT: ORDER PANEL ══════════════════════════════════════ */}
-      <div className="w-80 xl:w-96 shrink-0 flex flex-col bg-zinc-950 border border-zinc-800/60 rounded-2xl overflow-hidden">
+      {/* Mobile Cart Overlay */}
+      {showMobileCart && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-30 lg:hidden backdrop-blur-sm"
+          onClick={() => setShowMobileCart(false)}
+        />
+      )}
+
+      <div className={`fixed inset-y-0 right-0 z-40 w-[85vw] sm:w-96 bg-zinc-950 shadow-2xl transition-transform duration-300 flex flex-col border-l border-zinc-800/60 lg:static lg:w-80 xl:w-96 lg:shrink-0 lg:border-l-0 lg:border lg:rounded-2xl lg:translate-x-0 ${showMobileCart ? "translate-x-0" : "translate-x-full"}`}>
 
         {/* Header */}
         <div className="shrink-0 px-4 py-3 border-b border-zinc-800/60 flex items-center gap-2">
           <ShoppingBasket size={16} className="text-sky-400" />
-          <span className="font-black text-sm text-zinc-100 tracking-wide">Pedido Actual</span>
+          <span className="font-black text-sm text-zinc-100 tracking-wide flex-1">Pedido Actual</span>
           {cart.length > 0 && (
-            <span className="ml-auto bg-sky-500/20 text-sky-400 text-[10px] font-black px-2 py-0.5 rounded-full border border-sky-500/30">
+            <span className="bg-sky-500/20 text-sky-400 text-[10px] font-black px-2 py-0.5 rounded-full border border-sky-500/30">
               {cart.length} ítem{cart.length > 1 ? "s" : ""}
             </span>
           )}
+          {/* Close button for mobile */}
+          <button 
+            onClick={() => setShowMobileCart(false)} 
+            className="lg:hidden ml-2 p-1 text-zinc-400 hover:text-white bg-zinc-800 rounded-lg"
+          >
+            <X size={16} />
+          </button>
         </div>
 
         {/* Items */}
@@ -430,6 +525,25 @@ export default function NuevaVentaPage() {
           </button>
         </div>
       </div>
+
+      {/* Floating Cart Button (Mobile only) */}
+      {!showMobileCart && (
+        <div className="lg:hidden absolute bottom-4 left-4 right-4 z-20">
+          <button 
+            onClick={() => setShowMobileCart(true)}
+            className="w-full bg-sky-600 hover:bg-sky-500 text-white rounded-2xl p-4 flex items-center justify-between shadow-xl shadow-sky-900/30 active:scale-[0.98] transition-transform"
+          >
+            <div className="flex items-center gap-2">
+              <ShoppingBasket size={20} />
+              <span className="font-black">Ver Pedido</span>
+              {cart.length > 0 && (
+                <span className="bg-white/20 px-2 py-0.5 rounded-full text-[10px] min-w-[20px] text-center">{cart.length}</span>
+              )}
+            </div>
+            <span className="font-black text-lg leading-none">{fmtARS(subtotal)}</span>
+          </button>
+        </div>
+      )}
 
       {/* ═══ PRODUCT UNIT MODAL ══════════════════════════════════════ */}
       {selectedProd && (
@@ -518,7 +632,7 @@ export default function NuevaVentaPage() {
                       >
                         <option value="" disabled>Seleccionar variedad</option>
                         {selectedProd.customVarieties.map(v => (
-                          <option key={v} value={v.trim()}>{v.trim()}</option>
+                          <option key={v.name} value={v.name}>{v.name}{v.price ? ` (+$${v.price})` : ""}</option>
                         ))}
                       </select>
                     </div>
@@ -528,37 +642,49 @@ export default function NuevaVentaPage() {
 
                 {/* ══ RIGHT COLUMN: EXTRAS & QUANTITY ══ */}
                 <div className="space-y-6 flex flex-col justify-start">
-                  {/* Extras (para Pizzas) */}
-                  {selectedProd.categoryId && [1, 101, 102, 103].includes(selectedProd.categoryId) && (
-                    <div className="flex-1">
-                      <p className="font-black text-white text-sm mb-3">Extras</p>
-                      <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-2.5 grid grid-cols-2 gap-2 h-fit">
-                        {extras.filter(e => e.available).map(extra => {
-                          const isSelected = selectedExtras.some(e => e.id === extra.id);
-                          return (
-                            <label key={extra.id} className={`flex items-center justify-between p-2.5 rounded-xl border transition cursor-pointer select-none ${isSelected ? 'bg-orange-500/10 border-orange-500/50' : 'bg-zinc-950 border-zinc-800/80'}`}>
-                              <div className="flex items-center gap-3">
-                                <div className={`w-4 h-4 rounded-sm flex items-center justify-center shrink-0 border ${isSelected ? 'bg-orange-500 border-orange-500 text-white' : 'bg-zinc-900 border-zinc-700 text-transparent'}`}>
-                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={isSelected ? 'opacity-100' : 'opacity-0'}><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  {/* Extras */}
+                  {(() => {
+                    const isPizza = selectedProd.categoryId && [1, 101, 102, 103].includes(selectedProd.categoryId);
+                    const globalExtras = isPizza ? extras.filter(e => e.available) : [];
+                    const customExtrasMapped = (selectedProd.customExtras || []).map(ce => ({
+                      id: `custom-${ce.name}`,
+                      name: ce.name,
+                      price: ce.price,
+                      available: true
+                    }));
+                    const allExtras = [...customExtrasMapped, ...globalExtras];
+                    if (allExtras.length === 0) return null;
+                    return (
+                      <div className="flex-1">
+                        <p className="font-black text-white text-sm mb-3">Extras</p>
+                        <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2 h-fit">
+                          {allExtras.map(extra => {
+                            const isSelected = selectedExtras.some(e => e.id === extra.id);
+                            return (
+                              <label key={extra.id} className={`flex items-center justify-between p-2.5 rounded-xl border transition cursor-pointer select-none ${isSelected ? 'bg-orange-500/10 border-orange-500/50' : 'bg-zinc-950 border-zinc-800/80'}`}>
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-4 h-4 rounded-sm flex items-center justify-center shrink-0 border ${isSelected ? 'bg-orange-500 border-orange-500 text-white' : 'bg-zinc-900 border-zinc-700 text-transparent'}`}>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={isSelected ? 'opacity-100' : 'opacity-0'}><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                  </div>
+                                  <span className={`text-sm font-bold leading-none ${isSelected ? 'text-zinc-100' : 'text-zinc-300'}`}>{extra.name}</span>
                                 </div>
-                                <span className={`text-sm font-bold leading-none ${isSelected ? 'text-zinc-100' : 'text-zinc-300'}`}>{extra.name}</span>
-                              </div>
-                              <span className="text-xs font-black text-orange-400">+{fmtARS(extra.price)}</span>
-                              <input 
-                                type="checkbox" 
-                                className="hidden" 
-                                checked={isSelected}
-                                onChange={(e) => {
-                                  if (e.target.checked) setSelectedExtras([...selectedExtras, extra]);
-                                  else setSelectedExtras(selectedExtras.filter(e => e.id !== extra.id));
-                                }} 
-                              />
-                            </label>
-                          );
-                        })}
+                                <span className="text-xs font-black text-orange-400">+{fmtARS(extra.price)}</span>
+                                <input 
+                                  type="checkbox" 
+                                  className="hidden" 
+                                  checked={isSelected}
+                                  onChange={(e) => {
+                                    if (e.target.checked) setSelectedExtras([...selectedExtras, extra]);
+                                    else setSelectedExtras(selectedExtras.filter(e => e.id !== extra.id));
+                                  }} 
+                                />
+                              </label>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                 </div>
               </div>
@@ -612,11 +738,12 @@ export default function NuevaVentaPage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto no-scrollbar p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Body */}
+            <div className="p-4 sm:p-5 overflow-y-auto no-scrollbar flex-1 min-h-0">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-4">
                 
-                {/* ══ LEFT COLUMN: CLIENT & DELIVERY ══ */}
-                <div className="space-y-4">
+                {/* ══ LEFT COLUMN: CONFIGURATION ══ */}
+                <div className="space-y-6">
                   {/* Nombre y Teléfono */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative">
                     <div className="relative">

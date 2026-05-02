@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, AlertTriangle, CheckCircle2, Plus, Minus, Package, Edit3, Trash2 } from "lucide-react";
+import { Search, AlertTriangle, CheckCircle2, Plus, Minus, Package } from "lucide-react";
 
 const MOCK_INVENTORY = [
   { id: 1,  name: "Masa de Pizza",       unit: "unidades", current: 12,  min: 10, cost: 350,   category: "Bases"    },
@@ -21,80 +21,145 @@ function fmtARS(n: number) {
 }
 
 export default function InventarioPage() {
-  const [items, setItems] = useState(MOCK_INVENTORY);
-  const [search, setSearch] = useState("");
+  const [items, setItems]     = useState(MOCK_INVENTORY);
+  const [search, setSearch]   = useState("");
   const [catFilter, setCatFilter] = useState("Todos");
 
-  const categories = ["Todos", ...Array.from(new Set(items.map(i => i.category)))];
-  
+  const categories    = ["Todos", ...Array.from(new Set(items.map(i => i.category)))];
+  const criticalCount = items.filter(i => i.current <= i.min).length;
+  const totalValue    = items.reduce((s, i) => s + i.current * i.cost, 0);
+
   const filtered = items.filter(i => {
     if (catFilter !== "Todos" && i.category !== catFilter) return false;
     if (search.trim()) return i.name.toLowerCase().includes(search.toLowerCase());
     return true;
   });
 
-  const criticalCount = items.filter(i => i.current <= i.min).length;
-  const totalValue = items.reduce((s, i) => s + i.current * i.cost, 0);
-
   function adjustStock(id: number, delta: number) {
     setItems(prev => prev.map(i => i.id === id ? { ...i, current: Math.max(0, +(i.current + delta).toFixed(1)) } : i));
   }
 
   return (
-    <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-6">
-      
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="flex flex-col h-full overflow-hidden">
+
+      {/* ── Header ── */}
+      <div className="shrink-0 px-5 py-4 border-b border-zinc-800/60 bg-zinc-950 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-white">Inventario</h1>
-          <p className="text-zinc-500 font-bold text-xs uppercase tracking-widest mt-1">Gestión completa de insumos</p>
+          <h1 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
+            <Package size={20} className="text-purple-400" /> Inventario
+          </h1>
+          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">Gestión completa de insumos</p>
         </div>
-        <div className="flex gap-3">
+        {/* Stats pills */}
+        <div className="flex gap-2 flex-wrap shrink-0">
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 text-center">
             <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Valor Stock</p>
-            <p className="font-black text-lg text-white tabular-nums leading-tight">{fmtARS(totalValue)}</p>
+            <p className="font-black text-base text-white tabular-nums leading-tight">{fmtARS(totalValue)}</p>
           </div>
           {criticalCount > 0 && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2 flex items-center gap-2">
-              <AlertTriangle size={16} className="text-red-400" />
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2 flex items-center gap-2 animate-pulse">
+              <AlertTriangle size={15} className="text-red-400 shrink-0" />
               <div>
-                <p className="text-[9px] font-bold text-red-500 uppercase tracking-widest">Críticos</p>
-                <p className="font-black text-lg text-red-400 leading-tight">{criticalCount}</p>
+                <p className="text-[9px] font-bold text-red-500 uppercase tracking-widest leading-none">Críticos</p>
+                <p className="font-black text-base text-red-400 leading-tight">{criticalCount}</p>
               </div>
             </div>
           )}
         </div>
       </div>
-
-      {/* Filters */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3 flex flex-col md:flex-row gap-3">
-        <div className="relative flex-1">
+      {/* ── Scrollable Body ── */}
+      <div className="flex-1 overflow-y-auto no-scrollbar p-5 space-y-5">
+      
+      {/* ── Filters ────────────────────────────────────────────── */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3 flex flex-col gap-3">
+        <div className="relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar insumo..."
-            className="w-full pl-9 pr-4 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-sm font-bold text-zinc-100 placeholder:text-zinc-700 outline-none focus:border-purple-500/50 transition" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar insumo..."
+            className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-4 py-2.5 text-sm font-bold text-zinc-100 placeholder:text-zinc-700 outline-none focus:border-purple-500/50 transition"
+          />
         </div>
-        <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
           {categories.map(c => (
-            <button key={c} onClick={() => setCatFilter(c)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition ${catFilter === c ? "bg-purple-500/15 text-purple-400 border-purple-500/30" : "border-zinc-800 text-zinc-500 hover:text-zinc-300"}`}>
+            <button
+              key={c}
+              onClick={() => setCatFilter(c)}
+              className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold border transition ${
+                catFilter === c
+                  ? "bg-purple-500/15 text-purple-400 border-purple-500/30"
+                  : "border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600"
+              }`}
+            >
               {c}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-xl">
+      {/* ── Mobile: Item cards ───────────────────────────────────── */}
+      <div className="md:hidden space-y-2.5">
+        {filtered.map(item => {
+          const isCritical = item.current <= item.min;
+          return (
+            <div key={item.id} className={`bg-zinc-900 border rounded-2xl p-4 ${isCritical ? "border-red-500/40" : "border-zinc-800"}`}>
+              {/* Top row */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isCritical ? "bg-red-500/10" : "bg-zinc-800"}`}>
+                    <Package size={16} className={isCritical ? "text-red-400" : "text-zinc-500"} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-sm text-white truncate">{item.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span className="text-[10px] bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-full font-bold">{item.category}</span>
+                      <span className="text-[10px] font-bold text-zinc-500">costo: {fmtARS(item.cost)}/{item.unit}</span>
+                    </div>
+                  </div>
+                </div>
+                {isCritical ? (
+                  <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-black uppercase text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
+                    <AlertTriangle size={9} /> Crítico
+                  </span>
+                ) : (
+                  <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-black uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                    <CheckCircle2 size={9} /> OK
+                  </span>
+                )}
+              </div>
+              {/* Stock control */}
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-800/60">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 bg-zinc-800 rounded-lg p-0.5">
+                    <button onClick={() => adjustStock(item.id, -1)} className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white rounded transition active:scale-95"><Minus size={12} /></button>
+                    <span className={`font-black text-base w-12 text-center tabular-nums ${isCritical ? "text-red-400" : "text-white"}`}>{item.current}</span>
+                    <button onClick={() => adjustStock(item.id, 1)} className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white rounded transition active:scale-95"><Plus size={12} /></button>
+                  </div>
+                  <span className="text-[10px] text-zinc-600 font-bold">/ mín. {item.min} {item.unit}</span>
+                </div>
+                {/* Progress bar */}
+                <div className="w-20 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${isCritical ? "bg-red-500" : "bg-emerald-500"}`}
+                    style={{ width: `${Math.min(100, (item.current / (item.min * 2)) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Desktop: Table ────────────────────────────────────── */}
+      <div className="hidden md:block bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto no-scrollbar">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-zinc-950/50 border-b border-zinc-800">
-                <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Insumo</th>
-                <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Categoría</th>
-                <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Stock</th>
-                <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Estado</th>
-                <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Costo Unitario</th>
-                <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right">Acciones</th>
+              <tr className="bg-zinc-950/60 border-b border-zinc-800">
+                {["Insumo", "Categoría", "Stock", "Estado", "Costo Unitario", ""].map(h => (
+                  <th key={h} className="px-5 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/50">
@@ -102,10 +167,10 @@ export default function InventarioPage() {
                 const isCritical = item.current <= item.min;
                 return (
                   <tr key={item.id} className="hover:bg-zinc-800/20 transition group">
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isCritical ? "bg-red-500/10" : "bg-zinc-800"}`}>
-                          <Package size={16} className={isCritical ? "text-red-400" : "text-zinc-500"} />
+                          <Package size={15} className={isCritical ? "text-red-400" : "text-zinc-500"} />
                         </div>
                         <div>
                           <p className="font-bold text-sm text-white">{item.name}</p>
@@ -113,20 +178,20 @@ export default function InventarioPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3.5">
                       <span className="bg-zinc-800 px-2.5 py-1 rounded-full text-[10px] font-bold text-zinc-400">{item.category}</span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1 bg-zinc-800 rounded-lg p-0.5">
-                          <button onClick={() => adjustStock(item.id, -1)} className="w-6 h-6 flex items-center justify-center text-zinc-400 hover:text-white rounded transition"><Minus size={10} /></button>
+                        <div className="flex items-center gap-0.5 bg-zinc-800 rounded-lg p-0.5">
+                          <button onClick={() => adjustStock(item.id, -1)} className="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white rounded transition"><Minus size={10} /></button>
                           <span className={`font-black text-sm w-10 text-center tabular-nums ${isCritical ? "text-red-400" : "text-white"}`}>{item.current}</span>
-                          <button onClick={() => adjustStock(item.id, 1)} className="w-6 h-6 flex items-center justify-center text-zinc-400 hover:text-white rounded transition"><Plus size={10} /></button>
+                          <button onClick={() => adjustStock(item.id, 1)} className="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white rounded transition"><Plus size={10} /></button>
                         </div>
                         <span className="text-[10px] text-zinc-600 font-bold">/ mín. {item.min}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3.5">
                       {isCritical ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
                           <AlertTriangle size={9} /> Crítico
@@ -137,11 +202,13 @@ export default function InventarioPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-sm font-bold text-zinc-300 tabular-nums">{fmtARS(item.cost)}</td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition">
-                        <button className="p-2 text-zinc-600 hover:text-white transition rounded-lg"><Edit3 size={14} /></button>
-                        <button className="p-2 text-zinc-600 hover:text-red-500 transition rounded-lg"><Trash2 size={14} /></button>
+                    <td className="px-5 py-3.5 text-sm font-bold text-zinc-300 tabular-nums">{fmtARS(item.cost)}</td>
+                    <td className="px-5 py-3.5 text-right">
+                      <div className="w-24 h-1.5 bg-zinc-800 rounded-full overflow-hidden ml-auto">
+                        <div
+                          className={`h-full rounded-full ${isCritical ? "bg-red-500" : "bg-emerald-500"}`}
+                          style={{ width: `${Math.min(100, (item.current / (item.min * 2)) * 100)}%` }}
+                        />
                       </div>
                     </td>
                   </tr>
@@ -149,6 +216,12 @@ export default function InventarioPage() {
               })}
             </tbody>
           </table>
+        </div>
+        <div className="px-5 py-3 border-t border-zinc-800 bg-zinc-950/30">
+          <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
+            {filtered.length} insumos · {criticalCount} críticos
+          </p>
+        </div>
         </div>
       </div>
     </div>

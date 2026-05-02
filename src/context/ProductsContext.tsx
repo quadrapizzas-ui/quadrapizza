@@ -16,7 +16,8 @@ export type Product = {
   image: string;
   isOffer: boolean;
   saleType: "unidad" | "docena" | "combo" | "quadra";  // unidad: se vende x unidad, docena: se vende x docena, combo: opciones combinadas, quadra: personalizable por filas
-  customVarieties?: string[]; // Variedades específicas del producto (ej: ["Dulce", "Salada"], ["Pan Árabe", "Pan Francés"])
+  customVarieties?: { name: string; price: number }[]; // Variedades específicas del producto con precio opcional adicional
+  customExtras?: { name: string; price: number }[]; // Extras específicos del producto
   quadraConfig?: {
     totalRows: number;
     fixedRows: { variety: string; rowCount: number }[];
@@ -195,7 +196,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       image: "/2.webp",
       isOffer: false,
       saleType: "combo",
-      customVarieties: ["Dulce", "Salada"]
+      customVarieties: [{ name: "Dulce", price: 0 }, { name: "Salada", price: 0 }]
     },
     {
       id: 6,
@@ -210,7 +211,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       image: "/2.webp",
       isOffer: false,
       saleType: "combo",
-      customVarieties: ["Al Horno", "Frita"]
+      customVarieties: [{ name: "Al Horno", price: 0 }, { name: "Frita", price: 0 }]
     },
     {
       id: 9,
@@ -238,7 +239,8 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       image: "/4.webp",
       isOffer: false,
       saleType: "unidad",
-      customVarieties: ["Pan Árabe", "Pan Francés"]
+      customVarieties: [{ name: "Pan Árabe", price: 0 }, { name: "Pan Francés", price: 0 }],
+      customExtras: [{ name: "Bañado en Cheddar", price: 1500 }]
     },
     {
       id: 10,

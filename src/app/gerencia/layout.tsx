@@ -17,32 +17,30 @@ import {
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  { href: "/gerencia/dashboard", label: "Dashboard",   icon: LayoutDashboard },
-  { href: "/gerencia/ventas",    label: "Ventas",      icon: History         },
-  { href: "/gerencia/finanzas",  label: "Finanzas",    icon: TrendingUp      },
-  { href: "/gerencia/inventario",label: "Inventario",  icon: Box             },
-  { href: "/gerencia/usuarios",  label: "Usuarios",    icon: Users           },
-  { href: "/gerencia/catalogo",  label: "Catálogo",    icon: BookOpen        },
+  { href: "/gerencia/dashboard",  label: "Dashboard",  icon: LayoutDashboard },
+  { href: "/gerencia/ventas",     label: "Ventas",     icon: History         },
+  { href: "/gerencia/finanzas",   label: "Finanzas",   icon: TrendingUp      },
+  { href: "/gerencia/inventario", label: "Inventario", icon: Box             },
+  { href: "/gerencia/usuarios",   label: "Usuarios",   icon: Users           },
+  { href: "/gerencia/catalogo",   label: "Catálogo",   icon: BookOpen        },
 ];
 
 export default function GerenciaLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
+  const router   = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
 
+  // Auth guard
   useEffect(() => {
-    if (pathname === "/gerencia/login") {
-      setIsAuthorized(true);
-      return;
-    }
+    if (pathname === "/gerencia/login") { setIsAuthorized(true); return; }
     const auth = localStorage.getItem("quadra_gerencia_auth");
-    if (!auth) {
-      router.push("/gerencia/login");
-    } else {
-      setIsAuthorized(true);
-    }
+    if (!auth) { router.push("/gerencia/login"); }
+    else { setIsAuthorized(true); }
   }, [pathname, router]);
+
+  // Close drawer on route change
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem("quadra_gerencia_auth");
@@ -59,99 +57,99 @@ export default function GerenciaLayout({ children }: { children: React.ReactNode
 
   if (pathname === "/gerencia/login") {
     return (
-      <div className="fixed-layout bg-zinc-950 text-zinc-50">
+      <div className="fixed inset-0 bg-zinc-950 text-zinc-50 flex flex-col overflow-hidden">
         <main className="flex-1 w-full overflow-hidden flex flex-col">{children}</main>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-zinc-950 text-zinc-50 flex flex-col lg:flex-row overflow-hidden">
-      
-      {/* ─── SIDEBAR ─────────────────────────────────────────────────── */}
-      <aside className={`fixed lg:static inset-y-0 left-0 w-64 bg-zinc-950 border-r border-zinc-900 z-50 transition-transform duration-300 transform ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
-        <div className="flex flex-col h-full p-6">
-          
-          {/* Logo */}
-          <div className="flex items-center justify-between mb-10">
-            <div className="flex items-center gap-3">
-              <Image src="/logo.jpg" alt="Logo" width={34} height={34} className="rounded-xl object-cover" />
-              <div className="flex flex-col leading-none">
-                <span className="font-black text-lg tracking-tight">Quadra <span className="text-orange-500">Pizza</span></span>
-                <span className="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Dirección</span>
-              </div>
-            </div>
-            <button onClick={() => setMobileOpen(false)} className="lg:hidden p-2 text-zinc-500">
-              <X size={20} />
-            </button>
-          </div>
+    <div className="fixed inset-0 bg-zinc-950 text-zinc-50 flex flex-col overflow-hidden">
 
-          {/* Navigation */}
-          <nav className="flex-1 flex flex-col gap-1.5">
-            {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-              const active = pathname.startsWith(href);
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                    active
-                      ? "bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.1)]"
-                      : "text-zinc-500 hover:text-white hover:bg-zinc-900 border border-transparent"
-                  }`}
-                >
-                  <Icon size={18} />
-                  {label}
-                </Link>
-              );
-            })}
-          </nav>
+      {/* ─── TOP NAV BAR ─────────────────────────────────────────────── */}
+      <header className="shrink-0 h-14 bg-zinc-950 border-b border-zinc-800/70 flex items-center px-4 gap-4 z-40">
 
-          {/* Profile & Logout */}
-          <div className="mt-auto pt-6 border-t border-zinc-900">
-             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-black">
-                    D
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-white leading-none">Gerencia</span>
-                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Administrador</span>
-                  </div>
-                </div>
-                <button onClick={handleLogout} className="p-2 text-zinc-500 hover:text-orange-500 transition">
-                  <LogOut size={18} />
-                </button>
-             </div>
+        {/* Logo + módulo */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <Image src="/logo.jpg" alt="Logo" width={30} height={30} className="rounded-lg object-cover" />
+          <div className="flex flex-col leading-none">
+            <span className="font-black text-sm tracking-tight">Quadra <span className="text-orange-500">Pizza</span></span>
+            <span className="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Gerencia</span>
           </div>
         </div>
-      </aside>
 
-      {/* ─── MAIN CONTENT ───────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0">
-        
-        {/* Mobile Header */}
-        <header className="lg:hidden h-14 bg-zinc-950 border-b border-zinc-900 flex items-center px-4 justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <Image src="/logo.jpg" alt="Logo" width={28} height={28} className="rounded-lg object-cover" />
-            <span className="font-black text-sm tracking-tight">Quadra <span className="text-orange-500">Pizza</span></span>
-          </div>
-          <button onClick={() => setMobileOpen(true)} className="p-2 bg-zinc-900 rounded-lg text-zinc-400">
-            <Menu size={20} />
-          </button>
-        </header>
+        <div className="hidden md:block w-px h-6 bg-zinc-800 shrink-0" />
 
-        {/* Page */}
-        <main className="flex-1 overflow-y-auto bg-[#09090b] relative no-scrollbar">
-           {children}
-        </main>
-      </div>
+        {/* Nav links — desktop */}
+        <nav className="hidden md:flex items-center gap-1 flex-1">
+          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+            const active = pathname.startsWith(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  active
+                    ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800 border border-transparent"
+                }`}
+              >
+                <Icon size={14} />
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
 
-      {/* Overlay */}
+        {/* Spacer mobile */}
+        <div className="flex-1 md:hidden" />
+
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          title="Cerrar sesión"
+          className="shrink-0 p-2 rounded-lg text-zinc-500 hover:text-orange-400 hover:bg-zinc-800 transition"
+        >
+          <LogOut size={16} />
+        </button>
+
+        {/* Mobile menu toggle */}
+        <button
+          onClick={() => setMobileOpen(o => !o)}
+          className="md:hidden p-2 rounded-lg bg-zinc-900 text-zinc-400 hover:text-white transition"
+        >
+          {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+        </button>
+      </header>
+
+      {/* ─── MOBILE NAV DRAWER ───────────────────────────────────────── */}
       {mobileOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden" onClick={() => setMobileOpen(false)} />
+        <div className="md:hidden absolute top-14 left-0 right-0 z-50 bg-zinc-950 border-b border-zinc-800 p-3 flex flex-col gap-1">
+          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+            const active = pathname.startsWith(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                  active
+                    ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800 border border-transparent"
+                }`}
+              >
+                <Icon size={16} />
+                {label}
+              </Link>
+            );
+          })}
+        </div>
       )}
+
+      {/* ─── PAGE CONTENT ─────────────────────────────────────────────── */}
+      <main className="flex-1 overflow-hidden flex flex-col bg-[#09090b]">
+        {children}
+      </main>
     </div>
   );
 }

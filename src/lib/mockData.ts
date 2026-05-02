@@ -128,39 +128,44 @@ export interface MockOrder {
 class OrdersStore {
   private orders: MockOrder[] = [
     {
-      id: "W-1024", items: [{ name: "Quadra Integral", quantity: 2, price: 10500 }, { name: "Lomo Especial", quantity: 1, price: 12000 }],
-      paymentMethod: "Efectivo", clientName: "Juan García", phone: "3514567890", address: "AV. COLÓN 1200 · Centro", total: 33000,
+      id: "W-1024", items: [{ name: "Quadra Integral", quantity: 4, price: 10500 }, { name: "Lomo Especial", quantity: 2, price: 12000 }],
+      paymentMethod: "Efectivo", clientName: "Juan García", phone: "3514567890", address: "AV. COLÓN 1200 · Centro", total: 66000,
       createdAt: new Date(Date.now() - 5 * 60000).toISOString(), mockAge: "Hace 5 min", status: "confirmado"
     },
     {
-      id: "W-1025", items: [{ name: "Pizza Muzzarella", quantity: 1, price: 7500 }, { name: "Coca-Cola 1.5L", quantity: 1, price: 2500 }],
-      paymentMethod: "Mercado Pago", clientName: "María López", phone: "3512345678", address: "BV. SAN JUAN 800 · Güemes", total: 10000, deliveryFee: 800,
+      id: "W-1025", items: [{ name: "Pizza Muzzarella", quantity: 2, price: 7500 }, { name: "Coca-Cola 1.5L", quantity: 2, price: 2500 }],
+      paymentMethod: "Mercado Pago", clientName: "María López", phone: "3512345678", address: "BV. SAN JUAN 800 · Güemes", total: 20000, deliveryFee: 800,
       createdAt: new Date(Date.now() - 15 * 60000).toISOString(), mockAge: "Hace 15 min", status: "en-cocina"
     },
     {
-      id: "W-1026", items: [{ name: "Hamburguesa Quadra Triple", quantity: 2, price: 9500 }],
-      paymentMethod: "Tarjeta de crédito", clientName: "Carlos Pérez", phone: "3519876543", address: "AV. VÉLEZ SÁRSFIELD 500", total: 21850,
+      id: "W-1026", items: [{ name: "Hamburguesa Quadra Triple", quantity: 4, price: 9500 }],
+      paymentMethod: "Tarjeta de crédito", clientName: "Carlos Pérez", phone: "3519876543", address: "AV. VÉLEZ SÁRSFIELD 500", total: 43700,
       createdAt: new Date(Date.now() - 25 * 60000).toISOString(), mockAge: "Hace 25 min", status: "listo"
     },
     {
-      id: "W-1027", items: [{ name: "Lomo Especial", quantity: 2, price: 12000 }, { name: "Pizza Muzzarella", quantity: 1, price: 7500 }],
-      paymentMethod: "Efectivo", clientName: "Roberto Silva", phone: "3513334444", address: "DUARTE QUIRÓS 1500 · Alberdi", total: 31500, deliveryFee: 1500,
+      id: "W-1027", items: [{ name: "Lomo Especial", quantity: 4, price: 12000 }, { name: "Pizza Muzzarella", quantity: 2, price: 7500 }],
+      paymentMethod: "Efectivo", clientName: "Roberto Silva", phone: "3513334444", address: "DUARTE QUIRÓS 1500 · Alberdi", total: 63000, deliveryFee: 1500,
       createdAt: new Date(Date.now() - 40 * 60000).toISOString(), mockAge: "Hace 40 min", status: "en-camino"
     },
     {
-      id: "W-1028", items: [{ name: "Quadra Integral", quantity: 1, price: 10500 }],
-      paymentMethod: "Mercado Pago", clientName: "Laura Fernández", phone: "3511112222", address: "CALLE OBISPO TREJO 300", total: 10500,
+      id: "W-1028", items: [{ name: "Quadra Integral", quantity: 3, price: 10500 }],
+      paymentMethod: "Mercado Pago", clientName: "Laura Fernández", phone: "3511112222", address: "CALLE OBISPO TREJO 300", total: 31500,
       createdAt: new Date(Date.now() - 60 * 60000).toISOString(), mockAge: "Hace 1 hora", status: "completado"
     },
     {
-      id: "W-1029", items: [{ name: "Pizza Muzzarella", quantity: 3, price: 7500 }],
-      paymentMethod: "Efectivo", clientName: "Javier Gómez", phone: "3515556666", address: "Retiro en local", total: 22500,
+      id: "W-1029", items: [{ name: "Pizza Muzzarella", quantity: 6, price: 7500 }],
+      paymentMethod: "Efectivo", clientName: "Javier Gómez", phone: "3515556666", address: "Retiro en local", total: 45000,
       createdAt: new Date(Date.now() - 2 * 60000).toISOString(), mockAge: "Justo ahora", status: "confirmado"
     },
     {
-      id: "W-1030", items: [{ name: "Hamburguesa Quadra Triple", quantity: 1, price: 9500 }, { name: "Coca-Cola 1.5L", quantity: 1, price: 2500 }],
-      paymentMethod: "Efectivo", clientName: "Ana Martínez", phone: "3517778888", address: "Retiro en local", total: 12000,
+      id: "W-1030", items: [{ name: "Hamburguesa Quadra Triple", quantity: 3, price: 9500 }, { name: "Coca-Cola 1.5L", quantity: 3, price: 2500 }],
+      paymentMethod: "Efectivo", clientName: "Ana Martínez", phone: "3517778888", address: "Retiro en local", total: 36000,
       createdAt: new Date(Date.now() - 20 * 60000).toISOString(), mockAge: "Hace 20 min", status: "en-cocina"
+    },
+    {
+      id: "W-1031", items: [{ name: "Promo Quadra", quantity: 2, price: 15000 }],
+      paymentMethod: "Efectivo", clientName: "Ricardo Sosa", phone: "3511231231", address: "Local", total: 30000,
+      createdAt: new Date(Date.now() - 10 * 60000).toISOString(), mockAge: "Hace 10 min", status: "confirmado"
     }
   ];
 

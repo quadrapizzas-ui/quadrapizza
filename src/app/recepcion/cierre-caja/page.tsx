@@ -88,12 +88,8 @@ export default function CierreCajaPage() {
         </div>
 
         {/* Acciones */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
-          <button className="flex items-center justify-center gap-3 py-4 rounded-xl font-black text-zinc-300 bg-zinc-900 border border-zinc-800 hover:text-white hover:bg-zinc-800 transition active:scale-[0.98]">
-            <Printer size={20} />
-            Imprimir Reporte (Z)
-          </button>
-          <button className="flex items-center justify-center gap-3 py-4 rounded-xl font-black text-white bg-sky-600 hover:bg-sky-500 shadow-lg shadow-sky-900/20 transition active:scale-[0.98]">
+        <div className="mt-8">
+          <button className="w-full flex items-center justify-center gap-3 py-4 rounded-xl font-black text-white bg-sky-600 hover:bg-sky-500 shadow-lg shadow-sky-900/20 transition active:scale-[0.98]">
             <History size={20} />
             Confirmar y Cerrar Turno
           </button>

@@ -19,7 +19,8 @@ export default function ProductosPage() {
   const [quadraCustomizableRows, setQuadraCustomizableRows] = useState(0);
   const [quadraFixedRowsCount, setQuadraFixedRowsCount] = useState(0);
   const [quadraFixedVariety, setQuadraFixedVariety] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Todas");
+  const [selectedParent, setSelectedParent] = useState("Todos");
+  const [selectedSub, setSelectedSub] = useState("Todas");
   const [statusFilter, setStatusFilter] = useState("todos");
 
   // Formularios de producto
@@ -31,22 +32,54 @@ export default function ProductosPage() {
   const [pricePerDozen, setPricePerDozen] = useState("");
   const [oldPrice, setOldPrice] = useState("");
   const [imageUrl, setImageUrl] = useState("");
-  const [customVarieties, setCustomVarieties] = useState("");
+  const [customVarieties, setCustomVarieties] = useState<{name: string; price: number}[]>([]);
+  const [customExtras, setCustomExtras] = useState<{name: string; price: number}[]>([]);
 
   const { products, toggleProductStock, extras, setExtras, varieties, setVarieties } = useProducts();
 
-  const [isExtrasManagerOpen, setIsExtrasManagerOpen] = useState(false);
-  const [newExtraName, setNewExtraName] = useState("");
-  const [newExtraPrice, setNewExtraPrice] = useState("");
-  const [editingExtraId, setEditingExtraId] = useState<string | null>(null);
+  // ── Two-level category hierarchy ─────────────────────────────────────────
+  type HCat = { id: number; name: string; parentId: number | null };
 
-  const [isVarietiesManagerOpen, setIsVarietiesManagerOpen] = useState(false);
-  const [newVarietyName, setNewVarietyName] = useState("");
-  const [editingVarietyId, setEditingVarietyId] = useState<string | null>(null);
+  const HCATS: HCat[] = [
+    { id: 1,   name: "Pizzas",       parentId: null },
+    { id: 101, name: "Tradicionales", parentId: 1 },
+    { id: 102, name: "Especiales",    parentId: 1 },
+    { id: 103, name: "Rellenas",      parentId: 1 },
+    { id: 2,   name: "Empanadas",     parentId: null },
+    { id: 201, name: "Al Horno",      parentId: 2 },
+    { id: 202, name: "Fritas",        parentId: 2 },
+    { id: 3,   name: "Sándwiches",    parentId: null },
+    { id: 4,   name: "Bebidas",       parentId: null },
+    { id: 5,   name: "Postres",       parentId: null },
+    { id: 6,   name: "Menú del día",  parentId: null },
+    { id: 7,   name: "Almacén",       parentId: null },
+  ];
 
+  const parentCats = HCATS.filter(c => c.parentId === null);
+  const selectedParentObj = HCATS.find(c => c.name === selectedParent) ?? null;
+  const subCats = selectedParentObj ? HCATS.filter(c => c.parentId === selectedParentObj.id) : [];
+  const hasSubCats = subCats.length > 0;
+
+  // Matching logic
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "Todas" || p.category === selectedCategory;
+
+    let matchesCategory = true;
+    if (selectedParent !== "Todos") {
+      if (hasSubCats && selectedSub !== "Todas") {
+        // parent selected + specific sub
+        const subObj = HCATS.find(c => c.name === selectedSub);
+        matchesCategory = p.categoryId === subObj?.id;
+      } else if (hasSubCats) {
+        // parent selected, show all subs
+        const childIds = subCats.map(c => c.id);
+        matchesCategory = p.category === selectedParent || childIds.includes(p.categoryId ?? -1);
+      } else {
+        // parent with no children
+        matchesCategory = p.category === selectedParent;
+      }
+    }
+
     let matchesStatus = true;
     if (statusFilter === "sin-stock") matchesStatus = !p.stock;
     if (statusFilter === "con-stock") matchesStatus = p.stock;
@@ -61,34 +94,10 @@ export default function ProductosPage() {
     ofertas: products.filter(p => p.isOffer).length,
   };
 
-  type Category = { id: number; name: string; parentId: number | null };
-
-  const categories: Category[] = [
-    { id: 1, name: "Pizzas", parentId: null },
-    { id: 101, name: "Tradicionales", parentId: 1 },
-    { id: 102, name: "Especiales", parentId: 1 },
-    { id: 103, name: "Rellenas", parentId: 1 },
-    { id: 2, name: "Empanadas", parentId: null },
-    { id: 201, name: "Al Horno", parentId: 2 },
-    { id: 202, name: "Fritas", parentId: 2 },
-    { id: 3, name: "Sándwiches", parentId: null },
-    { id: 4, name: "Bebidas", parentId: null },
-    { id: 5, name: "Postres", parentId: null },
-    { id: 6, name: "Menú del día", parentId: null },
-    { id: 7, name: "Almacén", parentId: null },
-  ];
-
-  const getFlattenedCategories = (parentIdFilter: number | null, depth = 0): { cat: Category; depth: number }[] => {
-    const children = categories.filter((c) => c.parentId === parentIdFilter);
-    let result: { cat: Category; depth: number }[] = [];
-    for (const child of children) {
-      result.push({ cat: child, depth });
-      result = [...result, ...getFlattenedCategories(child.id, depth + 1)];
-    }
-    return result;
+  const handleParentSelect = (name: string) => {
+    setSelectedParent(name);
+    setSelectedSub("Todas");
   };
-
-  const selectableCategories = getFlattenedCategories(null);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -124,7 +133,8 @@ export default function ProductosPage() {
               setPricePerDozen("");
               setOldPrice("");
               setImageUrl("");
-              setCustomVarieties("");
+              setCustomVarieties([]);
+              setCustomExtras([]);
               setIsModalOpen(true);
             }}
             className="flex items-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-black rounded-xl transition active:scale-95 shadow-lg shadow-sky-900/30 w-full sm:w-auto justify-center"
@@ -132,26 +142,13 @@ export default function ProductosPage() {
             <Plus size={14} />
             Nuevo Producto
           </button>
-          <button
-            onClick={() => setIsExtrasManagerOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 text-xs font-black rounded-xl transition shadow-sm w-full sm:w-auto justify-center"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            Gestionar Extras
-          </button>
-          <button
-            onClick={() => setIsVarietiesManagerOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 text-xs font-black rounded-xl transition shadow-sm w-full sm:w-auto justify-center"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            Gestionar Variedades
-          </button>
+
         </div>
       </div>
 
-      {/* ── Búsqueda ── */}
-      <div className="shrink-0 px-5 py-3 border-b border-zinc-800/60 bg-zinc-950/80 flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
+      {/* ── Búsqueda y Filtro de Categorías ── */}
+      <div className="shrink-0 px-5 py-3 border-b border-zinc-800/60 bg-zinc-950/80 flex flex-col gap-3">
+        <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" size={15} />
           <input
             type="text"
@@ -161,21 +158,66 @@ export default function ProductosPage() {
             className="w-full pl-9 pr-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-sm font-bold text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-sky-500/60 transition"
           />
         </div>
-        <div className="relative w-full sm:w-auto">
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full sm:w-auto bg-zinc-900 border border-zinc-800 rounded-xl pl-4 pr-10 py-2 appearance-none text-sm font-bold text-zinc-300 outline-none focus:border-sky-500/60 transition"
+
+        {/* Level 1: parent categories */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+          <button
+            onClick={() => handleParentSelect("Todos")}
+            className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold border transition ${
+              selectedParent === "Todos"
+                ? "bg-sky-500 text-white border-sky-500"
+                : "bg-transparent border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600"
+            }`}
           >
-            <option value="Todas" className="bg-zinc-900 text-zinc-100">Todas las Categorías</option>
-            {selectableCategories.map(({ cat, depth }) => (
-              <option key={cat.id} value={cat.name} className="bg-zinc-900 text-zinc-100">
-                {"—".repeat(depth)} {cat.name}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none" size={14} />
+            Todos
+          </button>
+          {parentCats.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => handleParentSelect(cat.name)}
+              className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold border transition ${
+                selectedParent === cat.name
+                  ? "bg-orange-500 text-white border-orange-500"
+                  : "bg-transparent border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600"
+              }`}
+            >
+              {cat.name}
+            </button>
+          ))}
         </div>
+
+        {/* Level 2: subcategories (only when parent has children) */}
+        {hasSubCats && (
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <span className="shrink-0 text-[10px] font-black text-zinc-600 uppercase tracking-widest flex items-center gap-1">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              Nivel 2:
+            </span>
+            <button
+              onClick={() => setSelectedSub("Todas")}
+              className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold border transition ${
+                selectedSub === "Todas"
+                  ? "bg-zinc-700 text-white border-zinc-600"
+                  : "bg-transparent border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600"
+              }`}
+            >
+              Todas
+            </button>
+            {subCats.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedSub(cat.name)}
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold border transition ${
+                  selectedSub === cat.name
+                    ? "bg-zinc-700 text-white border-zinc-600"
+                    : "bg-transparent border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600"
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── Filtros Rápidos (Tabs) ── */}
@@ -306,7 +348,8 @@ export default function ProductosPage() {
                                 setImageType("upload");
                                 setImageUrl("");
                               }
-                              setCustomVarieties(p.customVarieties ? p.customVarieties.join(", ") : "");
+                              setCustomVarieties(p.customVarieties ? [...p.customVarieties] : []);
+                              setCustomExtras(p.customExtras ? [...p.customExtras] : []);
                               setIsModalOpen(true);
                             }}
                             className="p-2 rounded-xl text-zinc-500 hover:text-white hover:bg-zinc-700 transition"
@@ -452,9 +495,103 @@ export default function ProductosPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Variedades Opcionales (separadas por coma)</label>
-                  <input type="text" value={customVarieties} onChange={e => setCustomVarieties(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 outline-none focus:border-sky-500/60 transition text-sm font-bold text-zinc-100 placeholder:text-zinc-600" placeholder="Ej. Pan Árabe, Pan Francés | Dulce, Salada" />
-                  <p className="text-[10px] text-zinc-500 mt-1.5 font-bold">Si se completa, el cliente deberá elegir una de estas opciones.</p>
+                  <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Variedades Opcionales</label>
+                  <div className="space-y-2 mb-2">
+                    {customVarieties.map((v, idx) => (
+                      <div key={idx} className="flex items-center gap-2 bg-zinc-800/50 p-2 rounded-lg border border-zinc-700/50">
+                        <input
+                          type="text"
+                          value={v.name}
+                          onChange={(e) => {
+                            const newV = [...customVarieties];
+                            newV[idx].name = e.target.value;
+                            setCustomVarieties(newV);
+                          }}
+                          className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm font-bold text-zinc-100 outline-none focus:border-sky-500"
+                          placeholder="Nombre variedad"
+                        />
+                        <div className="relative w-24">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">$</span>
+                          <input
+                            type="number"
+                            value={v.price}
+                            onChange={(e) => {
+                              const newV = [...customVarieties];
+                              newV[idx].price = Number(e.target.value);
+                              setCustomVarieties(newV);
+                            }}
+                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg pl-6 pr-2 py-1.5 text-sm font-bold text-zinc-100 outline-none focus:border-sky-500"
+                            placeholder="Extra"
+                          />
+                        </div>
+                        <button
+                          onClick={() => setCustomVarieties(customVarieties.filter((_, i) => i !== idx))}
+                          className="p-1.5 text-zinc-500 hover:text-red-500 transition"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCustomVarieties([...customVarieties, { name: "", price: 0 }])}
+                    className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 transition text-xs font-bold"
+                  >
+                    <Plus size={14} />
+                    Agregar Variedad
+                  </button>
+                  <p className="text-[10px] text-zinc-500 mt-1.5 font-bold">Si agregás variedades, el cliente deberá elegir una de estas opciones al comprar.</p>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Extras Específicos</label>
+                  <div className="space-y-2 mb-2">
+                    {customExtras.map((e, idx) => (
+                      <div key={idx} className="flex items-center gap-2 bg-zinc-800/50 p-2 rounded-lg border border-zinc-700/50">
+                        <input
+                          type="text"
+                          value={e.name}
+                          onChange={(ev) => {
+                            const newE = [...customExtras];
+                            newE[idx].name = ev.target.value;
+                            setCustomExtras(newE);
+                          }}
+                          className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm font-bold text-zinc-100 outline-none focus:border-sky-500"
+                          placeholder="Ej. Cheddar, Huevo"
+                        />
+                        <div className="relative w-24">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">$</span>
+                          <input
+                            type="number"
+                            value={e.price}
+                            onChange={(ev) => {
+                              const newE = [...customExtras];
+                              newE[idx].price = Number(ev.target.value);
+                              setCustomExtras(newE);
+                            }}
+                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg pl-6 pr-2 py-1.5 text-sm font-bold text-zinc-100 outline-none focus:border-sky-500"
+                            placeholder="Costo"
+                          />
+                        </div>
+                        <button
+                          onClick={() => setCustomExtras(customExtras.filter((_, i) => i !== idx))}
+                          className="p-1.5 text-zinc-500 hover:text-red-500 transition"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCustomExtras([...customExtras, { name: "", price: 0 }])}
+                    className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 transition text-xs font-bold"
+                  >
+                    <Plus size={14} />
+                    Agregar Extra
+                  </button>
+                  <p className="text-[10px] text-zinc-500 mt-1.5 font-bold">Los extras son opcionales y se pueden elegir múltiples. Se sumarán al precio base.</p>
                 </div>
 
                 <div>
@@ -602,245 +739,7 @@ export default function ProductosPage() {
           </div>
         </div>
       )}
-      {/* MODAL: Administrador de Extras */}
-      {isExtrasManagerOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsExtrasManagerOpen(false)} />
-          <div className="relative bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-            
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-black text-zinc-100 tracking-tight">Administrar Extras</h2>
-                <p className="text-xs text-zinc-500 mt-1">Configurá los extras adicionales para las pizzas</p>
-              </div>
-              <button 
-                onClick={() => setIsExtrasManagerOpen(false)}
-                className="w-8 h-8 flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 rounded-xl transition"
-              >
-                <X size={16} />
-              </button>
-            </div>
 
-            {/* Listado de Extras */}
-            <div className="overflow-y-auto pr-2 no-scrollbar mb-6 flex-1 min-h-0 space-y-2">
-              {extras.map(extra => (
-                <div key={extra.id} className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${extra.available ? 'bg-zinc-900/50 border-zinc-800/50' : 'bg-zinc-900/20 border-zinc-800/30 opacity-60'}`}>
-                  
-                  {editingExtraId === extra.id ? (
-                    <div className="flex-1 flex items-center gap-2 mr-2">
-                      <input 
-                        type="text" 
-                        value={newExtraName} 
-                        onChange={(e) => setNewExtraName(e.target.value)}
-                        className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm font-bold text-white focus:outline-none focus:border-sky-500"
-                        autoFocus
-                      />
-                      <input 
-                        type="number" 
-                        value={newExtraPrice} 
-                        onChange={(e) => setNewExtraPrice(e.target.value)}
-                        className="w-24 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm font-bold text-white focus:outline-none focus:border-sky-500"
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex-1">
-                      <span className="font-bold text-zinc-200 text-sm">{extra.name}</span>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs font-black text-sky-400">${extra.price}</span>
-                        {!extra.available && <span className="text-[10px] uppercase font-bold text-red-500 bg-red-500/10 px-1.5 rounded-md">Oculto</span>}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-1 shrink-0">
-                    {editingExtraId === extra.id ? (
-                      <button 
-                        onClick={() => {
-                          setExtras(extras.map(e => e.id === extra.id ? { ...e, name: newExtraName, price: Number(newExtraPrice) } : e));
-                          setEditingExtraId(null);
-                        }}
-                        className="p-2 text-green-500 hover:bg-green-500/10 rounded-lg transition"
-                      >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                      </button>
-                    ) : (
-                      <>
-                        <button 
-                          onClick={() => {
-                            setExtras(extras.map(e => e.id === extra.id ? { ...e, available: !e.available } : e));
-                          }}
-                          className={`p-2 rounded-lg transition ${extra.available ? 'text-zinc-500 hover:text-sky-400 hover:bg-zinc-800' : 'text-green-500 hover:bg-green-500/10'}`}
-                          title={extra.available ? "Ocultar extra" : "Mostrar extra"}
-                        >
-                          {extra.available ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
-                        </button>
-                        <button 
-                          onClick={() => {
-                            setNewExtraName(extra.name);
-                            setNewExtraPrice(extra.price.toString());
-                            setEditingExtraId(extra.id);
-                          }}
-                          className="p-2 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button 
-                          onClick={() => setExtras(extras.filter(e => e.id !== extra.id))}
-                          className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Crear nuevo */}
-            <div className="flex gap-2 border-t border-zinc-800 pt-6 mt-auto">
-              <input 
-                type="text" 
-                placeholder="Nombre del extra..."
-                id="addExtraName"
-                className="flex-[2] bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:border-sky-500 text-zinc-100 transition placeholder:text-zinc-600 placeholder:font-normal"
-              />
-              <input 
-                type="number" 
-                placeholder="$ Precio"
-                id="addExtraPrice"
-                className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:border-sky-500 text-zinc-100 transition placeholder:text-zinc-600 placeholder:font-normal"
-              />
-              <button 
-                onClick={() => {
-                  const nameEl = document.getElementById('addExtraName') as HTMLInputElement;
-                  const priceEl = document.getElementById('addExtraPrice') as HTMLInputElement;
-                  if (nameEl.value && priceEl.value) {
-                    setExtras([...extras, { id: Date.now().toString(), name: nameEl.value, price: Number(priceEl.value), available: true }]);
-                    nameEl.value = '';
-                    priceEl.value = '';
-                  }
-                }}
-                className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-4 rounded-xl flex items-center justify-center transition-colors shadow-lg shadow-sky-900/20 active:scale-95 shrink-0"
-              >
-                <Plus size={20} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: Administrador de Variedades */}
-      {isVarietiesManagerOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsVarietiesManagerOpen(false)} />
-          <div className="relative bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-            
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-black text-zinc-100 tracking-tight">Administrar Variedades</h2>
-                <p className="text-xs text-zinc-500 mt-1">Configurá las variedades globales (sabores) disponibles para los productos Quadra.</p>
-              </div>
-              <button 
-                onClick={() => setIsVarietiesManagerOpen(false)}
-                className="w-8 h-8 flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 rounded-xl transition"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Listado de Variedades */}
-            <div className="overflow-y-auto pr-2 no-scrollbar mb-6 flex-1 min-h-0 space-y-2">
-              {varieties.map(variety => (
-                <div key={variety.id} className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${variety.available ? 'bg-zinc-900/50 border-zinc-800/50' : 'bg-zinc-900/20 border-zinc-800/30 opacity-60'}`}>
-                  
-                  {editingVarietyId === variety.id ? (
-                    <div className="flex-1 flex items-center gap-2 mr-2">
-                      <input 
-                        type="text" 
-                        value={newVarietyName} 
-                        onChange={(e) => setNewVarietyName(e.target.value)}
-                        className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm font-bold text-white focus:outline-none focus:border-sky-500"
-                        autoFocus
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex-1">
-                      <span className="font-bold text-zinc-200 text-sm">{variety.name}</span>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        {!variety.available && <span className="text-[10px] uppercase font-bold text-red-500 bg-red-500/10 px-1.5 rounded-md">Oculto</span>}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-1 shrink-0">
-                    {editingVarietyId === variety.id ? (
-                      <button 
-                        onClick={() => {
-                          setVarieties(varieties.map(v => v.id === variety.id ? { ...v, name: newVarietyName } : v));
-                          setEditingVarietyId(null);
-                        }}
-                        className="p-2 text-green-500 hover:bg-green-500/10 rounded-lg transition"
-                      >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                      </button>
-                    ) : (
-                      <>
-                        <button 
-                          onClick={() => {
-                            setVarieties(varieties.map(v => v.id === variety.id ? { ...v, available: !v.available } : v));
-                          }}
-                          className={`p-2 rounded-lg transition ${variety.available ? 'text-zinc-500 hover:text-sky-400 hover:bg-zinc-800' : 'text-green-500 hover:bg-green-500/10'}`}
-                          title={variety.available ? "Ocultar variedad" : "Mostrar variedad"}
-                        >
-                          {variety.available ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
-                        </button>
-                        <button 
-                          onClick={() => {
-                            setNewVarietyName(variety.name);
-                            setEditingVarietyId(variety.id);
-                          }}
-                          className="p-2 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button 
-                          onClick={() => setVarieties(varieties.filter(v => v.id !== variety.id))}
-                          className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Crear nuevo */}
-            <div className="flex gap-2 border-t border-zinc-800 pt-6 mt-auto">
-              <input 
-                type="text" 
-                placeholder="Nombre de la variedad (Sabor)..."
-                id="addVarietyName"
-                className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:border-sky-500 text-zinc-100 transition placeholder:text-zinc-600 placeholder:font-normal"
-              />
-              <button 
-                onClick={() => {
-                  const nameEl = document.getElementById('addVarietyName') as HTMLInputElement;
-                  if (nameEl.value) {
-                    setVarieties([...varieties, { id: Date.now().toString(), name: nameEl.value, available: true }]);
-                    nameEl.value = '';
-                  }
-                }}
-                className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-4 rounded-xl flex items-center justify-center transition-colors shadow-lg shadow-sky-900/20 active:scale-95 shrink-0"
-              >
-                <Plus size={20} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

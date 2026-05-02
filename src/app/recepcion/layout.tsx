@@ -84,13 +84,13 @@ export default function RecepcionLayout({ children }: { children: React.ReactNod
         {/* Logo + módulo */}
         <div className="flex items-center gap-2.5 shrink-0">
           <Image src="/logo.jpg" alt="Logo" width={30} height={30} className="rounded-lg object-cover" />
-          <div className="hidden sm:flex flex-col leading-none">
+          <div className="flex flex-col leading-none">
             <span className="font-black text-sm tracking-tight">Quadra <span className="text-orange-500">Pizza</span></span>
-            <span className="text-[9px] font-bold text-sky-400 uppercase tracking-widest">Recepción</span>
+            <span className="text-[10px] font-bold text-sky-400 uppercase tracking-widest">Recepción</span>
           </div>
         </div>
 
-        <div className="w-px h-6 bg-zinc-800 shrink-0" />
+        <div className="hidden md:block w-px h-6 bg-zinc-800 shrink-0" />
 
         {/* Nav links — desktop */}
         <nav className="hidden md:flex items-center gap-1 flex-1">

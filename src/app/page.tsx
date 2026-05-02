@@ -26,6 +26,7 @@ type CartItem = {
   quadraSelections?: string[]; // opciones seleccionadas para filas modificables
   extras?: { name: string; price: number }[]; // extras agregados
   customVariety?: string; // variedad elegida (ej. "Dulce", "Pan Árabe")
+  customVarietyPrice?: number; // extra cost from the variety
 };
 
 export default function CatalogPage() {
@@ -57,11 +58,16 @@ export default function CatalogPage() {
   };
 
   const { products, neighborhoods, extras, varieties } = useProducts();
-  const offers = products.filter(p => p.isOffer);
+  const offers = products.filter(p => p.isOffer && p.stock);
 
   const getDescendantIds = (catId: number): number[] => {
     const children = categories.filter(c => c.parentId === catId).map(c => c.id);
     return children.reduce((acc, childId) => [...acc, ...getDescendantIds(childId)], children);
+  };
+
+  const isCategoryActive = (catId: number): boolean => {
+    const descendantIds = [catId, ...getDescendantIds(catId)];
+    return products.some(p => p.stock && descendantIds.includes(p.categoryId || 0));
   };
 
   const activeCategoryId = selectedPath.length > 0 ? selectedPath[selectedPath.length - 1] : null;
@@ -174,6 +180,7 @@ export default function CatalogPage() {
         quadraSelections: selectedProductForCart.saleType === 'quadra' ? [...quadraSelections] : undefined,
         extras: selectedExtras.length > 0 ? [...selectedExtras.map(e => ({ name: e.name, price: e.price }))] : undefined,
         customVariety: selectedCustomVariety || undefined,
+        customVarietyPrice: selectedProductForCart.customVarieties?.find(v => v.name === selectedCustomVariety)?.price || 0,
       };
       setCartItems([...cartItems, newItem]);
     }
@@ -218,7 +225,8 @@ export default function CatalogPage() {
       base = parsePrice(item.price) * item.quantity;
     }
     const extrasTotal = item.extras ? item.extras.reduce((acc, e) => acc + e.price, 0) * item.quantity : 0;
-    return base + extrasTotal;
+    const varietyTotal = (item.customVarietyPrice || 0) * item.quantity;
+    return base + extrasTotal + varietyTotal;
   };
 
   const cartTotal = cartItems.reduce((acc, item) => acc + getItemSubtotal(item), 0);
@@ -358,7 +366,7 @@ export default function CatalogPage() {
         {/* Filtros Recursivos */}
         <div className="mb-6 space-y-4">
           {[null, ...selectedPath].map((parentId, index) => {
-            const children = categories.filter(c => c.parentId === parentId);
+            const children = categories.filter(c => c.parentId === parentId && isCategoryActive(c.id));
             if (children.length === 0) return null;
 
             const selectedIdAtThisLevel = selectedPath.length > index ? selectedPath[index] : null;
@@ -504,40 +512,52 @@ export default function CatalogPage() {
                 </div>
               )}
 
-              {/* Extras (para Pizzas) */}
-              {selectedProductForCart.categoryId && [1, 101, 102, 103].includes(selectedProductForCart.categoryId) && (
-                <div className="space-y-3 bg-zinc-900/40 p-4 rounded-xl border border-zinc-800">
-                  <div className="mb-2">
-                    <h3 className="font-bold text-zinc-200">¿Querés agregar extras?</h3>
-                    <p className="text-xs text-zinc-400 mt-0.5">Podés seleccionar todos los que quieras.</p>
+              {/* Extras combinados (Globales para pizzas y custom para específicos) */}
+              {(() => {
+                const isPizza = selectedProductForCart.categoryId && [1, 101, 102, 103].includes(selectedProductForCart.categoryId);
+                const globalExtras = isPizza ? extras.filter(e => e.available) : [];
+                const customExtrasMapped = (selectedProductForCart.customExtras || []).map(ce => ({
+                  id: `custom-${ce.name}`,
+                  name: ce.name,
+                  price: ce.price,
+                  available: true
+                }));
+                const allExtras = [...customExtrasMapped, ...globalExtras];
+                if (allExtras.length === 0) return null;
+                return (
+                  <div className="space-y-3 bg-zinc-900/40 p-4 rounded-xl border border-zinc-800">
+                    <div className="mb-2">
+                      <h3 className="font-bold text-zinc-200">¿Querés agregar extras?</h3>
+                      <p className="text-xs text-zinc-400 mt-0.5">Podés seleccionar todos los que quieras.</p>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {allExtras.map(extra => {
+                        const isSelected = selectedExtras.some(e => e.id === extra.id);
+                        return (
+                          <label key={extra.id} className={`flex items-center gap-3 p-3 rounded-lg border transition cursor-pointer select-none ${isSelected ? 'bg-orange-500/10 border-orange-500/50' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'}`}>
+                            <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 border ${isSelected ? 'bg-orange-500 border-orange-500 text-white' : 'bg-zinc-950 border-zinc-700 text-transparent'}`}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={isSelected ? 'opacity-100' : 'opacity-0'}><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className={`text-sm font-bold ${isSelected ? 'text-zinc-100' : 'text-zinc-300'}`}>{extra.name}</span>
+                              <span className="text-[11px] font-black text-orange-400">+{formatPrice(extra.price)}</span>
+                            </div>
+                            <input 
+                              type="checkbox" 
+                              className="hidden" 
+                              checked={isSelected}
+                              onChange={(e) => {
+                                if (e.target.checked) setSelectedExtras([...selectedExtras, extra]);
+                                else setSelectedExtras(selectedExtras.filter(e => e.id !== extra.id));
+                              }} 
+                            />
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {extras.filter(e => e.available).map(extra => {
-                      const isSelected = selectedExtras.some(e => e.id === extra.id);
-                      return (
-                        <label key={extra.id} className={`flex items-center gap-3 p-3 rounded-lg border transition cursor-pointer select-none ${isSelected ? 'bg-orange-500/10 border-orange-500/50' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'}`}>
-                          <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 border ${isSelected ? 'bg-orange-500 border-orange-500 text-white' : 'bg-zinc-950 border-zinc-700 text-transparent'}`}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={isSelected ? 'opacity-100' : 'opacity-0'}><polyline points="20 6 9 17 4 12"></polyline></svg>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className={`text-sm font-bold ${isSelected ? 'text-zinc-100' : 'text-zinc-300'}`}>{extra.name}</span>
-                            <span className="text-[11px] font-black text-orange-400">+{formatPrice(extra.price)}</span>
-                          </div>
-                          <input 
-                            type="checkbox" 
-                            className="hidden" 
-                            checked={isSelected}
-                            onChange={(e) => {
-                              if (e.target.checked) setSelectedExtras([...selectedExtras, extra]);
-                              else setSelectedExtras(selectedExtras.filter(e => e.id !== extra.id));
-                            }} 
-                          />
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Selector de Variedades Custom (si el producto las tiene) */}
               {selectedProductForCart.customVarieties && selectedProductForCart.customVarieties.length > 0 && (
@@ -552,7 +572,7 @@ export default function CatalogPage() {
                   >
                     <option value="" disabled>Seleccionar variedad</option>
                     {selectedProductForCart.customVarieties.map(v => (
-                      <option key={v} value={v.trim()}>{v.trim()}</option>
+                      <option key={v.name} value={v.name}>{v.name}{v.price ? ` (+$${v.price})` : ""}</option>
                     ))}
                   </select>
                 </div>
