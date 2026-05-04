@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Edit2, Trash2, X, MapPin, ArrowLeft } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, X, MapPin, ArrowLeft, AlertTriangle } from "lucide-react";
 import { useProducts, Neighborhood } from "@/context/ProductsContext";
 
 export default function EnviosPage() {
@@ -13,6 +13,8 @@ export default function EnviosPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [name, setName] = useState("");
   const [deliveryCost, setDeliveryCost] = useState("");
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
 
   const filteredNeighborhoods = neighborhoods.filter((n) =>
     n.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -34,8 +36,13 @@ export default function EnviosPage() {
   };
 
   const handleDelete = (id: number) => {
-    if (confirm("¿Estás seguro de que quieres eliminar esta zona de envío?")) {
-      setNeighborhoods(neighborhoods.filter((n) => n.id !== id));
+    setDeleteId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deleteId !== null) {
+      setNeighborhoods(neighborhoods.filter((n) => n.id !== deleteId));
+      setDeleteId(null);
     }
   };
 
@@ -159,8 +166,76 @@ export default function EnviosPage() {
             </div>
 
             <div className="px-6 pb-6">
-              <button onClick={handleSave} className="w-full bg-sky-600 hover:bg-sky-500 text-white font-black py-3 rounded-xl transition active:scale-95 shadow-lg shadow-sky-900/30 text-sm">
+              <button onClick={() => {
+                if (!name.trim() || !deliveryCost.trim()) return;
+                setShowSaveConfirm(true);
+              }} className="w-full bg-sky-600 hover:bg-sky-500 text-white font-black py-3 rounded-xl transition active:scale-95 shadow-lg shadow-sky-900/30 text-sm">
                 {isEditing ? "Guardar Cambios" : "Crear Zona"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal de Confirmación de Eliminación ── */}
+      {deleteId !== null && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-xs shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mx-auto mb-4">
+                <AlertTriangle size={24} />
+              </div>
+              <h3 className="text-white font-black text-lg mb-2">¿Eliminar Zona?</h3>
+              <p className="text-zinc-500 text-xs font-bold leading-relaxed">
+                Esta acción no se puede deshacer. Los pedidos no se verán afectados.
+              </p>
+            </div>
+            <div className="p-4 bg-zinc-900/50 border-t border-zinc-800 flex gap-2">
+              <button 
+                onClick={() => setDeleteId(null)}
+                className="flex-1 py-3 rounded-xl bg-zinc-900 text-zinc-400 font-bold text-xs hover:text-white transition"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={confirmDelete}
+                className="flex-1 py-3 rounded-xl bg-red-600 text-white font-black text-xs hover:bg-red-500 transition shadow-lg shadow-red-900/20"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal de Confirmación de Guardado ── */}
+      {showSaveConfirm && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-xs shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500 mx-auto mb-4">
+                <AlertTriangle size={24} />
+              </div>
+              <h3 className="text-white font-black text-lg mb-2">¿Confirmar cambios?</h3>
+              <p className="text-zinc-500 text-xs font-bold leading-relaxed">
+                Se actualizarán los datos de la zona <span className="text-zinc-300">{name}</span>.
+              </p>
+            </div>
+            <div className="p-4 bg-zinc-900/50 border-t border-zinc-800 flex gap-2">
+              <button 
+                onClick={() => setShowSaveConfirm(false)}
+                className="flex-1 py-3 rounded-xl bg-zinc-900 text-zinc-400 font-bold text-xs hover:text-white transition"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => {
+                  handleSave();
+                  setShowSaveConfirm(false);
+                }}
+                className="flex-1 py-3 rounded-xl bg-sky-600 text-white font-black text-xs hover:bg-sky-500 transition shadow-lg shadow-sky-900/20"
+              >
+                Confirmar
               </button>
             </div>
           </div>

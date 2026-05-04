@@ -33,7 +33,6 @@ export default function GerenciaUsuariosPage() {
   const inactiveCount = users.filter(u => !u.active).length;
 
   return (
-  return (
     <div className="flex flex-col h-full overflow-hidden">
 
       {/* ── Header ── */}

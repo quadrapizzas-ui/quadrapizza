@@ -42,10 +42,7 @@ export default function DeliveryLayout({ children }: { children: React.ReactNode
             <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Delivery</span>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 ml-1">
-          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-          <span className="hidden sm:block text-[10px] font-bold text-zinc-500 uppercase tracking-widest">En línea</span>
-        </div>
+
         <div className="flex-1" />
         <button
           onClick={() => { localStorage.removeItem("quadra_delivery_auth"); router.push("/delivery/login"); }}

@@ -1,5 +1,7 @@
 "use client";
 
+import React, { useState } from "react";
+
 import Link from "next/link";
 import { Package, Tag, ArrowRight, Plus, AlertTriangle, Settings, PieChart, ShoppingBag } from "lucide-react";
 import Image from "next/image";
@@ -7,28 +9,34 @@ import { useProducts } from "@/context/ProductsContext";
 
 export default function AdminDashboardPage() {
   const { products } = useProducts();
+  const [phoneNumber, setPhoneNumber] = useState("+5493518046223");
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
+  const [tempPhone, setTempPhone] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const totalProducts = products.length;
   const offerProducts = products.filter(p => p.isOffer);
   const activeOffers = offerProducts.length;
   const outOfStockProducts = products.filter(p => !p.stock);
   
-  const categoryCounts = products.reduce((acc, p) => {
+  const nonPromoProducts = products.filter(p => !p.isOffer);
+  const totalBaseProducts = nonPromoProducts.length;
+  
+  const categoryCounts = nonPromoProducts.reduce((acc, p) => {
     acc[p.category] = (acc[p.category] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  const getPercentage = (category: string) => {
-    if (totalProducts === 0) return 0;
-    return Math.round(((categoryCounts[category] || 0) / totalProducts) * 100);
-  };
+  const sortedCategories = Object.entries(categoryCounts)
+    .sort((a, b) => b[1] - a[1]);
 
-  const categoriesDef = [
-    { name: "Pizzas", color: "bg-sky-500" },
-    { name: "Empanadas", color: "bg-sky-400" },
-    { name: "Sándwiches", color: "bg-zinc-400" },
-    { name: "Promos", color: "bg-zinc-500" },
-  ];
+  const colors = ["bg-sky-500", "bg-sky-400", "bg-zinc-400", "bg-zinc-500"];
+
+  const categoriesDef = sortedCategories.map(([name, count], index) => ({
+    name,
+    color: colors[index % colors.length],
+    pct: totalBaseProducts === 0 ? 0 : Math.round((count / totalBaseProducts) * 100)
+  }));
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -107,58 +115,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Middle Section: Distribution & Settings */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Distribución */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-white flex items-center gap-2">
-                <PieChart size={16} className="text-zinc-500" /> Distribución
-              </h3>
-              <span className="text-[9px] font-black uppercase tracking-widest bg-zinc-800 px-2 py-0.5 rounded border border-zinc-700 text-zinc-400">Top 4</span>
-            </div>
-            <div className="flex flex-col gap-3">
-              {categoriesDef.map(cat => {
-                const pct = getPercentage(cat.name);
-                return (
-                  <div key={cat.name}>
-                    <div className="flex justify-between items-center text-xs font-bold mb-1.5">
-                      <span className="text-zinc-300">{cat.name}</span>
-                      <span className="text-zinc-500">{pct}%</span>
-                    </div>
-                    <div className="w-full bg-zinc-950 rounded-full h-1.5 overflow-hidden">
-                      <div className={`${cat.color} h-1.5 rounded-full transition-all duration-1000`} style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Configuración */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-4">
-            <h3 className="text-sm font-black text-white flex items-center gap-2">
-              <Settings size={16} className="text-zinc-500" /> Configuración de Tienda
-            </h3>
-            <div className="flex-1 flex flex-col justify-between">
-              <div>
-                <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5">WhatsApp de Pedidos</label>
-                <input 
-                  type="text" 
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 outline-none focus:border-sky-500/60 transition font-bold text-sm text-zinc-100 placeholder:text-zinc-600" 
-                  defaultValue="+5493518046223" 
-                  placeholder="+54 9 3518..." 
-                />
-                <p className="text-[10px] font-bold text-zinc-600 mt-1.5 leading-tight">Los carritos armados se enviarán como mensaje a este número.</p>
-              </div>
-              <button className="w-full mt-4 bg-zinc-800 hover:bg-zinc-700 text-white font-black py-2.5 rounded-xl transition active:scale-95 text-xs shadow-sm">
-                Guardar Cambios
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Section: Offer List & Out of Stock */}
+        {/* Middle Section: Offer List & Out of Stock */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           
           {/* Ofertas */}
@@ -245,7 +202,124 @@ export default function AdminDashboardPage() {
 
         </div>
 
+        {/* Bottom Section: Distribution */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-black text-white flex items-center gap-2">
+              <PieChart size={16} className="text-zinc-500" /> Distribución
+            </h3>
+            <span className="text-[9px] font-black uppercase tracking-widest bg-zinc-800 px-2 py-0.5 rounded border border-zinc-700 text-zinc-400">Total</span>
+          </div>
+          <div className="flex flex-col gap-3">
+            {categoriesDef.map(cat => {
+              return (
+                <div key={cat.name}>
+                  <div className="flex justify-between items-center text-xs font-bold mb-1.5">
+                    <span className="text-zinc-300">{cat.name}</span>
+                    <span className="text-zinc-500">{cat.pct}%</span>
+                  </div>
+                  <div className="w-full bg-zinc-950 rounded-full h-1.5 overflow-hidden">
+                    <div className={`${cat.color} h-1.5 rounded-full transition-all duration-1000`} style={{ width: `${cat.pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Configuración (Moved to Bottom) */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all">
+          <div className="flex flex-col gap-1.5 flex-1">
+            <h3 className="text-sm font-black text-white flex items-center gap-2">
+              <Settings size={16} className="text-zinc-500" /> Configuración de Tienda
+            </h3>
+            
+            {isEditingPhone ? (
+              <div className="mt-2 flex items-center gap-2 max-w-sm">
+                <input 
+                  type="text" 
+                  className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 outline-none focus:border-sky-500/60 transition font-bold text-sm text-zinc-100 placeholder:text-zinc-600" 
+                  value={tempPhone}
+                  onChange={(e) => setTempPhone(e.target.value)}
+                  placeholder="+54 9 3518..."
+                  autoFocus 
+                />
+              </div>
+            ) : (
+              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">
+                WhatsApp de Pedidos: <span className="text-zinc-300 ml-1">{phoneNumber}</span>
+              </p>
+            )}
+
+            <p className="text-[10px] font-bold text-zinc-600 leading-tight mt-0.5">Los carritos armados se enviarán como mensaje a este número.</p>
+          </div>
+          
+          <div className="shrink-0">
+            {isEditingPhone ? (
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setIsEditingPhone(false)}
+                  className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold px-4 py-2.5 rounded-xl transition active:scale-95 text-xs shadow-sm border border-zinc-700/50"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={() => setShowConfirm(true)}
+                  className="bg-sky-600 hover:bg-sky-500 text-white font-black px-5 py-2.5 rounded-xl transition active:scale-95 text-xs shadow-sm shadow-sky-900/20"
+                >
+                  Guardar
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => {
+                  setTempPhone(phoneNumber);
+                  setIsEditingPhone(true);
+                }}
+                className="bg-zinc-800 hover:bg-zinc-700 text-white font-black px-5 py-2.5 rounded-xl transition active:scale-95 text-xs shadow-sm border border-zinc-700/50"
+              >
+                Editar Número
+              </button>
+            )}
+          </div>
+        </div>
+
       </div>
+
+      {/* Modal de Confirmación WhatsApp */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-xs shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-500 mx-auto mb-4">
+                <AlertTriangle size={24} />
+              </div>
+              <h3 className="text-white font-black text-lg mb-2">¿Guardar cambios?</h3>
+              <p className="text-zinc-500 text-xs font-bold leading-relaxed">
+                El número de WhatsApp se actualizará a <span className="text-zinc-300">{tempPhone}</span> para todos los pedidos nuevos.
+              </p>
+            </div>
+            <div className="p-4 bg-zinc-900/50 border-t border-zinc-800 flex gap-2">
+              <button 
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 py-3 rounded-xl bg-zinc-900 text-zinc-400 font-bold text-xs hover:text-white transition"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => {
+                  setPhoneNumber(tempPhone);
+                  setIsEditingPhone(false);
+                  setShowConfirm(false);
+                }}
+                className="flex-1 py-3 rounded-xl bg-sky-600 text-white font-black text-xs hover:bg-sky-500 transition shadow-lg shadow-sky-900/20"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

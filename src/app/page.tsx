@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Search, ShoppingBag, Plus, Tag, Filter, ChevronRight, X, Minus, ShoppingCart, Trash2, ArrowLeft, MapPin, Store, CreditCard, ChevronDown } from "lucide-react";
+import { Search, ShoppingBag, Plus, Tag, Filter, ChevronRight, X, Minus, ShoppingCart, Trash2, ArrowLeft, MapPin, Store, CreditCard, ChevronDown, Utensils, Coffee, ShoppingBasket } from "lucide-react";
 import { useProducts, Product, Neighborhood } from "@/context/ProductsContext";
 
 type Category = {
@@ -73,6 +73,36 @@ export default function CatalogPage() {
   const activeCategoryId = selectedPath.length > 0 ? selectedPath[selectedPath.length - 1] : null;
   
   const filteredOffers = offers.filter(p => {
+    if (searchQuery.trim().length >= 3) {
+      const q = searchQuery.toLowerCase();
+      if (!p.name.toLowerCase().includes(q) && !(p.description || '').toLowerCase().includes(q)) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  const filteredMenuDelDia = products.filter(p => p.categoryId === 6 && p.stock).filter(p => {
+    if (searchQuery.trim().length >= 3) {
+      const q = searchQuery.toLowerCase();
+      if (!p.name.toLowerCase().includes(q) && !(p.description || '').toLowerCase().includes(q)) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  const filteredAlmacen = products.filter(p => [5, 7].includes(p.categoryId || 0) && p.stock).filter(p => {
+    if (searchQuery.trim().length >= 3) {
+      const q = searchQuery.toLowerCase();
+      if (!p.name.toLowerCase().includes(q) && !(p.description || '').toLowerCase().includes(q)) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  const filteredBebidas = products.filter(p => p.categoryId === 4 && p.stock).filter(p => {
     if (searchQuery.trim().length >= 3) {
       const q = searchQuery.toLowerCase();
       if (!p.name.toLowerCase().includes(q) && !(p.description || '').toLowerCase().includes(q)) {
@@ -326,19 +356,19 @@ export default function CatalogPage() {
           </div>
         </div>
 
-        {/* Ofertas Imperdibles */}
-        {filteredOffers.length > 0 && (
+        {/* En Oferta */}
+        {activeCategoryId === null && filteredOffers.length > 0 && (
           <div className="mb-10">
           <div className="flex items-center gap-2 mb-4">
-            <div className="bg-orange-500/20 p-2 rounded-full text-orange-500">
+            <div className="bg-red-500/20 p-2 rounded-full text-red-500">
               <Tag fill="currentColor" size={20} />
             </div>
-            <h2 className="text-2xl font-black tracking-tighter text-orange-500">Ofertas Imperdibles</h2>
+            <h2 className="text-2xl font-black tracking-tighter text-red-500">En Oferta</h2>
           </div>
           <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
             {filteredOffers.map((p) => (
               <div key={p.id} className="shrink-0 w-[280px] bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden flex flex-col relative shadow-sm hover:shadow-md transition-shadow">
-                <div className="absolute top-3 left-3 bg-orange-500 text-white font-black text-[10px] tracking-widest px-3 py-1 rounded-full z-10 animate-pulse">OFERTA</div>
+                <div className="absolute top-3 left-3 bg-red-600 text-white font-black text-[10px] tracking-widest px-3 py-1 rounded-full z-10 animate-pulse">OFERTA</div>
                 <div className="aspect-[4/3] bg-zinc-800 relative overflow-hidden">
                   <Image src={p.image} alt={p.name} fill sizes="280px" className="object-cover hover:scale-105 transition duration-500" />
                 </div>
@@ -350,9 +380,9 @@ export default function CatalogPage() {
                   <div className="mt-4 flex items-end justify-between">
                     <div>
                       <span className="text-xs text-red-400/80 line-through font-semibold block mb-0.5">{p.oldPrice}</span>
-                      <span className="font-black text-2xl tracking-tight text-orange-500 leading-none">{p.price}</span>
+                      <span className="font-black text-2xl tracking-tight text-red-500 leading-none">{p.price}</span>
                     </div>
-                    <button onClick={() => openAddToCartModal(p)} className="w-10 h-10 rounded-full bg-orange-600 flex items-center justify-center text-white hover:bg-orange-500 transition active:scale-95 shadow-lg shadow-orange-600/30">
+                    <button onClick={() => openAddToCartModal(p)} className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white hover:bg-red-500 transition active:scale-95 shadow-lg shadow-red-600/30">
                       <Plus size={20} />
                     </button>
                   </div>
@@ -362,6 +392,119 @@ export default function CatalogPage() {
           </div>
         </div>
         )}
+
+        {/* Menú del Día */}
+        {activeCategoryId === null && filteredMenuDelDia.length > 0 && (
+          <div className="mb-10">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="bg-emerald-500/20 p-2 rounded-full text-emerald-500">
+              <Utensils size={20} />
+            </div>
+            <h2 className="text-2xl font-black tracking-tighter text-emerald-500">Menú del Día</h2>
+          </div>
+          <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+            {filteredMenuDelDia.map((p) => (
+              <div key={p.id} className="shrink-0 w-[280px] bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden flex flex-col relative shadow-sm hover:shadow-md transition-shadow">
+                <div className="aspect-[4/3] bg-zinc-800 relative overflow-hidden">
+                  <Image src={p.image} alt={p.name} fill sizes="280px" className="object-cover hover:scale-105 transition duration-500" />
+                </div>
+                <div className="p-4 flex-1 flex flex-col justify-between border-t border-zinc-900">
+                  <div>
+                    <h3 className="font-bold text-[17px] leading-tight mb-1.5 text-zinc-100">{p.name}</h3>
+                    <p className="text-[12px] text-zinc-400 line-clamp-2 leading-relaxed">{p.description}</p>
+                  </div>
+                  <div className="mt-4 flex items-end justify-between">
+                    <div>
+                      <span className="font-black text-2xl tracking-tight text-emerald-500 leading-none">{p.price}</span>
+                    </div>
+                    <button onClick={() => openAddToCartModal(p)} className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white hover:bg-emerald-500 transition active:scale-95 shadow-lg shadow-emerald-600/30">
+                      <Plus size={20} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        )}
+
+        {/* Déjate Tentar (Almacén) */}
+        {activeCategoryId === null && filteredAlmacen.length > 0 && (
+          <div className="mb-10">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="bg-purple-500/20 p-2 rounded-full text-purple-500">
+              <ShoppingBasket size={20} />
+            </div>
+            <h2 className="text-2xl font-black tracking-tighter text-purple-500">Déjate Tentar</h2>
+          </div>
+          <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+            {filteredAlmacen.map((p) => (
+              <div key={p.id} className="shrink-0 w-[280px] bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden flex flex-col relative shadow-sm hover:shadow-md transition-shadow">
+                <div className="aspect-[4/3] bg-zinc-800 relative overflow-hidden">
+                  <Image src={p.image} alt={p.name} fill sizes="280px" className="object-cover hover:scale-105 transition duration-500" />
+                </div>
+                <div className="p-4 flex-1 flex flex-col justify-between border-t border-zinc-900">
+                  <div>
+                    <h3 className="font-bold text-[17px] leading-tight mb-1.5 text-zinc-100">{p.name}</h3>
+                    <p className="text-[12px] text-zinc-400 line-clamp-2 leading-relaxed">{p.description}</p>
+                  </div>
+                  <div className="mt-4 flex items-end justify-between">
+                    <div>
+                      <span className="font-black text-2xl tracking-tight text-purple-500 leading-none">{p.price}</span>
+                    </div>
+                    <button onClick={() => openAddToCartModal(p)} className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white hover:bg-purple-500 transition active:scale-95 shadow-lg shadow-purple-600/30">
+                      <Plus size={20} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        )}
+
+        {/* Bebidas */}
+        {activeCategoryId === null && filteredBebidas.length > 0 && (
+          <div className="mb-10">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="bg-blue-500/20 p-2 rounded-full text-blue-500">
+              <Coffee size={20} />
+            </div>
+            <h2 className="text-2xl font-black tracking-tighter text-blue-500">Bebidas</h2>
+          </div>
+          <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+            {filteredBebidas.map((p) => (
+              <div key={p.id} className="shrink-0 w-[280px] bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden flex flex-col relative shadow-sm hover:shadow-md transition-shadow">
+                <div className="aspect-[4/3] bg-zinc-800 relative overflow-hidden">
+                  <Image src={p.image} alt={p.name} fill sizes="280px" className="object-cover hover:scale-105 transition duration-500" />
+                </div>
+                <div className="p-4 flex-1 flex flex-col justify-between border-t border-zinc-900">
+                  <div>
+                    <h3 className="font-bold text-[17px] leading-tight mb-1.5 text-zinc-100">{p.name}</h3>
+                    <p className="text-[12px] text-zinc-400 line-clamp-2 leading-relaxed">{p.description}</p>
+                  </div>
+                  <div className="mt-4 flex items-end justify-between">
+                    <div>
+                      <span className="font-black text-2xl tracking-tight text-blue-500 leading-none">{p.price}</span>
+                    </div>
+                    <button onClick={() => openAddToCartModal(p)} className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white hover:bg-blue-500 transition active:scale-95 shadow-lg shadow-blue-600/30">
+                      <Plus size={20} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        )}
+
+        {/* Separador para catálogo general */}
+        <div className="mt-12 mb-6 border-t border-zinc-800/80 pt-8">
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-2xl font-black tracking-tighter text-zinc-100">Catálogo Completo</h2>
+          </div>
+          <p className="text-zinc-400 text-sm font-medium">Ingredientes de primera, recetas clásicas y el toque único de Quadra. Todo listo para tu mesa.</p>
+        </div>
 
         {/* Filtros Recursivos */}
         <div className="mb-6 space-y-4">
@@ -403,7 +546,14 @@ export default function CatalogPage() {
         {/* Grid de Productos */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 xl:gap-8 mt-2">
           {filteredProducts.length > 0 ? (
-            filteredProducts.filter(p => !p.isOffer && p.stock).map((p) => {
+            filteredProducts.filter(p => {
+              if (p.isOffer || !p.stock) return false;
+              // If viewing "Todos" (activeCategoryId === null), exclude special categories from the general grid
+              if (activeCategoryId === null && [4, 5, 6, 7].includes(p.categoryId || 0)) {
+                return false;
+              }
+              return true;
+            }).map((p) => {
               const breadcrumbs = getCategoryBreadcrumbs(p.categoryId || 0);
               return (
                 <div key={p.id} className="group relative bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
@@ -431,7 +581,7 @@ export default function CatalogPage() {
                     
                     <div className="mt-5 flex items-end sm:items-center justify-between gap-2">
                       <div className="flex flex-col">
-                        <span className="font-black text-lg sm:text-xl tracking-tight leading-none">{p.price}</span>
+                        <span className="font-black text-lg sm:text-xl tracking-tight leading-none text-orange-500">{p.price}</span>
                         {p.saleType === 'combo' && p.pricePerDozen && (
                           <span className="text-[9px] sm:text-[10px] font-bold text-orange-500 mt-1">Docena: {p.pricePerDozen}</span>
                         )}
@@ -441,7 +591,7 @@ export default function CatalogPage() {
                       </div>
                       <button 
                         onClick={() => openAddToCartModal(p)}
-                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300 group-hover:bg-orange-600 group-hover:text-white transition active:scale-90 shrink-0"
+                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-orange-600 flex items-center justify-center text-white hover:bg-orange-500 transition active:scale-90 shrink-0 shadow-lg shadow-orange-600/20"
                       >
                         <Plus size={18} />
                       </button>
@@ -465,17 +615,19 @@ export default function CatalogPage() {
       {selectedProductForCart && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedProductForCart(null)}></div>
-          <div className="relative bg-zinc-950 rounded-2xl w-full max-w-sm shadow-2xl p-6 sm:p-8 animate-in fade-in zoom-in-95 duration-200 border border-zinc-900">
-            <button
-              onClick={() => setSelectedProductForCart(null)}
-              className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-900 hover:bg-zinc-800 transition text-zinc-400 hover:text-white"
-            >
-              <X size={18} />
-            </button>
-            <h2 className="text-xl font-black tracking-tight pr-8 leading-tight mb-1">Agregar al Pedido</h2>
-            <p className="text-sm font-semibold text-zinc-400 mb-6">{selectedProductForCart.name}</p>
+          <div className="relative bg-zinc-950 rounded-2xl w-full max-w-sm shadow-2xl animate-in fade-in zoom-in-95 duration-200 border border-zinc-900 flex flex-col max-h-[90vh]">
+            <div className="px-6 pt-6 sm:px-8 sm:pt-8 shrink-0">
+              <button
+                onClick={() => setSelectedProductForCart(null)}
+                className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-900 hover:bg-zinc-800 transition text-zinc-400 hover:text-white"
+              >
+                <X size={18} />
+              </button>
+              <h2 className="text-xl font-black tracking-tight pr-8 leading-tight mb-1">Agregar al Pedido</h2>
+              <p className="text-sm font-semibold text-zinc-400 mb-4">{selectedProductForCart.name}</p>
+            </div>
 
-            <div className="space-y-5 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto px-6 sm:px-8 space-y-5 no-scrollbar min-h-0">
 
               {/* Selector Quadra (Filas personalizables) */}
               {selectedProductForCart.saleType === 'quadra' && selectedProductForCart.quadraConfig && (
@@ -656,15 +808,16 @@ export default function CatalogPage() {
                 </div>
               </div>
 
-              <div className="pt-2">
-                <button
-                  onClick={confirmAddToCart}
-                  disabled={(selectedProductForCart.saleType === 'quadra' && quadraSelections.some(s => !s)) || (selectedProductForCart.customVarieties && selectedProductForCart.customVarieties.length > 0 && !selectedCustomVariety)}
-                  className="w-full bg-orange-600 text-white font-bold py-4 rounded-xl hover:bg-orange-500 transition active:scale-95 shadow-lg flex justify-center items-center gap-2 text-sm disabled:opacity-50 disabled:active:scale-100 disabled:shadow-none"
-                >
-                  <ShoppingCart size={18} /> Agregar al Pedido
-                </button>
-              </div>
+            </div>
+
+            <div className="shrink-0 px-6 pb-6 sm:px-8 sm:pb-8 pt-4 border-t border-zinc-900 mt-auto">
+              <button
+                onClick={confirmAddToCart}
+                disabled={(selectedProductForCart.saleType === 'quadra' && quadraSelections.some(s => !s)) || (selectedProductForCart.customVarieties && selectedProductForCart.customVarieties.length > 0 && !selectedCustomVariety)}
+                className="w-full bg-orange-600 text-white font-bold py-4 rounded-xl hover:bg-orange-500 transition active:scale-95 shadow-lg flex justify-center items-center gap-2 text-sm disabled:opacity-50 disabled:active:scale-100 disabled:shadow-none"
+              >
+                <ShoppingCart size={18} /> Agregar al Pedido
+              </button>
             </div>
           </div>
         </div>

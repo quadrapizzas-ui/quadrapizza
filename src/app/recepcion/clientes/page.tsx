@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, UserPlus, Phone, MapPin, ShoppingBag, Trash2, Pencil, X, ChevronDown } from "lucide-react";
+import { Search, UserPlus, Phone, MapPin, ShoppingBag, Trash2, Pencil, X, ChevronDown, AlertTriangle } from "lucide-react";
 import { useProducts } from "@/context/ProductsContext";
 
 import { mockCustomersStore, mockOrdersStore } from "@/lib/mockData";
@@ -18,6 +18,7 @@ export default function ClientesPage() {
 
   const [editingCustomer, setEditingCustomer] = useState<any>(null);
   const [editData, setEditData] = useState({ name: "", phone: "", address: "", neighborhoodId: "", addressDetail: "" });
+  const [deleteModal, setDeleteModal] = useState<{ customer: any; error?: string } | null>(null);
 
   const handleEditClick = (c: any) => {
     setEditingCustomer(c);
@@ -50,12 +51,17 @@ export default function ClientesPage() {
       ["confirmado", "en-cocina", "en-camino"].includes(o.status)
     );
     if (activeOrders.length > 0) {
-      alert("No se puede borrar el cliente porque tiene pedidos en curso.");
+      setDeleteModal({ customer: c, error: "No se puede borrar este cliente porque tiene pedidos activos en curso." });
       return;
     }
-    if (confirm(`¿Estás seguro de que deseas borrar a ${c.name}?`)) {
-      mockCustomersStore.deleteCustomer(c.id);
+    setDeleteModal({ customer: c });
+  };
+
+  const confirmDelete = () => {
+    if (deleteModal?.customer) {
+      mockCustomersStore.deleteCustomer(deleteModal.customer.id);
     }
+    setDeleteModal(null);
   };
 
   const filtered = customers.filter(c => {
@@ -138,7 +144,7 @@ export default function ClientesPage() {
 
       {/* Edit Modal */}
       {editingCustomer && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-sm shadow-2xl flex flex-col max-h-[90vh]">
             <div className="px-5 py-4 border-b border-zinc-800 flex justify-between items-center shrink-0">
               <h2 className="text-lg font-black text-white">Editar Cliente</h2>
@@ -184,6 +190,53 @@ export default function ClientesPage() {
             <div className="p-5 border-t border-zinc-800 shrink-0 flex gap-2">
               <button onClick={() => setEditingCustomer(null)} className="flex-1 py-3 rounded-xl bg-zinc-900 text-zinc-400 font-bold text-sm hover:text-white transition">Cancelar</button>
               <button onClick={handleSave} className="flex-1 py-3 rounded-xl bg-sky-600 text-white font-black text-sm hover:bg-sky-500 transition">Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setDeleteModal(null)}>
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-sm shadow-2xl animate-in fade-in zoom-in-95" onClick={e => e.stopPropagation()}>
+            <div className="p-6 flex flex-col items-center text-center">
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${deleteModal.error ? "bg-amber-500/15" : "bg-red-500/15"}`}>
+                <AlertTriangle size={24} className={deleteModal.error ? "text-amber-400" : "text-red-400"} />
+              </div>
+              <h3 className="text-lg font-black text-white mb-1">
+                {deleteModal.error ? "Acción no permitida" : "Eliminar cliente"}
+              </h3>
+              <p className="text-sm text-zinc-400 font-medium leading-relaxed">
+                {deleteModal.error
+                  ? deleteModal.error
+                  : <span>¿Estás seguro de que deseas eliminar a <strong className="text-white">{deleteModal.customer.name}</strong>? Esta acción no se puede deshacer.</span>
+                }
+              </p>
+            </div>
+            <div className="px-5 pb-5 flex gap-2">
+              {deleteModal.error ? (
+                <button
+                  onClick={() => setDeleteModal(null)}
+                  className="flex-1 py-3 rounded-xl bg-zinc-800 text-white font-bold text-sm hover:bg-zinc-700 transition active:scale-[0.98]"
+                >
+                  Entendido
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setDeleteModal(null)}
+                    className="flex-1 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 font-bold text-sm hover:text-white hover:border-zinc-600 transition active:scale-[0.98]"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="flex-1 py-3 rounded-xl bg-red-600 text-white font-black text-sm hover:bg-red-500 transition active:scale-[0.98] shadow-lg shadow-red-900/30"
+                  >
+                    Sí, eliminar
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

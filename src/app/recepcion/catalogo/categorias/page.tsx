@@ -63,6 +63,9 @@ export default function CategoriesPage() {
     { id: 202, name: "Fritas", parentId: 2 },
     { id: 3, name: "Sándwiches", parentId: null },
     { id: 4, name: "Bebidas", parentId: null },
+    { id: 5, name: "Postres", parentId: null },
+    { id: 6, name: "Menú del día", parentId: null },
+    { id: 7, name: "Almacén", parentId: null },
   ]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);

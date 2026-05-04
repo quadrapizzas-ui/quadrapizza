@@ -99,6 +99,18 @@ export default function ProductosPage() {
     setSelectedSub("Todas");
   };
 
+  const getFlattenedCategories = (parentIdFilter: number | null, depth = 0): { cat: HCat; depth: number }[] => {
+    const children = HCATS.filter((c) => c.parentId === parentIdFilter);
+    let result: { cat: HCat; depth: number }[] = [];
+    for (const child of children) {
+      result.push({ cat: child, depth });
+      result = [...result, ...getFlattenedCategories(child.id, depth + 1)];
+    }
+    return result;
+  };
+
+  const selectableCategories = getFlattenedCategories(null);
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
 
