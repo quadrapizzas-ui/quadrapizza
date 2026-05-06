@@ -357,7 +357,7 @@ export default function CatalogPage() {
         </div>
 
         {/* En Oferta */}
-        {activeCategoryId === null && filteredOffers.length > 0 && (
+        {filteredOffers.length > 0 && (
           <div className="mb-10">
           <div className="flex items-center gap-2 mb-4">
             <div className="bg-red-500/20 p-2 rounded-full text-red-500">
@@ -394,7 +394,7 @@ export default function CatalogPage() {
         )}
 
         {/* Menú del Día */}
-        {activeCategoryId === null && filteredMenuDelDia.length > 0 && (
+        {filteredMenuDelDia.length > 0 && (
           <div className="mb-10">
           <div className="flex items-center gap-2 mb-4">
             <div className="bg-emerald-500/20 p-2 rounded-full text-emerald-500">
@@ -429,7 +429,7 @@ export default function CatalogPage() {
         )}
 
         {/* Déjate Tentar (Almacén) */}
-        {activeCategoryId === null && filteredAlmacen.length > 0 && (
+        {filteredAlmacen.length > 0 && (
           <div className="mb-10">
           <div className="flex items-center gap-2 mb-4">
             <div className="bg-purple-500/20 p-2 rounded-full text-purple-500">
@@ -464,7 +464,7 @@ export default function CatalogPage() {
         )}
 
         {/* Bebidas */}
-        {activeCategoryId === null && filteredBebidas.length > 0 && (
+        {filteredBebidas.length > 0 && (
           <div className="mb-10">
           <div className="flex items-center gap-2 mb-4">
             <div className="bg-blue-500/20 p-2 rounded-full text-blue-500">
