@@ -111,6 +111,11 @@ export const MOCK_PRODUCTS: ExtendedProduct[] = [
 
 export type OrderStatus = "confirmado" | "en-cocina" | "listo" | "en-camino" | "completado" | "cancelado";
 
+/** Extrae solo el primer nombre de un nombre completo (e.g. "Juan García" → "Juan") */
+export function getFirstName(fullName: string): string {
+  return fullName?.trim().split(/\s+/)[0] || "";
+}
+
 export interface MockOrder {
   id: string;
   items: Array<{ name: string; quantity: number; price: number }>;
@@ -123,81 +128,42 @@ export interface MockOrder {
   createdAt: string;
   mockAge: string;
   status: OrderStatus;
+  cajero_id?: number;
+  cajero_name?: string;
 }
 
-class OrdersStore {
-  private orders: MockOrder[] = [
-    {
-      id: "W-1024", items: [{ name: "Quadra Integral", quantity: 4, price: 10500 }, { name: "Lomo Especial", quantity: 2, price: 12000 }],
-      paymentMethod: "Efectivo", clientName: "Juan García", phone: "3514567890", address: "AV. COLÓN 1200 · Centro", total: 66000,
-      createdAt: new Date(Date.now() - 5 * 60000).toISOString(), mockAge: "Hace 5 min", status: "confirmado"
-    },
-    {
-      id: "W-1025", items: [{ name: "Pizza Muzzarella", quantity: 2, price: 7500 }, { name: "Coca-Cola 1.5L", quantity: 2, price: 2500 }],
-      paymentMethod: "Mercado Pago", clientName: "María López", phone: "3512345678", address: "BV. SAN JUAN 800 · Güemes", total: 20000, deliveryFee: 800,
-      createdAt: new Date(Date.now() - 15 * 60000).toISOString(), mockAge: "Hace 15 min", status: "en-cocina"
-    },
-    {
-      id: "W-1026", items: [{ name: "Hamburguesa Quadra Triple", quantity: 4, price: 9500 }],
-      paymentMethod: "Tarjeta de crédito", clientName: "Carlos Pérez", phone: "3519876543", address: "AV. VÉLEZ SÁRSFIELD 500", total: 43700,
-      createdAt: new Date(Date.now() - 25 * 60000).toISOString(), mockAge: "Hace 25 min", status: "listo"
-    },
-    {
-      id: "W-1027", items: [{ name: "Lomo Especial", quantity: 4, price: 12000 }, { name: "Pizza Muzzarella", quantity: 2, price: 7500 }],
-      paymentMethod: "Efectivo", clientName: "Roberto Silva", phone: "3513334444", address: "DUARTE QUIRÓS 1500 · Alberdi", total: 63000, deliveryFee: 1500,
-      createdAt: new Date(Date.now() - 40 * 60000).toISOString(), mockAge: "Hace 40 min", status: "en-camino"
-    },
-    {
-      id: "W-1028", items: [{ name: "Quadra Integral", quantity: 3, price: 10500 }],
-      paymentMethod: "Mercado Pago", clientName: "Laura Fernández", phone: "3511112222", address: "CALLE OBISPO TREJO 300", total: 31500,
-      createdAt: new Date(Date.now() - 60 * 60000).toISOString(), mockAge: "Hace 1 hora", status: "completado"
-    },
-    {
-      id: "W-1029", items: [{ name: "Pizza Muzzarella", quantity: 6, price: 7500 }],
-      paymentMethod: "Efectivo", clientName: "Javier Gómez", phone: "3515556666", address: "Retiro en local", total: 45000,
-      createdAt: new Date(Date.now() - 2 * 60000).toISOString(), mockAge: "Justo ahora", status: "confirmado"
-    },
-    {
-      id: "W-1030", items: [{ name: "Hamburguesa Quadra Triple", quantity: 3, price: 9500 }, { name: "Coca-Cola 1.5L", quantity: 3, price: 2500 }],
-      paymentMethod: "Efectivo", clientName: "Ana Martínez", phone: "3517778888", address: "Retiro en local", total: 36000,
-      createdAt: new Date(Date.now() - 20 * 60000).toISOString(), mockAge: "Hace 20 min", status: "en-cocina"
-    },
-    {
-      id: "W-1031", items: [{ name: "Promo Quadra", quantity: 2, price: 15000 }],
-      paymentMethod: "Efectivo", clientName: "Ricardo Sosa", phone: "3511231231", address: "Local", total: 30000,
-      createdAt: new Date(Date.now() - 10 * 60000).toISOString(), mockAge: "Hace 10 min", status: "confirmado"
-    }
-  ];
-
-  private listeners: Set<() => void> = new Set();
-
-  constructor() {
-    this.loadFromStorage();
-  }
-
-  private loadFromStorage() {
+const generateMockOrders = (): MockOrder[] => {
+  return [];
+};
+ 
+ class OrdersStore {
+   private orders: MockOrder[] = generateMockOrders();
+ 
+   private listeners: Set<() => void> = new Set();
+ 
+   constructor() {
+     this.loadFromStorage();
+   }
+ 
+   private loadFromStorage() {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("quadra_mock_orders");
+      const stored = localStorage.getItem("quadra_mock_orders_v8");
       if (stored) {
         try {
           let orders = JSON.parse(stored);
-          if (orders.length < 5) throw new Error("Force seed for simulation");
-          // Filtro temporal para limpiar registros viejos
-          const forbiddenNames = ["angel salazar", "app web"];
-          orders = orders.filter((o: any) => !forbiddenNames.includes(o.clientName?.toLowerCase()));
           this.orders = orders;
-          localStorage.setItem("quadra_mock_orders", JSON.stringify(orders));
         } catch (e) {
-          // If JSON parse fails or force seed triggers, fallback to injected simulation array and save it
-          localStorage.setItem("quadra_mock_orders", JSON.stringify(this.orders));
+          localStorage.setItem("quadra_mock_orders_v8", JSON.stringify(this.orders));
         }
+      } else {
+          localStorage.setItem("quadra_mock_orders_v8", JSON.stringify(this.orders));
       }
     }
   }
 
   private saveToStorage() {
     if (typeof window !== "undefined") {
-      localStorage.setItem("quadra_mock_orders", JSON.stringify(this.orders));
+      localStorage.setItem("quadra_mock_orders_v8", JSON.stringify(this.orders));
     }
   }
 
@@ -211,8 +177,12 @@ class OrdersStore {
   }
 
   addOrder(order: Partial<MockOrder>) {
+    const todayStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+    const todaysOrders = this.orders.filter(o => o.id.startsWith(todayStr));
+    const nextSeq = String(todaysOrders.length + 1).padStart(3, '0');
+    
     const newOrder: MockOrder = {
-      id: "W-" + Math.floor(1000 + Math.random() * 9000),
+      id: `${todayStr}-${nextSeq}`,
       items: order.items || [],
       paymentMethod: order.paymentMethod || "efectivo",
       clientName: order.clientName || "Cliente",
@@ -223,6 +193,8 @@ class OrdersStore {
       createdAt: new Date().toISOString(),
       mockAge: "Justo ahora",
       status: "confirmado",
+      cajero_id: order.cajero_id,
+      cajero_name: order.cajero_name,
       ...order,
     };
     this.orders = [newOrder, ...this.orders];
@@ -256,14 +228,12 @@ export interface MockCustomer {
   total: number;
 }
 
+const generateMockCustomers = (): MockCustomer[] => {
+  return [];
+};
+
 class CustomersStore {
-  private customers: MockCustomer[] = [
-    { id: "1", name: "Juan García", phone: "3514567890", address: "AV. COLÓN 1200", addressDetail: "Centro", orders: 14, lastOrder: "Hace 2 días", total: 42000 },
-    { id: "2", name: "María López", phone: "3512345678", address: "BV. SAN JUAN 800", addressDetail: "Güemes", orders: 8, lastOrder: "Hace 1 semana", total: 28000 },
-    { id: "3", name: "Carlos Pérez", phone: "3519876543", address: "AV. VÉLEZ SÁRSFIELD 500", orders: 22, lastOrder: "Hoy", total: 67500 },
-    { id: "4", name: "Laura Fernández", phone: "3511112222", address: "CALLE OBISPO TREJO 300", orders: 5, lastOrder: "Hace 3 días", total: 15000 },
-    { id: "5", name: "Roberto Silva", phone: "3513334444", address: "DUARTE QUIRÓS 1500", addressDetail: "Alberdi", orders: 31, lastOrder: "Ayer", total: 102000 },
-  ];
+  private customers: MockCustomer[] = generateMockCustomers();
 
   private listeners: Set<() => void> = new Set();
 
@@ -273,15 +243,11 @@ class CustomersStore {
 
   private loadFromStorage() {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("quadra_mock_customers");
+      const stored = localStorage.getItem("quadra_mock_customers_v4");
       if (stored) {
         try {
           let customers = JSON.parse(stored);
-          // Filtro temporal para limpiar registros viejos
-          const forbiddenNames = ["angel salazar", "app web"];
-          customers = customers.filter((c: any) => !forbiddenNames.includes(c.name?.toLowerCase()));
           this.customers = customers;
-          localStorage.setItem("quadra_mock_customers", JSON.stringify(customers));
         } catch (e) {
           console.error("Error parsing stored customers", e);
         }
@@ -291,7 +257,7 @@ class CustomersStore {
 
   private saveToStorage() {
     if (typeof window !== "undefined") {
-      localStorage.setItem("quadra_mock_customers", JSON.stringify(this.customers));
+      localStorage.setItem("quadra_mock_customers_v4", JSON.stringify(this.customers));
     }
   }
 
@@ -366,3 +332,98 @@ class CustomersStore {
 }
 
 export const mockCustomersStore = new CustomersStore();
+
+export type StockItem = {
+  id: number;
+  name: string;
+  unit: string;
+  current: number;
+  min: number;
+  cost: number;
+  category: string;
+};
+
+const INITIAL_STOCK: StockItem[] = [
+  { id: 1,  name: "Masa de Pizza",       unit: "unidades", current: 12,  min: 10, cost: 350,   category: "Bases"    },
+  { id: 2,  name: "Muzzarella",          unit: "kg",       current: 3.5, min: 5,  cost: 4200,  category: "Lácteos"  },
+  { id: 3,  name: "Salsa de Tomate",     unit: "litros",   current: 8,   min: 4,  cost: 1800,  category: "Salsas"   },
+  { id: 4,  name: "Jamón Cocido",        unit: "kg",       current: 1.2, min: 3,  cost: 6500,  category: "Fiambres" },
+  { id: 5,  name: "Coca-Cola 1.5L",      unit: "unidades", current: 24,  min: 12, cost: 1200,  category: "Bebidas"  },
+  { id: 6,  name: "Pan de Hamburguesa",  unit: "unidades", current: 6,   min: 15, cost: 280,   category: "Bases"    },
+  { id: 7,  name: "Cheddar Feteado",     unit: "paquetes", current: 8,   min: 5,  cost: 3200,  category: "Lácteos"  },
+  { id: 8,  name: "Huevos",              unit: "docenas",  current: 1,   min: 3,  cost: 3800,  category: "Básicos"  },
+  { id: 9,  name: "Aceite de Oliva",     unit: "litros",   current: 4,   min: 2,  cost: 5500,  category: "Básicos"  },
+  { id: 10, name: "Bacon",               unit: "kg",       current: 2,   min: 3,  cost: 7800,  category: "Fiambres" },
+];
+
+class StockStore {
+  private stock: StockItem[] = INITIAL_STOCK;
+  private listeners: Set<() => void> = new Set();
+
+  constructor() {
+    this.loadFromStorage();
+  }
+
+  private loadFromStorage() {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("quadra_mock_stock_v1");
+      if (stored) {
+        try {
+          this.stock = JSON.parse(stored);
+        } catch (e) {
+          console.error("Error parsing stored stock", e);
+        }
+      }
+    }
+  }
+
+  private saveToStorage() {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("quadra_mock_stock_v1", JSON.stringify(this.stock));
+    }
+  }
+
+  subscribe = (listener: () => void) => {
+    this.listeners.add(listener);
+    return () => { this.listeners.delete(listener); };
+  }
+
+  getSnapshot = () => {
+    return this.stock;
+  }
+
+  adjustStock(id: number, delta: number) {
+    this.stock = this.stock.map(i => 
+      i.id === id ? { ...i, current: Math.max(0, +(i.current + delta).toFixed(1)) } : i
+    );
+    this.saveToStorage();
+    this.notify();
+  }
+
+  updateItem(id: number, updates: Partial<StockItem>) {
+    this.stock = this.stock.map(i => 
+      i.id === id ? { ...i, ...updates } : i
+    );
+    this.saveToStorage();
+    this.notify();
+  }
+
+  addItem(item: Omit<StockItem, 'id'>) {
+    const newId = Math.max(0, ...this.stock.map(i => i.id)) + 1;
+    this.stock = [...this.stock, { id: newId, ...item }];
+    this.saveToStorage();
+    this.notify();
+  }
+
+  deleteItem(id: number) {
+    this.stock = this.stock.filter(i => i.id !== id);
+    this.saveToStorage();
+    this.notify();
+  }
+
+  private notify() {
+    this.listeners.forEach(l => l());
+  }
+}
+
+export const mockStockStore = new StockStore();

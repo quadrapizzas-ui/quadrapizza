@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { ProductsProvider } from '@/context/ProductsContext'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -20,10 +19,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={`${inter.variable} h-full`}>
+      <head>
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
+      </head>
       <body className="min-h-full flex flex-col font-sans bg-zinc-950 text-zinc-50 antialiased">
-        <ProductsProvider>
-          {children}
-        </ProductsProvider>
+        {children}
       </body>
     </html>
   )

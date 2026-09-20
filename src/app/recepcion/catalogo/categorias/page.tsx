@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Plus, Edit2, Trash2, X, CornerDownRight, ChevronDown, ArrowLeft } from "lucide-react";
-
-type Category = { id: number; name: string; parentId: number | null };
+import { useProductsStore, type Category } from "@/lib/store/productsStore";
 
 const CategoryNode = ({
   category,
@@ -53,20 +53,9 @@ const CategoryNode = ({
 };
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>([
-    { id: 1, name: "Pizzas", parentId: null },
-    { id: 101, name: "Tradicionales", parentId: 1 },
-    { id: 102, name: "Especiales", parentId: 1 },
-    { id: 103, name: "Rellenas", parentId: 1 },
-    { id: 2, name: "Empanadas", parentId: null },
-    { id: 201, name: "Al Horno", parentId: 2 },
-    { id: 202, name: "Fritas", parentId: 2 },
-    { id: 3, name: "Sándwiches", parentId: null },
-    { id: 4, name: "Bebidas", parentId: null },
-    { id: 5, name: "Postres", parentId: null },
-    { id: 6, name: "Menú del día", parentId: null },
-    { id: 7, name: "Almacén", parentId: null },
-  ]);
+  const pathname = usePathname();
+  const basePath = pathname.replace(/\/categorias$/, "");
+  const { categories, setCategories } = useProductsStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
@@ -125,7 +114,7 @@ export default function CategoriesPage() {
       {/* ── Header ── */}
       <div className="shrink-0 px-5 py-4 border-b border-zinc-800/60 bg-zinc-950 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Link href="/recepcion/catalogo" className="w-9 h-9 flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition shrink-0">
+          <Link href={basePath} className="w-9 h-9 flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition shrink-0">
             <ArrowLeft size={16} />
           </Link>
           <div>

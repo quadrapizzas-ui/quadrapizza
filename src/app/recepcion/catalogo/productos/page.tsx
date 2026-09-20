@@ -3,10 +3,13 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Plus, Search, Edit2, Trash2, X, UploadCloud, Link as LinkIcon, ImageIcon, ChevronDown, ArrowLeft } from "lucide-react";
-import { useProducts } from "@/context/ProductsContext";
+import { useProductsStore } from "@/lib/store/productsStore";
 
 export default function ProductosPage() {
+  const pathname = usePathname();
+  const basePath = pathname.replace(/\/productos$/, "");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isOffer, setIsOffer] = useState(false);
   const [imageType, setImageType] = useState("upload");
@@ -35,30 +38,11 @@ export default function ProductosPage() {
   const [customVarieties, setCustomVarieties] = useState<{name: string; price: number}[]>([]);
   const [customExtras, setCustomExtras] = useState<{name: string; price: number}[]>([]);
 
-  const { products, toggleProductStock, extras, setExtras, varieties, setVarieties } = useProducts();
+  const { products, toggleProductStock, extras, setExtras, varieties, setVarieties, categories } = useProductsStore();
 
-  // ── Two-level category hierarchy ─────────────────────────────────────────
-  type HCat = { id: number; name: string; parentId: number | null };
-
-  const HCATS: HCat[] = [
-    { id: 1,   name: "Pizzas",       parentId: null },
-    { id: 101, name: "Tradicionales", parentId: 1 },
-    { id: 102, name: "Especiales",    parentId: 1 },
-    { id: 103, name: "Rellenas",      parentId: 1 },
-    { id: 2,   name: "Empanadas",     parentId: null },
-    { id: 201, name: "Al Horno",      parentId: 2 },
-    { id: 202, name: "Fritas",        parentId: 2 },
-    { id: 3,   name: "Sándwiches",    parentId: null },
-    { id: 4,   name: "Bebidas",       parentId: null },
-    { id: 5,   name: "Postres",       parentId: null },
-    { id: 6,   name: "Menú del día",  parentId: null },
-    { id: 7,   name: "Almacén",       parentId: null },
-  ];
-
-  const parentCats = HCATS.filter(c => c.parentId === null);
-  const selectedParentObj = HCATS.find(c => c.name === selectedParent) ?? null;
-  const subCats = selectedParentObj ? HCATS.filter(c => c.parentId === selectedParentObj.id) : [];
-  const hasSubCats = subCats.length > 0;
+  const parents = categories.filter(c => c.parentId === null);
+  const activeParent = categories.find(c => c.name === selectedParent);
+  const activeSubs = activeParent ? categories.filter(c => c.parentId === activeParent.id) : [];
 
   // Matching logic
   const filteredProducts = products.filter((p) => {
@@ -66,17 +50,12 @@ export default function ProductosPage() {
 
     let matchesCategory = true;
     if (selectedParent !== "Todos") {
-      if (hasSubCats && selectedSub !== "Todas") {
-        // parent selected + specific sub
-        const subObj = HCATS.find(c => c.name === selectedSub);
-        matchesCategory = p.categoryId === subObj?.id;
-      } else if (hasSubCats) {
-        // parent selected, show all subs
-        const childIds = subCats.map(c => c.id);
-        matchesCategory = p.category === selectedParent || childIds.includes(p.categoryId ?? -1);
+      if (selectedSub !== "Todas") {
+        const sub = activeSubs.find(s => s.name === selectedSub);
+        matchesCategory = p.categoryId === sub?.id;
       } else {
-        // parent with no children
-        matchesCategory = p.category === selectedParent;
+        const childIds = activeSubs.map(c => c.id);
+        matchesCategory = p.categoryId === activeParent?.id || childIds.includes(p.categoryId ?? -1);
       }
     }
 
@@ -99,25 +78,13 @@ export default function ProductosPage() {
     setSelectedSub("Todas");
   };
 
-  const getFlattenedCategories = (parentIdFilter: number | null, depth = 0): { cat: HCat; depth: number }[] => {
-    const children = HCATS.filter((c) => c.parentId === parentIdFilter);
-    let result: { cat: HCat; depth: number }[] = [];
-    for (const child of children) {
-      result.push({ cat: child, depth });
-      result = [...result, ...getFlattenedCategories(child.id, depth + 1)];
-    }
-    return result;
-  };
-
-  const selectableCategories = getFlattenedCategories(null);
-
   return (
     <div className="flex flex-col h-full overflow-hidden">
 
       {/* ── Header ── */}
       <div className="shrink-0 px-5 py-4 border-b border-zinc-800/60 bg-zinc-950 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Link href="/recepcion/catalogo" className="w-9 h-9 flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition shrink-0">
+          <Link href={basePath} className="w-9 h-9 flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition shrink-0">
             <ArrowLeft size={16} />
           </Link>
           <div>
@@ -183,7 +150,7 @@ export default function ProductosPage() {
           >
             Todos
           </button>
-          {parentCats.map(cat => (
+          {parents.map(cat => (
             <button
               key={cat.id}
               onClick={() => handleParentSelect(cat.name)}
@@ -199,7 +166,7 @@ export default function ProductosPage() {
         </div>
 
         {/* Level 2: subcategories (only when parent has children) */}
-        {hasSubCats && (
+        {activeSubs.length > 0 && (
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
             <span className="shrink-0 text-[10px] font-black text-zinc-600 uppercase tracking-widest flex items-center gap-1">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
@@ -215,7 +182,7 @@ export default function ProductosPage() {
             >
               Todas
             </button>
-            {subCats.map(cat => (
+            {activeSubs.map(cat => (
               <button
                 key={cat.id}
                 onClick={() => setSelectedSub(cat.name)}
@@ -269,112 +236,108 @@ export default function ProductosPage() {
               </thead>
               <tbody className="divide-y divide-zinc-800">
                 {filteredProducts.length > 0 ? (
-                  filteredProducts.map((p) => (
-                    <tr key={p.id} className="group hover:bg-zinc-800/40 transition flex flex-col sm:table-row p-4 sm:p-0">
-                      {/* Imagen desktop */}
-                      <td className="sm:p-4 sm:pl-5 hidden sm:table-cell">
-                        <div className="w-11 h-11 rounded-xl bg-zinc-800 overflow-hidden relative border border-zinc-700">
-                          <Image src={p.image} alt={p.name} fill sizes="44px" className="object-cover" />
-                        </div>
-                      </td>
-                      {/* Nombre */}
-                      <td className="sm:p-4">
-                        <div className="flex items-center gap-4 sm:gap-0">
-                          <div className="w-12 h-12 rounded-xl bg-zinc-800 overflow-hidden relative border border-zinc-700 sm:hidden shrink-0">
-                            <Image src={p.image} alt={p.name} fill sizes="48px" className="object-cover" />
+                  filteredProducts.map((p) => {
+                    const catName = categories.find(c => c.id === p.categoryId)?.name || "-";
+                    return (
+                      <tr key={p.id} className="group hover:bg-zinc-800/40 transition flex flex-col sm:table-row p-4 sm:p-0">
+                        <td className="sm:p-4 sm:pl-5 hidden sm:table-cell">
+                          <div className="w-11 h-11 rounded-xl bg-zinc-800 overflow-hidden relative border border-zinc-700">
+                            <Image src={p.image} alt={p.name} fill sizes="44px" className="object-cover" />
                           </div>
-                          <div>
-                            <p className="font-bold text-sm text-zinc-100">{p.name}</p>
-                            <div className="sm:hidden flex flex-wrap items-center gap-2 mt-1">
-                              <span className="text-[10px] font-bold bg-zinc-800 px-2 py-0.5 rounded border border-zinc-700 text-zinc-400">{p.category}</span>
-                              {p.isOffer && <span className="text-[9px] font-black bg-sky-500/15 text-sky-400 px-2 py-0.5 rounded border border-sky-500/20 uppercase tracking-widest">Oferta</span>}
+                        </td>
+                        <td className="sm:p-4">
+                          <div className="flex items-center gap-4 sm:gap-0">
+                            <div className="w-12 h-12 rounded-xl bg-zinc-800 overflow-hidden relative border border-zinc-700 sm:hidden shrink-0">
+                              <Image src={p.image} alt={p.name} fill sizes="48px" className="object-cover" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-sm text-zinc-100">{p.name}</p>
+                              <div className="sm:hidden flex flex-wrap items-center gap-2 mt-1">
+                                <span className="text-[10px] font-bold bg-zinc-800 px-2 py-0.5 rounded border border-zinc-700 text-zinc-400">{catName}</span>
+                                {p.isOffer && <span className="text-[9px] font-black bg-sky-500/15 text-sky-400 px-2 py-0.5 rounded border border-sky-500/20 uppercase tracking-widest">Oferta</span>}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
-                      {/* Categoría */}
-                      <td className="sm:p-4 hidden sm:table-cell">
-                        <span className="text-[10px] font-bold uppercase tracking-widest bg-zinc-800 px-2 py-1 rounded-lg border border-zinc-700 text-zinc-400">{p.category}</span>
-                      </td>
-                      {/* Precio */}
-                      <td className="sm:p-4 hidden sm:table-cell">
-                        <div className="flex flex-col">
-                          {p.isOffer && <span className="text-[10px] text-zinc-500 line-through font-bold leading-none mb-0.5">{p.oldPrice}</span>}
-                          <span className={`font-black text-sm ${p.isOffer ? "text-sky-400" : "text-zinc-100"}`}>{p.price}</span>
-                          {p.pricePerHalfDozen && <span className="text-[10px] text-zinc-500 mt-0.5">Media: {p.pricePerHalfDozen}</span>}
-                          {p.pricePerDozen && <span className="text-[10px] text-zinc-500 mt-0.5">Docena: {p.pricePerDozen}</span>}
-                        </div>
-                      </td>
-                      {/* Tipo venta */}
-                      <td className="sm:p-4 hidden sm:table-cell">
-                        <span className="text-[10px] font-bold uppercase tracking-widest bg-zinc-800 px-2 py-1 rounded-lg border border-zinc-700 text-zinc-400 capitalize">
-                          {p.saleType === "combo" ? "Múltiple" : p.saleType}
-                        </span>
-                      </td>
-                      {/* Estado */}
-                      <td className="sm:p-4 mt-3 sm:mt-0">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => toggleProductStock(p.id)}
-                            className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${p.stock ? "bg-emerald-500" : "bg-red-500/70"}`}
-                          >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-zinc-950 shadow-sm transition-transform ${p.stock ? "translate-x-[18px]" : "translate-x-[2px]"}`} />
-                          </button>
-                          <span className={`text-[10px] font-black uppercase tracking-widest ${p.stock ? "text-emerald-400" : "text-red-400"}`}>
-                            {p.stock ? "Disponible" : "Sin Stock"}
+                        </td>
+                        <td className="sm:p-4 hidden sm:table-cell">
+                          <span className="text-[10px] font-bold uppercase tracking-widest bg-zinc-800 px-2 py-1 rounded-lg border border-zinc-700 text-zinc-400">{catName}</span>
+                        </td>
+                        <td className="sm:p-4 hidden sm:table-cell">
+                          <div className="flex flex-col">
+                            {p.isOffer && <span className="text-[10px] text-zinc-500 line-through font-bold leading-none mb-0.5">{p.oldPrice}</span>}
+                            <span className={`font-black text-sm ${p.isOffer ? "text-sky-400" : "text-zinc-100"}`}>{p.price}</span>
+                            {p.pricePerHalfDozen && <span className="text-[10px] text-zinc-500 mt-0.5">Media: {p.pricePerHalfDozen}</span>}
+                            {p.pricePerDozen && <span className="text-[10px] text-zinc-500 mt-0.5">Docena: {p.pricePerDozen}</span>}
+                          </div>
+                        </td>
+                        <td className="sm:p-4 hidden sm:table-cell">
+                          <span className="text-[10px] font-bold uppercase tracking-widest bg-zinc-800 px-2 py-1 rounded-lg border border-zinc-700 text-zinc-400 capitalize">
+                            {p.saleType === "combo" ? "Múltiple" : p.saleType}
                           </span>
-                        </div>
-                      </td>
-                      {/* Acciones */}
-                      <td className="sm:p-4 sm:pr-5 mt-3 sm:mt-0 flex sm:table-cell justify-end">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => {
-                              setIsEditing(true);
-                              setIsOffer(!!p.isOffer);
-                              setInStock(p.stock);
-                              setImageType("upload");
-                              setSaleType(p.saleType);
-                              setIsQuadra(p.saleType === 'quadra');
-                              if (p.saleType === 'quadra' && p.quadraConfig) {
-                                setQuadraCustomizableRows(p.quadraConfig.customizableRowsCount);
-                                setQuadraFixedRowsCount(p.quadraConfig.fixedRows[0]?.rowCount || 0);
-                                setQuadraFixedVariety(p.quadraConfig.fixedRows[0]?.variety || "");
-                              } else {
-                                setQuadraCustomizableRows(0);
-                                setQuadraFixedRowsCount(0);
-                                setQuadraFixedVariety("");
-                              }
-                              setName(p.name);
-                              setDescription(p.description || "");
-                              setCategoryId(p.categoryId || "");
-                              setPrice(p.price || "");
-                              setPricePerHalfDozen(p.pricePerHalfDozen || "");
-                              setPricePerDozen(p.pricePerDozen || "");
-                              setOldPrice(p.oldPrice || "");
-                              if (p.image) {
-                                setImageType("url");
-                                setImageUrl(p.image);
-                              } else {
+                        </td>
+                        <td className="sm:p-4 mt-3 sm:mt-0">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => toggleProductStock(p.id)}
+                              className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${p.stock ? "bg-emerald-500" : "bg-red-500/70"}`}
+                            >
+                              <span className={`inline-block h-4 w-4 transform rounded-full bg-zinc-950 shadow-sm transition-transform ${p.stock ? "translate-x-[18px]" : "translate-x-[2px]"}`} />
+                            </button>
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${p.stock ? "text-emerald-400" : "text-red-400"}`}>
+                              {p.stock ? "Disponible" : "Sin Stock"}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="sm:p-4 sm:pr-5 mt-3 sm:mt-0 flex sm:table-cell justify-end">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => {
+                                setIsEditing(true);
+                                setIsOffer(!!p.isOffer);
+                                setInStock(p.stock);
                                 setImageType("upload");
-                                setImageUrl("");
-                              }
-                              setCustomVarieties(p.customVarieties ? [...p.customVarieties] : []);
-                              setCustomExtras(p.customExtras ? [...p.customExtras] : []);
-                              setIsModalOpen(true);
-                            }}
-                            className="p-2 rounded-xl text-zinc-500 hover:text-white hover:bg-zinc-700 transition"
-                          >
-                            <Edit2 size={15} />
-                          </button>
-                          <button className="p-2 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-zinc-700 transition">
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                                setSaleType(p.saleType);
+                                setIsQuadra(p.saleType === 'quadra');
+                                if (p.saleType === 'quadra' && p.quadraConfig) {
+                                  setQuadraCustomizableRows(p.quadraConfig.customizableRowsCount);
+                                  setQuadraFixedRowsCount(p.quadraConfig.fixedRows[0]?.rowCount || 0);
+                                  setQuadraFixedVariety(p.quadraConfig.fixedRows[0]?.variety || "");
+                                } else {
+                                  setQuadraCustomizableRows(0);
+                                  setQuadraFixedRowsCount(0);
+                                  setQuadraFixedVariety("");
+                                }
+                                setName(p.name);
+                                setDescription(p.description || "");
+                                setCategoryId(p.categoryId || "");
+                                setPrice(p.price || "");
+                                setPricePerHalfDozen(p.pricePerHalfDozen || "");
+                                setPricePerDozen(p.pricePerDozen || "");
+                                setOldPrice(p.oldPrice || "");
+                                if (p.image) {
+                                  setImageType("url");
+                                  setImageUrl(p.image);
+                                } else {
+                                  setImageType("upload");
+                                  setImageUrl("");
+                                }
+                                setCustomVarieties(p.customVarieties ? [...p.customVarieties] : []);
+                                setCustomExtras(p.customExtras ? [...p.customExtras] : []);
+                                setIsModalOpen(true);
+                              }}
+                              className="p-2 rounded-xl text-zinc-500 hover:text-white hover:bg-zinc-700 transition"
+                            >
+                              <Edit2 size={15} />
+                            </button>
+                            <button className="p-2 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-zinc-700 transition">
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td colSpan={7} className="p-12 text-center text-zinc-600 font-bold text-xs uppercase tracking-widest">
@@ -436,11 +399,9 @@ export default function ProductosPage() {
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            // In a real app, you'd upload this file to your server/bucket
-                            // and then set the returned URL. For now, we'll create a local object URL
                             const localUrl = URL.createObjectURL(file);
                             setImageUrl(localUrl);
-                            setImageType("url"); // Switch to URL view to see the preview
+                            setImageType("url");
                           }
                         }}
                       />
@@ -609,12 +570,19 @@ export default function ProductosPage() {
                 <div>
                   <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Categoría / Subcategoría</label>
                   <div className="relative">
-                    <select value={categoryId} onChange={e => setCategoryId(Number(e.target.value) || "")} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-4 pr-10 py-2.5 appearance-none outline-none focus:border-sky-500/60 transition text-sm font-bold text-zinc-100">
-                      <option value="" className="bg-zinc-900 text-zinc-100">Seleccionar categoría...</option>
-                      {selectableCategories.map(({ cat, depth }) => (
-                        <option key={cat.id} value={cat.id} className="bg-zinc-900 text-zinc-100">
-                          {"—".repeat(depth)} {cat.name}
-                        </option>
+                    <select
+                      value={categoryId}
+                      onChange={(e) => setCategoryId(Number(e.target.value))}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 outline-none focus:border-sky-500/60 transition text-sm font-bold text-zinc-100"
+                    >
+                      <option value="" disabled>Seleccionar...</option>
+                      {categories.filter(c => c.parentId === null).map(parent => (
+                        <optgroup key={parent.id} label={parent.name}>
+                          <option value={parent.id}>{parent.name} (General)</option>
+                          {categories.filter(c => c.parentId === parent.id).map(sub => (
+                            <option key={sub.id} value={sub.id}>-- {sub.name}</option>
+                          ))}
+                        </optgroup>
                       ))}
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none" size={14} />

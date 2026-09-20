@@ -1,16 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import {
-  ShieldCheck, UserPlus, Trash2, Edit3, Key, BadgeCheck, Circle, Users,
+  ShieldCheck, UserPlus, Trash2, Edit3, Key, BadgeCheck, Circle, Users, X, AlertTriangle
 } from "lucide-react";
-
-const INITIAL_USERS = [
-  { id: 1, name: "Hector Zanier", role: "Gerencia",  email: "hector@quadrapizza.com", pin: "****", active: true  },
-  { id: 2, name: "Ana Maria",     role: "Recepción", email: "ana@quadrapizza.com",    pin: "1234", active: true  },
-  { id: 3, name: "Carlos Gomez", role: "Cocina",    email: "carlos@quadrapizza.com", pin: "1234", active: true  },
-  { id: 4, name: "Mario Rossi",  role: "Delivery",  email: "mario@quadrapizza.com",  pin: "1234", active: false },
-];
+import { useAuthStore, MockUser } from "@/lib/store/authStore";
 
 const roleColors: Record<string, string> = {
   "Gerencia":  "bg-purple-500/10 text-purple-400 border-purple-500/20",
@@ -27,10 +21,62 @@ const roleInitialBg: Record<string, string> = {
 };
 
 export default function GerenciaUsuariosPage() {
-  const [users, setUsers] = useState(INITIAL_USERS);
+  const { users, setUsers } = useAuthStore();
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [editingUser, setEditingUser] = React.useState<MockUser | null>(null);
+  
+  // Form state
+  const [name, setName] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [role, setRole] = React.useState("Recepción");
+  const [pin, setPin] = React.useState("");
+  const [active, setActive] = React.useState(true);
+  const [errorMsg, setErrorMsg] = React.useState("");
 
   const activeCount   = users.filter(u => u.active).length;
   const inactiveCount = users.filter(u => !u.active).length;
+
+  const openModal = (user?: MockUser) => {
+    setErrorMsg("");
+    if (user) {
+      setEditingUser(user);
+      setName(user.name);
+      setEmail(user.email);
+      setRole(user.role);
+      setPin(user.pin);
+      setActive(user.active);
+    } else {
+      setEditingUser(null);
+      setName("");
+      setEmail("");
+      setRole("Recepción");
+      setPin("");
+      setActive(true);
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleSave = () => {
+    if (!name || !email || !pin || pin.length !== 4) {
+      setErrorMsg("Completa los datos y asegúrate que el PIN tenga 4 dígitos.");
+      return;
+    }
+
+    // Validar PIN único
+    const pinExists = users.find(u => u.pin === pin && u.id !== editingUser?.id);
+    if (pinExists) {
+      setErrorMsg("El PIN ingresado ya está en uso por otro usuario. Debe ser único.");
+      return;
+    }
+
+    if (editingUser) {
+      setUsers(users.map(u => u.id === editingUser.id ? { ...u, name, email, role, pin, active } : u));
+    } else {
+      const newId = Math.max(...users.map(u => u.id), 0) + 1;
+      setUsers([...users, { id: newId, name, email, role, pin, active }]);
+    }
+    setIsModalOpen(false);
+  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -43,7 +89,10 @@ export default function GerenciaUsuariosPage() {
           </h1>
           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">Control de accesos y perfiles</p>
         </div>
-        <button className="flex items-center justify-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-sm font-black rounded-xl shadow-lg shadow-purple-900/20 transition active:scale-95 w-full sm:w-auto">
+        <button 
+          onClick={() => openModal()}
+          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-sm font-black rounded-xl shadow-lg shadow-purple-900/20 transition active:scale-95 w-full sm:w-auto"
+        >
           <UserPlus size={16} />
           Nuevo Usuario
         </button>
@@ -126,7 +175,10 @@ export default function GerenciaUsuariosPage() {
 
             {/* Actions */}
             <div className="flex gap-2 mt-auto">
-              <button className="flex-1 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-bold text-zinc-500 hover:text-white hover:border-zinc-700 transition flex items-center justify-center gap-1.5 active:scale-95">
+              <button 
+                onClick={() => openModal(u)}
+                className="flex-1 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-bold text-zinc-500 hover:text-white hover:border-zinc-700 transition flex items-center justify-center gap-1.5 active:scale-95"
+              >
                 <Edit3 size={13} /> Editar
               </button>
               <button className="w-11 h-10 flex items-center justify-center bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-700 hover:text-red-500 hover:border-red-500/30 transition active:scale-95">
@@ -138,6 +190,63 @@ export default function GerenciaUsuariosPage() {
       </div>
 
       </div>
+
+      {/* ── Modal Crear/Editar ── */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-black text-white">{editingUser ? "Editar Usuario" : "Nuevo Usuario"}</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-zinc-500 hover:text-white transition">
+                <X size={20} />
+              </button>
+            </div>
+
+            {errorMsg && (
+              <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-xl flex gap-2 items-start">
+                <AlertTriangle size={16} className="text-red-400 shrink-0 mt-0.5" />
+                <p className="text-sm font-bold text-red-400">{errorMsg}</p>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Nombre</label>
+                <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-white outline-none focus:border-purple-500/50" />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Email</label>
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-white outline-none focus:border-purple-500/50" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Rol</label>
+                  <select value={role} onChange={e => setRole(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-white outline-none focus:border-purple-500/50">
+                    <option value="Recepción">Recepción</option>
+                    <option value="Cocina">Cocina</option>
+                    <option value="Delivery">Delivery</option>
+                    <option value="Gerencia">Gerencia</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">PIN (4 dígitos)</label>
+                  <input type="text" maxLength={4} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-white outline-none focus:border-purple-500/50 font-mono tracking-widest" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pt-2">
+                <input type="checkbox" id="active" checked={active} onChange={e => setActive(e.target.checked)} className="rounded bg-zinc-950 border-zinc-800 text-purple-500" />
+                <label htmlFor="active" className="text-sm font-bold text-zinc-300">Usuario Activo</label>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button onClick={() => setIsModalOpen(false)} className="flex-1 py-2.5 rounded-xl font-bold text-zinc-400 bg-zinc-800 hover:bg-zinc-700 transition">Cancelar</button>
+              <button onClick={handleSave} className="flex-1 py-2.5 rounded-xl font-black text-white bg-purple-600 hover:bg-purple-500 transition shadow-lg shadow-purple-900/30">Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

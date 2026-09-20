@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { MonitorCheck, Package, LogOut, Menu, X } from "lucide-react";
+import { useAuthStore } from "@/lib/store/authStore";
 
 const NAV_ITEMS = [
   { href: "/cocina/monitor-pedidos", label: "Monitor",      icon: MonitorCheck },
@@ -17,6 +18,7 @@ export default function CocinaLayout({ children }: { children: React.ReactNode }
   const [mobileOpen, setMobileOpen] = useState(false);
   const [clock, setClock]           = useState("");
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const { activeUser, logout } = useAuthStore();
 
   useEffect(() => {
     const tick = () => setClock(new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
@@ -27,12 +29,11 @@ export default function CocinaLayout({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     if (pathname === "/cocina/login") { setIsAuthorized(true); return; }
-    const auth = localStorage.getItem("quadra_cocina_auth");
-    if (!auth) { router.push("/cocina/login"); return; }
+    if (!activeUser) { router.push("/cocina/login"); return; }
     setIsAuthorized(true);
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = "auto"; };
-  }, [pathname, router]);
+  }, [pathname, router, activeUser]);
 
   if (!isAuthorized) return (
     <div className="fixed inset-0 bg-black flex items-center justify-center">
@@ -60,7 +61,7 @@ export default function CocinaLayout({ children }: { children: React.ReactNode }
         <div className="hidden md:block w-px h-6 bg-zinc-800 shrink-0" />
         <nav className="hidden md:flex items-center gap-1 flex-1 min-w-0">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-            const active = pathname.startsWith(href);
+            const active = pathname?.startsWith(href);
             return (
               <Link key={href} href={href}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${active ? "bg-orange-500/15 text-orange-400 border border-orange-500/30" : "text-zinc-500 hover:text-white hover:bg-zinc-900 border border-transparent"}`}>
@@ -73,7 +74,18 @@ export default function CocinaLayout({ children }: { children: React.ReactNode }
         <div className="flex-1 md:hidden" />
         {/* Live clock */}
         <span className="hidden sm:block font-mono text-sm font-bold text-zinc-300 tabular-nums shrink-0">{clock}</span>
-        <button onClick={() => { localStorage.removeItem("quadra_cocina_auth"); router.push("/cocina/login"); }}
+
+        {/* Active User Indicator */}
+        {activeUser && (
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-full shrink-0">
+            <div className="w-5 h-5 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-[10px] font-black">
+              {activeUser.name ? activeUser.name.charAt(0) : "U"}
+            </div>
+            <span className="text-xs font-bold text-zinc-300">{activeUser.name || "Usuario"}</span>
+          </div>
+        )}
+
+        <button onClick={() => { logout(); router.push("/cocina/login"); }}
           title="Cerrar sesión"
           className="shrink-0 p-2 rounded-lg text-zinc-500 hover:text-orange-400 hover:bg-zinc-900 transition">
           <LogOut size={16} />

@@ -14,13 +14,15 @@ import {
   Menu,
   X,
   History,
+  ClipboardList,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/gerencia/dashboard",  label: "Dashboard",  icon: LayoutDashboard },
   { href: "/gerencia/ventas",     label: "Ventas",     icon: History         },
+  { href: "/gerencia/estado-pedidos", label: "Pedidos", icon: ClipboardList   },
   { href: "/gerencia/finanzas",   label: "Finanzas",   icon: TrendingUp      },
-  { href: "/gerencia/inventario", label: "Inventario", icon: Box             },
+  { href: "/gerencia/stock",      label: "Stock",      icon: Box             },
   { href: "/gerencia/usuarios",   label: "Usuarios",   icon: Users           },
   { href: "/gerencia/catalogo",   label: "Catálogo",   icon: BookOpen        },
 ];

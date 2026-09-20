@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { mockOrdersStore, MockOrder } from "@/lib/mockData";
+import { getBusinessDay } from "@/lib/businessDay";
 import {
   MapPin, Navigation, Package, CheckCircle2, Bike, Phone,
   ChevronDown, ChevronUp, ChefHat,
@@ -30,7 +31,6 @@ function DeliveryCard({
   const isEnCocina   = order.status === "en-cocina";
   const isCompletado = order.status === "completado";
   const [showConfirm, setShowConfirm] = useState(false);
-  const [showItems, setShowItems]     = useState(false);
 
   // Visual identity per status
   const headerTheme = isEnCocina
@@ -129,7 +129,7 @@ function DeliveryCard({
             }`}>
               {isEfectivo ? "💵 Efectivo" : order.paymentMethod === "Tarjeta" ? "💳 Tarjeta" : "📲 Transfer."}
             </span>
-            {order.deliveryFee && order.deliveryFee > 0 && (
+            {order.deliveryFee !== undefined && order.deliveryFee > 0 && (
               <span className="text-[10px] font-bold text-zinc-500">Envío: {fmtARS(order.deliveryFee)}</span>
             )}
           </div>
@@ -146,20 +146,13 @@ function DeliveryCard({
           </div>
         </div>
 
-        {/* ── Items toggle ──────────────────────────────────── */}
-        <button
-          onClick={() => setShowItems(v => !v)}
-          className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-800/40 border border-zinc-800/60 text-xs font-bold text-zinc-400 hover:text-zinc-200 transition"
-        >
-          <span className="flex items-center gap-2">
+        {/* ── Items ────────────────────────────────────────── */}
+        <div className="bg-zinc-950 border border-zinc-800/60 rounded-xl p-3 space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-zinc-400 border-b border-zinc-800/60 pb-2">
             <Package size={13} className="text-zinc-600" />
             {order.items.length} {order.items.length === 1 ? "producto" : "productos"}
-          </span>
-          {showItems ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-        </button>
-
-        {showItems && (
-          <div className="bg-zinc-950 border border-zinc-800/60 rounded-xl p-3 space-y-2">
+          </div>
+          <div className="space-y-2">
             {order.items.map((item, i) => (
               <div key={i} className="flex items-start gap-2.5">
                 <span className="shrink-0 w-7 h-7 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center font-black text-orange-400 text-xs">
@@ -169,7 +162,7 @@ function DeliveryCard({
               </div>
             ))}
           </div>
-        )}
+        </div>
 
         {/* ── Actions (only for active states) ─────────────── */}
         {!readonly && !isEnCocina && !isCompletado && (
@@ -339,10 +332,11 @@ const TABS = [
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function MisViajesPage() {
-  const [orders, setOrders]   = useState<MockOrder[]>(() => mockOrdersStore.getSnapshot());
+  const [orders, setOrders]   = useState<MockOrder[]>([]);
   const [activeTab, setActiveTab] = useState<"en-cocina" | "listo" | "en-camino" | "completado">("listo");
 
   useEffect(() => {
+    setOrders(mockOrdersStore.getSnapshot());
     return mockOrdersStore.subscribe(() => setOrders([...mockOrdersStore.getSnapshot()]));
   }, []);
 
@@ -352,11 +346,14 @@ export default function MisViajesPage() {
     return !lower.includes("retiro") && !lower.includes("local") && lower !== "envío";
   };
 
+  const todayBusinessDayTime = getBusinessDay().getTime();
+  const currentShiftOrders = orders.filter(o => getBusinessDay(o.createdAt).getTime() === todayBusinessDayTime);
+
   const byStatus = {
-    "en-cocina": orders.filter(o => o.status === "en-cocina"  && isDelivery(o.address)),
-    listo:       orders.filter(o => o.status === "listo"       && isDelivery(o.address)),
-    "en-camino": orders.filter(o => o.status === "en-camino"   && isDelivery(o.address)),
-    completado:  orders.filter(o => o.status === "completado"  && isDelivery(o.address)),
+    "en-cocina": currentShiftOrders.filter(o => o.status === "en-cocina"  && isDelivery(o.address)),
+    listo:       currentShiftOrders.filter(o => o.status === "listo"       && isDelivery(o.address)),
+    "en-camino": currentShiftOrders.filter(o => o.status === "en-camino"   && isDelivery(o.address)),
+    completado:  currentShiftOrders.filter(o => o.status === "completado"  && isDelivery(o.address)),
   };
 
   function handleAction(id: string, newStatus: string) {
@@ -369,26 +366,7 @@ export default function MisViajesPage() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
 
-      {/* ── Stats bar (4 counters) ──────────────────────────────── */}
-      <div className="shrink-0 px-3 py-2.5 border-b border-zinc-900 bg-zinc-950">
-        <div className="flex items-center justify-between max-w-lg mx-auto">
-          {TABS.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className="flex flex-col items-center gap-0.5"
-            >
-              <span className={`font-black text-xl tabular-nums leading-none ${activeTab === tab.key ? tab.activeText : "text-zinc-500"}`}>
-                {byStatus[tab.key].length}
-              </span>
-              <span className={`text-[9px] font-bold uppercase tracking-wide leading-none flex items-center gap-1 ${activeTab === tab.key ? tab.activeText : "text-zinc-700"}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${tab.dotColor} opacity-${activeTab === tab.key ? "100" : "40"}`} />
-                {tab.shortLabel}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
+
 
       {/* ── Tab switcher (4 tabs, scrollable if needed) ─────────── */}
       <div className="shrink-0 flex border-b border-zinc-900 bg-zinc-950 overflow-x-auto no-scrollbar">
@@ -417,13 +395,7 @@ export default function MisViajesPage() {
         })}
       </div>
 
-      {/* ── Context label ──────────────────────────────────────── */}
-      <div className={`shrink-0 px-4 py-2 border-b ${current.borderAccent} bg-zinc-950/50 flex items-center gap-2`}>
-        <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${current.dotColor}`} />
-        <p className={`text-[10px] font-black uppercase tracking-widest ${current.labelColor}`}>
-          {current.contextLabel}
-        </p>
-      </div>
+
 
       {/* ── Content ────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto no-scrollbar p-4">

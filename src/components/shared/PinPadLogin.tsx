@@ -2,26 +2,26 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Button } from "@/components/ui/Button";
+import { useAuthStore } from "@/lib/store/authStore";
 
 interface PinPadLoginProps {
   moduleName: string;
   onSuccessRedirect: string;
-  expectedPin?: string; // Por ahora podemos mockearlo, ej: "1234"
+  expectedPin?: string; // Mantained for backwards compatibility temporarily
   moduleColor?: string; // Ej: "text-orange-500"
-  storageKey?: string; // Clave de localStorage que guarda la sesión. Ej: "quadra_recepcion_auth"
+  storageKey?: string; // Mantained for backwards compatibility temporarily
 }
 
 export function PinPadLogin({ 
   moduleName, 
   onSuccessRedirect, 
-  expectedPin = "1234",
   moduleColor = "text-white",
-  storageKey,
 }: PinPadLoginProps) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
   const router = useRouter();
+  
+  const { loginByPin } = useAuthStore();
 
   const handlePress = (num: string) => {
     if (pin.length < 4) {
@@ -41,10 +41,8 @@ export function PinPadLogin({
   };
 
   const verifyPin = (enteredPin: string) => {
-    if (enteredPin === expectedPin) {
-      if (storageKey) {
-        localStorage.setItem(storageKey, "true");
-      }
+    const success = loginByPin(enteredPin, moduleName);
+    if (success) {
       setTimeout(() => {
         router.push(onSuccessRedirect);
       }, 300); // Pequeño delay visual para UX
@@ -90,12 +88,12 @@ export function PinPadLogin({
           {moduleName}
         </h2>
         <p className="hidden lg:block mt-6 text-zinc-500 text-sm max-w-sm leading-relaxed">
-          Ingresa tu PIN de seguridad utilizando tu teclado físico para acceder al sistema.
+          Ingresa tu PIN de seguridad utilizando tu teclado físico para acceder.
         </p>
       </div>
 
-      {/* Widget Reducido del PinPad */}
-      <div className="bg-zinc-900/50 backdrop-blur-2xl border border-zinc-800 p-8 rounded-[40px] shadow-2xl w-full max-w-[340px] flex flex-col items-center flex-shrink-0 relative">
+      {/* INGRESO DE PIN */}
+      <div className="bg-zinc-900/50 backdrop-blur-2xl border border-zinc-800 p-8 rounded-[40px] shadow-2xl w-full max-w-[340px] flex flex-col items-center flex-shrink-0 relative animate-in slide-in-from-bottom-8 duration-300">
         
         {/* Bubbles de PIN */}
         <div className={`flex gap-4 mb-8 transition-transform ${error ? 'animate-shake' : ''}`}>
@@ -121,7 +119,7 @@ export function PinPadLogin({
           )}
         </div>
 
-        {/* Numpad Grid (Oculto en PC por solicitud, mantenido para pantallas táctiles) */}
+        {/* Numpad Grid */}
         <div className="grid grid-cols-3 gap-x-5 gap-y-5 w-full mt-10 lg:hidden">
           {padKeys.map((key) => {
              if (key === "borrar") {
@@ -159,8 +157,6 @@ export function PinPadLogin({
              );
           })}
         </div>
-
-        <p className="absolute -bottom-10 left-0 right-0 text-center mx-auto text-zinc-600 text-xs font-semibold">(PIN Demo: 1234)</p>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { mockOrdersStore, MockOrder } from "@/lib/mockData";
+import { getBusinessDay } from "@/lib/businessDay";
 import { ChefHat, Clock, Truck, Flame, AlertTriangle } from "lucide-react";
 
 function useElapsedMinutes(isoDate: string) {
@@ -99,17 +100,20 @@ function KdsColumn({ title, icon: Icon, count, accent, children }: {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function CocinaMonitorPage() {
-  const [orders, setOrders] = useState<MockOrder[]>(() => mockOrdersStore.getSnapshot());
+  const [orders, setOrders] = useState<MockOrder[]>([]);
   const [activeTab, setActiveTab] = useState<0 | 1 | 2>(0);
 
   useEffect(() => {
+    setOrders(mockOrdersStore.getSnapshot());
     return mockOrdersStore.subscribe(() => setOrders([...mockOrdersStore.getSnapshot()]));
   }, []);
 
-  const pendientes  = orders.filter(o => o.status === "confirmado");
-  const enCocina    = orders.filter(o => o.status === "en-cocina");
-  const listos      = orders.filter(o => o.status === "listo");
-  const totalActivos = pendientes.length + enCocina.length + listos.length;
+  const todayBusinessDayTime = getBusinessDay().getTime();
+  const currentShiftOrders = orders.filter(o => getBusinessDay(o.createdAt).getTime() === todayBusinessDayTime);
+
+  const pendientes  = currentShiftOrders.filter(o => o.status === "confirmado");
+  const enCocina    = currentShiftOrders.filter(o => o.status === "en-cocina");
+  const listos      = currentShiftOrders.filter(o => o.status === "listo");
 
   const columns = [
     {
@@ -156,32 +160,7 @@ export default function CocinaMonitorPage() {
   return (
     <div className="flex flex-col h-full bg-black overflow-hidden">
 
-      {/* ── Sub-header: stats bar ─────────────────────────────────────── */}
-      <div className="shrink-0 px-4 md:px-6 py-2 bg-zinc-950 border-b border-zinc-900 flex items-center gap-3 md:gap-6">
-        {/* Sync indicator */}
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shrink-0" />
-          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest hidden sm:block">Sincronizado</span>
-        </div>
 
-        {/* Stats */}
-        <div className="flex items-center gap-4 ml-auto">
-          {columns.map((col, idx) => (
-            <div key={idx} className="flex items-center gap-1.5">
-              <div className={`w-2 h-2 rounded-full ${col.dotColor}`} />
-              <span className={`font-black text-lg tabular-nums ${col.textColor}`}>{col.count}</span>
-              <span className={`text-[10px] font-bold uppercase tracking-wider hidden sm:block ${col.textColor} opacity-60`}>
-                {idx === 0 ? "Pend." : idx === 1 ? "Prep." : "Listo"}
-              </span>
-            </div>
-          ))}
-          <div className="h-6 w-px bg-zinc-800 hidden sm:block" />
-          <div className="hidden sm:flex flex-col items-center">
-            <span className="font-black text-lg text-white tabular-nums">{totalActivos}</span>
-            <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-wider">Total</span>
-          </div>
-        </div>
-      </div>
 
       {/* ── MOBILE ONLY: Tab switcher ──────────────────────────────────── */}
       <div className="shrink-0 md:hidden flex border-b border-zinc-900 bg-zinc-950">

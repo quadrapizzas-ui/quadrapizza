@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Search, UserPlus, Phone, MapPin, ShoppingBag, Trash2, Pencil, X, ChevronDown, AlertTriangle } from "lucide-react";
-import { useProducts } from "@/context/ProductsContext";
+import { useProductsStore } from "@/lib/store/productsStore";
 
 import { mockCustomersStore, mockOrdersStore } from "@/lib/mockData";
 import { useSyncExternalStore } from "react";
@@ -12,7 +12,7 @@ function fmtARS(n: number) {
 }
 
 export default function ClientesPage() {
-  const { neighborhoods } = useProducts();
+  const { neighborhoods } = useProductsStore();
   const [search, setSearch] = useState("");
   const customers = useSyncExternalStore(mockCustomersStore.subscribe, mockCustomersStore.getSnapshot);
 
@@ -64,6 +64,13 @@ export default function ClientesPage() {
     setDeleteModal(null);
   };
 
+  const [visibleCount, setVisibleCount] = useState(20);
+
+  // Reset pagination when search changes
+  React.useEffect(() => {
+    setVisibleCount(20);
+  }, [search]);
+
   const filtered = customers.filter(c => {
     const searchStr = search.toLowerCase();
     const searchDigits = search.replace(/\D/g, "");
@@ -72,6 +79,8 @@ export default function ClientesPage() {
     return c.name.toLowerCase().includes(searchStr) || 
            (searchDigits.length > 0 && phoneDigits.includes(searchDigits));
   });
+
+  const paginated = filtered.slice(0, visibleCount);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -99,12 +108,12 @@ export default function ClientesPage() {
 
       {/* List */}
       <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-3">
-        {filtered.length === 0 ? (
+        {paginated.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-zinc-700">
             <Search size={36} strokeWidth={1.5} />
             <p className="font-bold text-sm uppercase tracking-widest">Sin resultados</p>
           </div>
-        ) : filtered.map(c => (
+        ) : paginated.map(c => (
           <div key={c.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex items-start gap-4 hover:border-zinc-700 transition group">
             <div className="w-11 h-11 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-500 font-black text-lg shrink-0 group-hover:bg-sky-500/15 group-hover:text-sky-400 transition">
               {c.name.charAt(0)}
@@ -140,6 +149,19 @@ export default function ClientesPage() {
             </div>
           </div>
         ))}
+        {visibleCount < filtered.length && (
+          <div className="py-4 flex flex-col items-center gap-2">
+            <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
+              Mostrando {paginated.length} de {filtered.length} resultados
+            </p>
+            <button 
+              onClick={() => setVisibleCount(prev => prev + 20)}
+              className="px-6 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 transition active:scale-95"
+            >
+              Cargar más
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Edit Modal */}

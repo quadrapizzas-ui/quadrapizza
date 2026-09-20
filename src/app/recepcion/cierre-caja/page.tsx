@@ -8,6 +8,8 @@ import {
   ReceiptText, ChevronDown, ChevronUp, Printer
 } from "lucide-react";
 import { mockOrdersStore, MockOrder } from "@/lib/mockData";
+import { useAuthStore } from "@/lib/store/authStore";
+import { useCierresStore } from "@/lib/store/cierresStore";
 
 const fmtARS = (n: number) =>
   new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
@@ -20,9 +22,17 @@ export default function CierreCajaPage() {
   const [notas, setNotas] = useState("");
   const [shiftStatus, setShiftStatus] = useState<ShiftStatus>("open");
   const [showOrders, setShowOrders] = useState(false);
+  const [visibleOrders, setVisibleOrders] = useState(20);
   const [closedAt, setClosedAt] = useState<Date | null>(null);
 
-  const allOrders = useSyncExternalStore(mockOrdersStore.subscribe, mockOrdersStore.getSnapshot);
+  const allOrdersStore = useSyncExternalStore(mockOrdersStore.subscribe, mockOrdersStore.getSnapshot);
+  const { activeUser } = useAuthStore();
+  const { addCierre } = useCierresStore();
+  
+  // Filtrar solo los pedidos de este cajero
+  const allOrders = activeUser 
+    ? allOrdersStore.filter(o => o.cajero_id === activeUser.id) 
+    : [];
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30000);
@@ -61,6 +71,17 @@ export default function CierreCajaPage() {
   }
 
   function handleConfirmar() {
+    if (!activeUser) return;
+    
+    addCierre({
+      cajero_id: activeUser.id,
+      cajero_name: activeUser.name,
+      monto_total: totalVentas,
+      efectivo_total: totalEfectivo,
+      otros_medios_total: totalDigital,
+      cantidad_pedidos: completedOrders.length
+    });
+
     setClosedAt(new Date());
     setShiftStatus("closed");
   }
@@ -171,7 +192,7 @@ export default function CierreCajaPage() {
         {/* Header */}
         <div>
           <h1 className="text-2xl font-black text-zinc-100 tracking-tight">Cierre de Caja</h1>
-          <p className="text-zinc-500 text-sm mt-0.5">Resumen y balance del turno actual.</p>
+          <p className="text-zinc-500 text-sm mt-0.5">Resumen y balance del turno actual para <strong>{activeUser?.name || 'Usuario'}</strong>.</p>
         </div>
 
         {/* Turno Banner */}
@@ -269,7 +290,7 @@ export default function CierreCajaPage() {
           </p>
         </div>
 
-        {/* Orders Detail Accordion */}
+        {/* Orders Detail Accordion — solo completados */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
           <button
             onClick={() => setShowOrders(v => !v)}
@@ -278,7 +299,7 @@ export default function CierreCajaPage() {
             <div className="flex items-center gap-2">
               <ClipboardList size={16} className="text-zinc-400" />
               <span className="text-sm font-black text-zinc-200 uppercase tracking-widest">
-                Pedidos del Turno ({allOrders.length})
+                Pedidos Completados ({completedOrders.length})
               </span>
             </div>
             {showOrders ? <ChevronUp size={16} className="text-zinc-500" /> : <ChevronDown size={16} className="text-zinc-500" />}
@@ -286,30 +307,41 @@ export default function CierreCajaPage() {
 
           {showOrders && (
             <div className="border-t border-zinc-800 divide-y divide-zinc-800/60 max-h-72 overflow-y-auto no-scrollbar">
-              {allOrders.map(order => {
-                const statusMap: Record<string, { label: string; color: string }> = {
-                  "completado":  { label: "Completado",  color: "text-emerald-400 bg-emerald-500/10" },
-                  "cancelado":   { label: "Cancelado",   color: "text-red-400 bg-red-500/10" },
-                  "confirmado":  { label: "Confirmado",  color: "text-orange-400 bg-orange-500/10" },
-                  "en-cocina":   { label: "En Cocina",   color: "text-yellow-400 bg-yellow-500/10" },
-                  "listo":       { label: "Listo",       color: "text-indigo-400 bg-indigo-500/10" },
-                  "en-camino":   { label: "En Camino",   color: "text-sky-400 bg-sky-500/10" },
-                };
-                const st = statusMap[order.status] ?? { label: order.status, color: "text-zinc-400 bg-zinc-800" };
-                return (
-                  <div key={order.id} className="flex items-center justify-between px-5 py-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-zinc-500">#{order.id}</span>
-                        <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full ${st.color}`}>{st.label}</span>
+              {completedOrders.length === 0 ? (
+                <div className="py-8 flex flex-col items-center justify-center gap-2 text-zinc-600">
+                  <CheckCircle2 size={24} strokeWidth={1.5} />
+                  <p className="text-[10px] font-bold uppercase tracking-widest">Sin pedidos completados aún</p>
+                </div>
+              ) : (
+                <>
+                  {completedOrders.slice(0, visibleOrders).map(order => (
+                    <div key={order.id} className="flex items-center justify-between px-5 py-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-black text-zinc-500">#{order.id}</span>
+                          <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full text-emerald-400 bg-emerald-500/10">Completado</span>
+                        </div>
+                        <p className="text-sm font-bold text-zinc-200 mt-0.5">{order.clientName}</p>
+                        <p className="text-[11px] text-zinc-500">{order.paymentMethod}</p>
                       </div>
-                      <p className="text-sm font-bold text-zinc-200 mt-0.5">{order.clientName}</p>
-                      <p className="text-[11px] text-zinc-500">{order.paymentMethod}</p>
+                      <span className="font-black text-white text-sm tabular-nums">{fmtARS(order.total)}</span>
                     </div>
-                    <span className="font-black text-white text-sm tabular-nums">{fmtARS(order.total)}</span>
-                  </div>
-                );
-              })}
+                  ))}
+                  {visibleOrders < completedOrders.length && (
+                    <div className="py-4 flex flex-col items-center gap-2">
+                      <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
+                        Mostrando {Math.min(visibleOrders, completedOrders.length)} de {completedOrders.length} pedidos
+                      </p>
+                      <button 
+                        onClick={() => setVisibleOrders(prev => prev + 20)}
+                        className="px-6 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 transition active:scale-95"
+                      >
+                        Cargar más
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
         </div>

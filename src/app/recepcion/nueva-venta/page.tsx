@@ -2,10 +2,11 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
-import { Plus, Minus, Trash2, Search, ChevronDown, Send, ShoppingBasket, ShoppingCart, X, MessageSquare, User, Check } from "lucide-react";
-import { useProducts, Product } from "@/context/ProductsContext";
+import { Plus, Minus, Trash2, Search, ChevronDown, Send, ShoppingBasket, ShoppingCart, X, MessageSquare, User, Check, Copy } from "lucide-react";
+import { useProductsStore, Product } from "@/lib/store/productsStore";
 import { mockOrdersStore, mockCustomersStore, MockCustomer } from "@/lib/mockData";
 import { useSyncExternalStore } from "react";
+import { useAuthStore } from "@/lib/store/authStore";
 
 type UnitType = "unidad" | "media_docena" | "docena";
 
@@ -21,31 +22,6 @@ interface CartItem {
   quadraSelections?: string[];
   extras?: { name: string; price: number }[];
   customVariety?: string;
-}
-
-// ── Two-level category hierarchy ──────────────────────────────────────────────
-type HCat = { id: number; name: string; parentId: number | null };
-
-const HCATS: HCat[] = [
-  { id: 1,   name: "Pizzas",        parentId: null },
-  { id: 101, name: "Tradicionales",  parentId: 1 },
-  { id: 102, name: "Especiales",     parentId: 1 },
-  { id: 103, name: "Rellenas",       parentId: 1 },
-  { id: 2,   name: "Empanadas",      parentId: null },
-  { id: 201, name: "Al Horno",       parentId: 2 },
-  { id: 202, name: "Fritas",         parentId: 2 },
-  { id: 3,   name: "Sándwiches",     parentId: null },
-  { id: 4,   name: "Bebidas",        parentId: null },
-  { id: 5,   name: "Postres",        parentId: null },
-  { id: 6,   name: "Menú del día",   parentId: null },
-  { id: 7,   name: "Almacén",        parentId: null },
-];
-
-const PARENT_CATS = HCATS.filter(c => c.parentId === null);
-
-function getSubCatsNV(parentName: string): HCat[] {
-  const parent = HCATS.find(c => c.name === parentName);
-  return parent ? HCATS.filter(c => c.parentId === parent.id) : [];
 }
 
 function parsePrice(str?: string): number {
@@ -64,16 +40,16 @@ function itemSubtotal(item: CartItem): number {
 }
 
 export default function NuevaVentaPage() {
-  const { products, neighborhoods, extras, varieties } = useProducts();
+  const { products, neighborhoods, extras, varieties, categories } = useProductsStore();
 
   const [selectedParent, setSelectedParent] = useState("Todos");
   const [selectedSub, setSelectedSub] = useState("Todas");
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
+  const { activeUser } = useAuthStore();
 
   const customers = useSyncExternalStore(mockCustomersStore.subscribe, mockCustomersStore.getSnapshot);
 
-  // Modal confirm
   const [showModal, setShowModal] = useState(false);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState("");
@@ -85,25 +61,34 @@ export default function NuevaVentaPage() {
   const [payment, setPayment] = useState("Efectivo");
   const [dineroRecibido, setDineroRecibido] = useState("");
   const [sending, setSending] = useState(false);
+  const [createdOrder, setCreatedOrder] = useState<{ id: string; phone?: string; name: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  // Mobile layout state
+  function handleNewOrder() {
+    setShowModal(false);
+    setCreatedOrder(null);
+    setCopied(false);
+    setCart([]);
+    setCustomerId(null); setCustomerName(""); setCustomerPhone(""); setAddress(""); setAddressDetail("");
+    setDeliveryMethod("retiro"); setSelectedNeighId(null); setPayment("Efectivo"); setDineroRecibido("");
+  }
+
   const [showMobileCart, setShowMobileCart] = useState(false);
-
-  // Item note modal
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [tempNote, setTempNote] = useState("");
-
-  // Product selector modal
   const [selectedProd, setSelectedProd] = useState<Product | null>(null);
   const [modalQty, setModalQty] = useState(1);
   const [modalUnit, setModalUnit] = useState<UnitType>("unidad");
   const [quadraSelections, setQuadraSelections] = useState<string[]>([]);
   const [selectedExtras, setSelectedExtras] = useState<typeof extras>([]);
   const [selectedCustomVariety, setSelectedCustomVariety] = useState("");
-
-  // Autocomplete states
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
   const [customerSearchType, setCustomerSearchType] = useState<"name" | "phone" | null>(null);
+
+  const parentCats = useMemo(() => categories.filter(c => c.parentId === null), [categories]);
+  const activeParent = useMemo(() => categories.find(c => c.name === selectedParent), [categories, selectedParent]);
+  const subCats = useMemo(() => activeParent ? categories.filter(c => c.parentId === activeParent.id) : [], [categories, activeParent]);
+  const hasSubCats = subCats.length > 0;
 
   const suggestedCustomers = useMemo(() => {
     if (!showCustomerSuggestions || !customerSearchType) return [];
@@ -133,31 +118,24 @@ export default function NuevaVentaPage() {
     setCustomerSearchType(null);
   }
 
-  const subCatsNV = useMemo(() => getSubCatsNV(selectedParent), [selectedParent]);
-  const hasSubCatsNV = subCatsNV.length > 0;
-
   const handleParentSelect = (name: string) => {
     setSelectedParent(name);
     setSelectedSub("Todas");
   };
 
-  // --- Filtered products ---
   const filtered = useMemo(() => {
     return products.filter(p => {
       if (!p.stock) return false;
 
-      // Category filtering
-      if (selectedParent !== "Todos") {
-        const subs = getSubCatsNV(selectedParent);
-        const hasSubs = subs.length > 0;
-        if (hasSubs && selectedSub !== "Todas") {
-          const subObj = HCATS.find(c => c.name === selectedSub);
+      if (selectedParent !== "Todos" && activeParent) {
+        if (hasSubCats && selectedSub !== "Todas") {
+          const subObj = subCats.find(c => c.name === selectedSub);
           if (p.categoryId !== subObj?.id) return false;
-        } else if (hasSubs) {
-          const childIds = subs.map(c => c.id);
-          if (p.category !== selectedParent && !childIds.includes(p.categoryId ?? -1)) return false;
+        } else if (hasSubCats) {
+          const childIds = subCats.map(c => c.id);
+          if (p.categoryId !== activeParent.id && !childIds.includes(p.categoryId ?? -1)) return false;
         } else {
-          if (p.category !== selectedParent) return false;
+          if (p.categoryId !== activeParent.id) return false;
         }
       }
 
@@ -167,9 +145,8 @@ export default function NuevaVentaPage() {
       }
       return true;
     });
-  }, [products, selectedParent, selectedSub, search]);
+  }, [products, selectedParent, selectedSub, search, activeParent, hasSubCats, subCats]);
 
-  // --- Cart helpers ---
   function openProdModal(p: Product) {
     setSelectedProd(p);
     setModalQty(1);
@@ -292,7 +269,7 @@ export default function NuevaVentaPage() {
       };
     });
 
-    mockOrdersStore.addOrder({
+    const newOrder = mockOrdersStore.addOrder({
       items: itemsForStore,
       clientName: formattedCustomerName,
       phone: customerPhone.trim() || undefined,
@@ -300,14 +277,13 @@ export default function NuevaVentaPage() {
       paymentMethod: payment,
       deliveryFee: deliveryCost,
       total,
+      cajero_id: activeUser?.id,
+      cajero_name: activeUser?.name,
     });
 
     setTimeout(() => {
       setSending(false);
-      setShowModal(false);
-      setCart([]);
-      setCustomerId(null); setCustomerName(""); setCustomerPhone(""); setAddress(""); setAddressDetail("");
-      setDeliveryMethod("retiro"); setSelectedNeighId(null); setPayment("Efectivo"); setDineroRecibido("");
+      setCreatedOrder({ id: newOrder.id, phone: customerPhone.trim(), name: formattedCustomerName });
     }, 600);
   }
 
@@ -316,10 +292,8 @@ export default function NuevaVentaPage() {
   return (
     <div className="flex h-full overflow-hidden bg-[#09090b] gap-2 p-2">
 
-      {/* ═══ LEFT: CATALOG ═══════════════════════════════════════════ */}
       <div className="flex-1 flex flex-col min-w-0 bg-zinc-950 border border-zinc-800/60 rounded-2xl overflow-hidden">
 
-        {/* Search + category bar */}
         <div className="shrink-0 p-3 border-b border-zinc-800/60 space-y-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={15} />
@@ -329,7 +303,6 @@ export default function NuevaVentaPage() {
               className="w-full pl-9 pr-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-sm font-medium text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-sky-500/60 transition"
             />
           </div>
-          {/* Level 1: parent categories */}
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
             <button
               onClick={() => handleParentSelect("Todos")}
@@ -339,7 +312,7 @@ export default function NuevaVentaPage() {
                   : "bg-transparent border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300"
               }`}
             >Todos</button>
-            {PARENT_CATS.map(cat => (
+            {parentCats.map(cat => (
               <button
                 key={cat.id}
                 onClick={() => handleParentSelect(cat.name)}
@@ -352,8 +325,7 @@ export default function NuevaVentaPage() {
             ))}
           </div>
 
-          {/* Level 2: subcategories (only when parent has children) */}
-          {hasSubCatsNV && (
+          {hasSubCats && (
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
               <span className="shrink-0 text-[9px] font-black text-zinc-600 uppercase tracking-widest flex items-center gap-1">
                 <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
@@ -367,7 +339,7 @@ export default function NuevaVentaPage() {
                     : "bg-transparent border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300"
                 }`}
               >Todas</button>
-              {subCatsNV.map(cat => (
+              {subCats.map(cat => (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedSub(cat.name)}
@@ -382,7 +354,6 @@ export default function NuevaVentaPage() {
           )}
         </div>
 
-        {/* Product grid */}
         <div className="flex-1 overflow-y-auto no-scrollbar p-3">
           {filtered.length === 0 ? (
             <div className="h-full flex items-center justify-center text-zinc-600 text-sm font-bold">Sin productos</div>
@@ -418,8 +389,6 @@ export default function NuevaVentaPage() {
         </div>
       </div>
 
-      {/* ═══ RIGHT: ORDER PANEL ══════════════════════════════════════ */}
-      {/* Mobile Cart Overlay */}
       {showMobileCart && (
         <div 
           className="fixed inset-0 bg-black/60 z-30 lg:hidden backdrop-blur-sm"
@@ -429,7 +398,6 @@ export default function NuevaVentaPage() {
 
       <div className={`fixed inset-y-0 right-0 z-40 w-[85vw] sm:w-96 bg-zinc-950 shadow-2xl transition-transform duration-300 flex flex-col border-l border-zinc-800/60 lg:static lg:w-80 xl:w-96 lg:shrink-0 lg:border-l-0 lg:border lg:rounded-2xl lg:translate-x-0 ${showMobileCart ? "translate-x-0" : "translate-x-full"}`}>
 
-        {/* Header */}
         <div className="shrink-0 px-4 py-3 border-b border-zinc-800/60 flex items-center gap-2">
           <ShoppingBasket size={16} className="text-sky-400" />
           <span className="font-black text-sm text-zinc-100 tracking-wide flex-1">Pedido Actual</span>
@@ -438,7 +406,6 @@ export default function NuevaVentaPage() {
               {cart.length} ítem{cart.length > 1 ? "s" : ""}
             </span>
           )}
-          {/* Close button for mobile */}
           <button 
             onClick={() => setShowMobileCart(false)} 
             className="lg:hidden ml-2 p-1 text-zinc-400 hover:text-white bg-zinc-800 rounded-lg"
@@ -447,7 +414,6 @@ export default function NuevaVentaPage() {
           </button>
         </div>
 
-        {/* Items */}
         <div className="flex-1 overflow-y-auto no-scrollbar p-3 space-y-2">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center gap-2 text-zinc-700">
@@ -456,7 +422,6 @@ export default function NuevaVentaPage() {
             </div>
           ) : cart.map(item => (
             <div key={item.key} className="bg-zinc-900 border border-zinc-800/60 rounded-xl p-3.5 flex flex-col gap-3">
-              {/* Name & Actions */}
               <div className="flex items-start justify-between gap-2">
                 <p className="text-sm font-bold text-zinc-200 leading-tight flex-1 min-w-0 pr-1">{item.name}</p>
                 <div className="flex items-center gap-1 shrink-0">
@@ -469,7 +434,6 @@ export default function NuevaVentaPage() {
                 </div>
               </div>
 
-              {/* Details & Controls */}
               <div className="flex items-center gap-3">
                 <div className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-zinc-800">
                   <Image src={item.image} alt={item.name} fill sizes="48px" className="object-cover" />
@@ -509,7 +473,6 @@ export default function NuevaVentaPage() {
           ))}
         </div>
 
-        {/* Footer */}
         <div className="shrink-0 p-3 border-t border-zinc-800/60 space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Subtotal</span>
@@ -526,7 +489,6 @@ export default function NuevaVentaPage() {
         </div>
       </div>
 
-      {/* Floating Cart Button (Mobile only) */}
       {!showMobileCart && (
         <div className="lg:hidden absolute bottom-4 left-4 right-4 z-20">
           <button 
@@ -545,11 +507,9 @@ export default function NuevaVentaPage() {
         </div>
       )}
 
-      {/* ═══ PRODUCT UNIT MODAL ══════════════════════════════════════ */}
       {selectedProd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
           <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-4xl shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] overflow-hidden">
-            {/* Header */}
             <div className="shrink-0 p-5 pb-4 border-b border-zinc-800/60">
               <div className="flex items-start justify-between">
                 <div>
@@ -565,9 +525,7 @@ export default function NuevaVentaPage() {
             <div className="flex-1 overflow-y-auto no-scrollbar p-4 sm:p-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 
-                {/* ══ LEFT COLUMN: VARIETIES & UNIT ══ */}
                 <div className="space-y-6 flex flex-col justify-start">
-                  {/* Opciones (Para combo o cualquier empanada) */}
                   {(selectedProd.saleType === "combo" || selectedProd.category === "Empanadas") && (
                     <div>
                       <p className="font-black text-white text-sm mb-3">¿Cómo querés pedirlo?</p>
@@ -588,7 +546,6 @@ export default function NuevaVentaPage() {
                     </div>
                   )}
 
-                  {/* Selector Quadra */}
                   {selectedProd.saleType === "quadra" && selectedProd.quadraConfig && (
                     <div>
                       <p className="font-black text-white text-sm mb-3">Elegí los sabores</p>
@@ -621,7 +578,6 @@ export default function NuevaVentaPage() {
                     </div>
                   )}
 
-                  {/* Selector Custom Variety */}
                   {selectedProd.customVarieties && selectedProd.customVarieties.length > 0 && (
                     <div>
                       <p className="font-black text-white text-sm mb-3">Elegí la variedad</p>
@@ -640,19 +596,14 @@ export default function NuevaVentaPage() {
                   
                   </div>
 
-                {/* ══ RIGHT COLUMN: EXTRAS & QUANTITY ══ */}
                 <div className="space-y-6 flex flex-col justify-start">
-                  {/* Extras */}
                   {(() => {
-                    const isPizza = selectedProd.categoryId && [1, 101, 102, 103].includes(selectedProd.categoryId);
-                    const globalExtras = isPizza ? extras.filter(e => e.available) : [];
-                    const customExtrasMapped = (selectedProd.customExtras || []).map(ce => ({
-                      id: `custom-${ce.name}`,
-                      name: ce.name,
-                      price: ce.price,
-                      available: true
-                    }));
-                    const allExtras = [...customExtrasMapped, ...globalExtras];
+                    const allExtras = extras.filter(e => {
+                      if (!e.available) return false;
+                      if (selectedProd.extraIds?.includes(e.id)) return true;
+                      if (selectedProd.categoryId && e.applyToCategories?.includes(selectedProd.categoryId)) return true;
+                      return false;
+                    });
                     if (allExtras.length === 0) return null;
                     return (
                       <div className="flex-1">
@@ -685,14 +636,11 @@ export default function NuevaVentaPage() {
                       </div>
                     );
                   })()}
-
                 </div>
               </div>
             </div>
 
-            {/* Fixed Footer Botón y Cantidad */}
             <div className="shrink-0 p-4 sm:p-5 border-t border-zinc-800/60 bg-zinc-950 flex flex-col sm:flex-row items-center gap-4">
-              {/* Controles de Cantidad Compactos */}
               <div className="flex items-center justify-between w-full sm:w-auto bg-zinc-900 border border-zinc-800/80 rounded-xl p-1.5 shrink-0">
                 <button onClick={() => setModalQty(Math.max(1, modalQty - 1))} className="w-12 h-12 flex items-center justify-center rounded-lg bg-zinc-950 border border-zinc-800/80 text-zinc-400 hover:text-white hover:bg-zinc-800 transition active:scale-95">
                   <Minus size={20} />
@@ -719,18 +667,69 @@ export default function NuevaVentaPage() {
         </div>
       )}
 
-      {/* ═══ CONFIRM ORDER MODAL ═════════════════════════════════════ */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
+          onClick={() => createdOrder ? handleNewOrder() : setShowModal(false)}
+        >
+          <div 
+            className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
 
-            {/* Header */}
-            <div className="shrink-0 px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
-              <h2 className="font-black text-lg text-zinc-100">Detalles del Pedido</h2>
-              <button onClick={() => setShowModal(false)} className="p-2 rounded-xl bg-zinc-900 text-zinc-500 hover:text-white transition"><Minus size={16} /></button>
-            </div>
+            {createdOrder ? (
+              <div className="p-8 flex flex-col items-center justify-center text-center">
+                <div className="w-20 h-20 bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center mb-6">
+                  <Check size={40} />
+                </div>
+                <h2 className="font-black text-2xl text-white mb-2">¡Pedido Confirmado!</h2>
+                <p className="text-zinc-400 mb-8 max-w-sm">El pedido #{createdOrder.id} para {createdOrder.name} se ha guardado correctamente.</p>
+                
+                <div className="w-full max-w-sm space-y-3">
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/estado-pedido/${createdOrder.id}`;
+                      navigator.clipboard.writeText(url);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    className="w-full py-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition flex items-center justify-center gap-2"
+                  >
+                    {copied ? <Check size={18} className="text-emerald-400" /> : <Copy size={18} />}
+                    {copied ? "¡Enlace copiado!" : "Copiar enlace de seguimiento"}
+                  </button>
 
-            {/* Resumen */}
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/estado-pedido/${createdOrder.id}`;
+                      const text = `¡Hola ${createdOrder.name}! 👋 Acá te dejamos el enlace para que sigas el estado de tu pedido: ${url}`;
+                      const phone = createdOrder.phone ? (createdOrder.phone.startsWith("54") ? createdOrder.phone : `549${createdOrder.phone}`) : "";
+                      const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+                      window.open(waUrl, '_blank');
+                    }}
+                    className="w-full py-4 rounded-xl bg-[#25D366]/20 hover:bg-[#25D366]/30 text-[#25D366] border border-[#25D366]/30 font-bold text-sm transition flex items-center justify-center gap-2"
+                  >
+                    <MessageSquare size={18} />
+                    Enviar por WhatsApp
+                  </button>
+                  
+                  <div className="h-px bg-zinc-800 my-4" />
+
+                  <button
+                    onClick={handleNewOrder}
+                    className="w-full py-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-black text-sm transition shadow-lg shadow-sky-900/30"
+                  >
+                    Nuevo Pedido
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="shrink-0 px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+                  <h2 className="font-black text-lg text-zinc-100">Detalles del Pedido</h2>
+                  <button onClick={() => setShowModal(false)} className="p-2 rounded-xl bg-zinc-900 text-zinc-500 hover:text-white transition"><Minus size={16} /></button>
+                </div>
+
             <div className="shrink-0 px-6 py-3 bg-zinc-900/50 border-b border-zinc-800">
               <div className="flex justify-between text-sm">
                 <span className="text-zinc-500 font-bold">{cart.length} producto{cart.length > 1 ? "s" : ""}</span>
@@ -738,13 +737,10 @@ export default function NuevaVentaPage() {
               </div>
             </div>
 
-            {/* Body */}
             <div className="p-4 sm:p-5 overflow-y-auto no-scrollbar flex-1 min-h-0">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-4">
                 
-                {/* ══ LEFT COLUMN: CONFIGURATION ══ */}
                 <div className="space-y-6">
-                  {/* Nombre y Teléfono */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative">
                     <div className="relative">
                       <label className="block text-xs font-bold text-zinc-400 mb-1.5">Nombre del cliente *</label>
@@ -787,7 +783,6 @@ export default function NuevaVentaPage() {
                         className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-sky-500/60 transition" />
                     </div>
 
-                    {/* Autocomplete Dropdown */}
                     {showCustomerSuggestions && suggestedCustomers.length > 0 && (
                       <div className="absolute top-[calc(100%+0.5rem)] left-0 right-0 bg-zinc-800 border border-zinc-700 rounded-xl shadow-2xl overflow-hidden z-[60]">
                         <div className="px-3 py-2 bg-zinc-900 border-b border-zinc-700">
@@ -809,7 +804,6 @@ export default function NuevaVentaPage() {
                     )}
                   </div>
 
-                  {/* Entrega */}
                   <div>
                     <label className="block text-xs font-bold text-zinc-400 mb-1.5">Método de entrega</label>
                     <div className="flex gap-2">
@@ -855,9 +849,7 @@ export default function NuevaVentaPage() {
                   )}
                 </div>
 
-                {/* ══ RIGHT COLUMN: PAYMENT & TOTAL ══ */}
                 <div className="space-y-4 flex flex-col justify-start">
-                  {/* Pago */}
                   <div>
                     <label className="block text-xs font-bold text-zinc-400 mb-1.5">Método de pago</label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
@@ -895,7 +887,6 @@ export default function NuevaVentaPage() {
                     )}
                   </div>
 
-                  {/* Total summary at the bottom */}
                   <div className="mt-auto pt-4">
                     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-1.5">
                       <div className="flex justify-between text-xs">
@@ -938,6 +929,8 @@ export default function NuevaVentaPage() {
                 {sending ? "Enviando..." : "Enviar a Cocina"}
               </button>
             </div>
+              </>
+            )}
           </div>
         </div>
       )}

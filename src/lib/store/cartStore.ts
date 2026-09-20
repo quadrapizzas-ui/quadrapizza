@@ -59,7 +59,7 @@ export const useCartStore = create<CartState>()(
       }
     }),
     {
-      name: 'quadra-pizza-cart', // Permite preservar el carrito aunque el usuario refresque la PWA
+      name: 'quadra-pizza-cart-v2', // Permite preservar el carrito aunque el usuario refresque la PWA
     }
   )
 )

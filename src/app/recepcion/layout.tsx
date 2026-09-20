@@ -5,14 +5,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  ShoppingBasket, ClipboardList, Users, Package, BookOpen, LogOut, Menu, X, FileText
+  ShoppingBasket, ClipboardList, Users, Package, BookOpen, LogOut, Menu, X, FileText, UserCircle
 } from "lucide-react";
+import { useAuthStore } from "@/lib/store/authStore";
 
 const NAV_ITEMS = [
   { href: "/recepcion/nueva-venta",   label: "Nueva Venta",      icon: ShoppingBasket },
   { href: "/recepcion/estado-pedidos",label: "Estado Pedidos",   icon: ClipboardList  },
   { href: "/recepcion/clientes",      label: "Clientes",         icon: Users          },
-  { href: "/recepcion/stock-rapido",  label: "Stock Rápido",     icon: Package        },
+  { href: "/recepcion/stock",  label: "Stock",            icon: Package        },
   { href: "/recepcion/catalogo",      label: "Catálogo",         icon: BookOpen       },
   { href: "/recepcion/cierre-caja",   label: "Cierre de Caja",   icon: FileText       },
 ];
@@ -23,6 +24,7 @@ export default function RecepcionLayout({ children }: { children: React.ReactNod
   const [mobileOpen, setMobileOpen] = useState(false);
   const [clock, setClock] = useState("");
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const { activeUser, logout } = useAuthStore();
 
   // Clock
   useEffect(() => {
@@ -41,8 +43,9 @@ export default function RecepcionLayout({ children }: { children: React.ReactNod
       setIsAuthorized(true);
       return;
     }
-    const auth = localStorage.getItem("quadra_recepcion_auth");
-    if (!auth) {
+    // No dependemos de localStorage puro si estamos usando Zustand persist, pero para seguridad
+    // validaremos si hay activeUser. Si no lo hay, volvemos a login.
+    if (!activeUser) {
       router.push("/recepcion/login");
     } else {
       setIsAuthorized(true);
@@ -52,7 +55,7 @@ export default function RecepcionLayout({ children }: { children: React.ReactNod
   }, [pathname, router]);
 
   const handleLogout = () => {
-    localStorage.removeItem("quadra_recepcion_auth");
+    logout();
     router.push("/recepcion/login");
   };
 
@@ -120,6 +123,16 @@ export default function RecepcionLayout({ children }: { children: React.ReactNod
         <span className="hidden sm:block font-mono text-sm font-bold text-zinc-300 shrink-0 tabular-nums">
           {clock}
         </span>
+
+        {/* Active User Indicator */}
+        {activeUser && (
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-full shrink-0">
+            <div className="w-5 h-5 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center text-[10px] font-black">
+              {activeUser.name.charAt(0)}
+            </div>
+            <span className="text-xs font-bold text-zinc-300">{activeUser.name}</span>
+          </div>
+        )}
 
         {/* Logout */}
         <button

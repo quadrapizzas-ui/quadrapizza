@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Plus, Search, Edit2, Trash2, X, MapPin, ArrowLeft, AlertTriangle } from "lucide-react";
-import { useProducts, Neighborhood } from "@/context/ProductsContext";
+import { useProductsStore, type Neighborhood } from "@/lib/store/productsStore";
 
 export default function EnviosPage() {
-  const { neighborhoods, setNeighborhoods } = useProducts();
+  const pathname = usePathname();
+  const basePath = pathname.replace(/\/envios$/, "");
+  const { neighborhoods, setNeighborhoods } = useProductsStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -55,7 +58,7 @@ export default function EnviosPage() {
       {/* ── Header ── */}
       <div className="shrink-0 px-5 py-4 border-b border-zinc-800/60 bg-zinc-950 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Link href="/recepcion/catalogo" className="w-9 h-9 flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition shrink-0">
+          <Link href={basePath} className="w-9 h-9 flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition shrink-0">
             <ArrowLeft size={16} />
           </Link>
           <div>

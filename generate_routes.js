@@ -19,7 +19,7 @@ if (fs.existsSync(adminDir)) {
   console.log('(admin) already migrated or missing');
 }
 
-// Routes Definition
+// Routes Definition 
 const routes = {
   recepcion: [
     { path: 'login', name: 'Login Operario' },
@@ -63,13 +63,13 @@ const createLayoutIfNeeded = (moduleName) => {
 Object.keys(routes).forEach(moduleName => {
   const modulePath = path.join(srcApp, moduleName);
   fs.mkdirSync(modulePath, { recursive: true });
-  
+
   createLayoutIfNeeded(moduleName);
 
   routes[moduleName].forEach(route => {
     const routePath = path.join(modulePath, route.path);
     fs.mkdirSync(routePath, { recursive: true });
-    
+
     const pagePath = path.join(routePath, 'page.tsx');
     if (!fs.existsSync(pagePath)) {
       const content = `"use client";

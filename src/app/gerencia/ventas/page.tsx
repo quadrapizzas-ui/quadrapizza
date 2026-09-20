@@ -33,6 +33,87 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+// ── Desktop order row ────────────────────────────────────────────────────────
+function DesktopOrderRow({ order }: { order: MockOrder }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <>
+      <tr className="group hover:bg-zinc-800/30 transition cursor-pointer" onClick={() => setExpanded(!expanded)}>
+        <td className="px-5 py-3.5 font-mono text-xs font-black text-zinc-400 group-hover:text-purple-400 transition whitespace-nowrap">
+          #{order.id.split("-")[1] || order.id}
+        </td>
+        <td className="px-5 py-3.5">
+          <div className="flex flex-col">
+            <span className="text-sm font-bold text-white whitespace-nowrap">{order.clientName}</span>
+            <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-tight">
+              {new Date(order.createdAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })} hs
+            </span>
+          </div>
+        </td>
+        <td className="px-5 py-3.5"><StatusBadge status={order.status} /></td>
+        <td className="px-5 py-3.5">
+          <span className="text-xs font-bold text-zinc-400 whitespace-nowrap">{order.paymentMethod}</span>
+        </td>
+        <td className="px-5 py-3.5">
+          <span className="text-sm font-black text-white whitespace-nowrap">{fmtARS(order.total)}</span>
+        </td>
+        <td className="px-5 py-3.5 text-right">
+          <button className="p-2 text-zinc-700 group-hover:text-white transition">
+            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+        </td>
+      </tr>
+      {expanded && (
+        <tr className="bg-zinc-950/50">
+          <td colSpan={6} className="px-5 py-5 border-t border-zinc-800/50">
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Cajero/a</p>
+                  <p className="text-xs text-zinc-300 font-medium">{order.cajero_name || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Teléfono Cliente</p>
+                  <p className="text-xs text-zinc-300 font-medium">{order.phone || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Entrega</p>
+                  <p className="text-xs text-zinc-300 font-medium">
+                    {order.address === "Retiro en local" || order.address === "Retira en Local" || order.address === "Local" 
+                      ? "🏪 Retiro en Local" 
+                      : `🛵 Envío: ${order.address}`
+                    }
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Costo Envío</p>
+                  <p className="text-xs text-zinc-300 font-medium">{order.deliveryFee ? fmtARS(order.deliveryFee) : "Bonificado / No aplica"}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Detalle de Productos</p>
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden max-w-2xl">
+                  {order.items.map((it, i) => (
+                    <div key={i} className="flex items-center justify-between px-4 py-2 border-b border-zinc-800/50 last:border-0">
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center font-black text-orange-400 text-[10px] shrink-0">
+                          {it.quantity}x
+                        </span>
+                        <span className="text-xs font-bold text-zinc-300">{it.name}</span>
+                      </div>
+                      <span className="text-xs font-medium text-zinc-400">{fmtARS(it.price * it.quantity)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
 // ── Mobile order card ─────────────────────────────────────────────────────────
 function OrderCard({ order }: { order: MockOrder }) {
   const [expanded, setExpanded] = useState(false);
@@ -80,18 +161,26 @@ function OrderCard({ order }: { order: MockOrder }) {
 }
 
 export default function GerenciaVentasPage() {
-  const [orders, setOrders] = useState<MockOrder[]>(() => mockOrdersStore.getSnapshot());
+  const [orders, setOrders] = useState<MockOrder[]>([]);
   const [search, setSearch] = useState("");
+  const [visibleCount, setVisibleCount] = useState(20);
 
   useEffect(() => {
+    setOrders(mockOrdersStore.getSnapshot());
     return mockOrdersStore.subscribe(() => setOrders([...mockOrdersStore.getSnapshot()]));
   }, []);
+
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [search]);
 
   const filtered = orders.filter(
     o =>
       o.clientName.toLowerCase().includes(search.toLowerCase()) ||
       o.id.toLowerCase().includes(search.toLowerCase())
   );
+
+  const paginated = filtered.slice(0, visibleCount);
 
   const totalVentas = filtered.reduce((s, o) => s + o.total, 0);
 
@@ -148,12 +237,25 @@ export default function GerenciaVentasPage() {
 
       {/* Mobile card list */}
       <div className="md:hidden space-y-2.5">
-        {filtered.length === 0 ? (
+        {paginated.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-zinc-700">
             <p className="font-bold text-sm uppercase tracking-widest">No se encontraron ventas</p>
           </div>
         ) : (
-          filtered.map(o => <OrderCard key={o.id} order={o} />)
+          paginated.map(o => <OrderCard key={o.id} order={o} />)
+        )}
+        {visibleCount < filtered.length && (
+          <div className="py-4 flex flex-col items-center gap-2">
+            <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
+              Mostrando {paginated.length} de {filtered.length} resultados
+            </p>
+            <button 
+              onClick={() => setVisibleCount(prev => prev + 20)}
+              className="px-6 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 transition active:scale-95"
+            >
+              Cargar más
+            </button>
+          </div>
         )}
       </div>
 
@@ -169,34 +271,8 @@ export default function GerenciaVentasPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/50">
-              {filtered.map(o => (
-                <tr key={o.id} className="group hover:bg-zinc-800/30 transition">
-                  <td className="px-5 py-3.5 font-mono text-xs font-black text-zinc-400 group-hover:text-purple-400 transition whitespace-nowrap">
-                    #{o.id.split("-")[1] || o.id}
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-white whitespace-nowrap">{o.clientName}</span>
-                      <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-tight">
-                        {new Date(o.createdAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })} hs
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3.5"><StatusBadge status={o.status} /></td>
-                  <td className="px-5 py-3.5">
-                    <span className="text-xs font-bold text-zinc-400 whitespace-nowrap">{o.paymentMethod}</span>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <span className="text-sm font-black text-white whitespace-nowrap">{fmtARS(o.total)}</span>
-                  </td>
-                  <td className="px-5 py-3.5 text-right">
-                    <button className="p-2 text-zinc-700 hover:text-white transition">
-                      <MoreVertical size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
+              {paginated.map(o => <DesktopOrderRow key={o.id} order={o} />)}
+              {paginated.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-6 py-20 text-center text-zinc-700 font-bold uppercase tracking-widest text-sm">
                     No se encontraron ventas
@@ -208,16 +284,16 @@ export default function GerenciaVentasPage() {
         </div>
         <div className="px-5 py-4 bg-zinc-950/30 border-t border-zinc-800 flex items-center justify-between">
           <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
-            Mostrando {filtered.length} de {orders.length} resultados
+            Mostrando {paginated.length} de {filtered.length} resultados
           </p>
-          <div className="flex gap-1">
-            <button disabled className="p-2 rounded-lg bg-zinc-900 text-zinc-700 border border-zinc-800 disabled:opacity-30">
-              <ChevronRight size={14} className="rotate-180" />
+          {visibleCount < filtered.length && (
+            <button 
+              onClick={() => setVisibleCount(prev => prev + 20)}
+              className="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 transition active:scale-95"
+            >
+              Cargar más
             </button>
-            <button className="p-2 rounded-lg bg-zinc-900 text-zinc-400 border border-zinc-800 hover:text-white transition">
-              <ChevronRight size={14} />
-            </button>
-          </div>
+          )}
         </div>
         </div>
       </div>
