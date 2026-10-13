@@ -10,7 +10,7 @@ export type ModuleKey =
 
 export interface FieldDetail {
   name: string;
-  type: "text" | "number" | "select" | "checkbox" | "button" | "kpi" | "badge" | "file";
+  type: "text" | "number" | "select" | "checkbox" | "button" | "kpi" | "etiqueta" | "file";
   required?: boolean;
   description: string;
   exampleOrOptions?: string;
@@ -63,11 +63,11 @@ export interface DocModule {
 
 export const MODULES_DATA: DocModule[] = [
   // ─────────────────────────────────────────────────────────────────────────────
-  // 1. CATÁLOGO ONLINE Y TIENDA WEB
+  // 1. CATÁLOGO Y TIENDA WEB
   // ─────────────────────────────────────────────────────────────────────────────
   {
     id: "catalogo",
-    title: "1. Catálogo Online y Tienda Web Pública",
+    title: "1. Catálogo y Tienda Web Pública",
     shortTitle: "Catálogo",
     roleBadge: "Clientes & Público General",
     roleColor: {
@@ -89,10 +89,10 @@ export const MODULES_DATA: DocModule[] = [
         badge: "Navegación Web",
         route: "/",
         description:
-          "Barra superior de navegación que acompaña al cliente durante toda su visita a la tienda online.",
+          "Barra superior de navegación que acompaña al cliente durante toda su visita a la tienda web.",
         containers: [
           {
-            name: "Barra Superior Fija (Header)",
+            name: "Barra Superior Fija",
             purpose: "Identidad del negocio, acceso al buscador y apertura del carrito de compras.",
             metricsOrDataShown: [
               "Logo oficial y nombre comercial de Quadra Pizza.",
@@ -101,7 +101,7 @@ export const MODULES_DATA: DocModule[] = [
             ],
             controlsOrButtons: [
               "Logo Quadra Pizza: Recarga la página y vuelve al inicio del catálogo.",
-              "Botón 'Ver Carrito': Abre el drawer lateral deslizable con los productos seleccionados."
+              "Botón 'Ver Carrito': Abre el panel lateral deslizable con los productos seleccionados."
             ],
             interpretationTip: "El contador del carrito se actualiza instantáneamente cada vez que el cliente suma productos o extras."
           },
@@ -134,9 +134,9 @@ export const MODULES_DATA: DocModule[] = [
         ]
       },
       {
-        title: "Modal de Configuración y Personalización del Producto",
+        title: "Ventana de Configuración y Personalización del Producto",
         shortTitle: "Personalizar Sabores",
-        badge: "Modal Interactivo",
+        badge: "Ventana Emergente",
         description:
           "Ventana interactiva que se abre al hacer clic sobre cualquier producto de la grilla para configurar cantidades, sabores, formatos y adicionales.",
         fieldsAndCheckboxes: [
@@ -177,7 +177,7 @@ export const MODULES_DATA: DocModule[] = [
             type: "button",
             required: true,
             description: "Confirma la personalización del ítem y lo incorpora al carrito de compras.",
-            effect: "Valida que todas las variedades requeridas estén seleccionadas y abre el drawer del carrito."
+            effect: "Valida que todas las variedades requeridas estén seleccionadas y abre el panel del carrito."
           }
         ],
         steps: [
@@ -190,11 +190,11 @@ export const MODULES_DATA: DocModule[] = [
         ]
       },
       {
-        title: "Carrito de Compras y Checkout por WhatsApp",
+        title: "Carrito de Compras y Confirmación de Pedido por WhatsApp",
         shortTitle: "Carrito y WhatsApp",
-        badge: "Checkout en 2 Pasos",
+        badge: "Confirmación en 2 Pasos",
         description:
-          "Panel lateral deslizable (drawer) donde el cliente revisa su pedido, ingresa sus datos de entrega, selecciona el método de pago y despacha la orden hacia el WhatsApp del local.",
+          "Panel lateral deslizable (panel lateral deslizable) donde el cliente revisa su pedido, ingresa sus datos de entrega, selecciona el método de pago y despacha la orden hacia el WhatsApp del local.",
         containers: [
           {
             name: "Paso 1: Tu Pedido (Revisión)",
@@ -299,7 +299,7 @@ export const MODULES_DATA: DocModule[] = [
   // ─────────────────────────────────────────────────────────────────────────────
   {
     id: "recepcion",
-    title: "2. Recepción y Punto de Venta (POS)",
+    title: "2. Recepción y Punto de Venta",
     shortTitle: "Recepción",
     roleBadge: "Cajeros & Mostrador",
     roleColor: {
@@ -316,9 +316,9 @@ export const MODULES_DATA: DocModule[] = [
       "Terminal operativo de mostrador para emitir ventas rápidas de salón y teléfono, supervisar el tablero Kanban de comandas, administrar deudores y cuentas corrientes, controlar stock, editar el catálogo y efectuar el arqueo de caja del turno.",
     sections: [
       {
-        title: "Header Superior y Navegación del Cajero",
-        shortTitle: "Header y Sesión",
-        badge: "Layout Recepción",
+        title: "Barra Superior y Navegación del Cajero",
+        shortTitle: "Barra Superior y Sesión",
+        badge: "Estructura Recepción",
         description:
           "Barra superior presente en todas las pantallas del módulo de Recepción para supervisar la sesión activa.",
         containers: [
@@ -329,14 +329,14 @@ export const MODULES_DATA: DocModule[] = [
               "Logo oficial y título 'Recepción - Terminal Mostrador'.",
               "Reloj digital de alta precisión en tiempo real (HH:MM).",
               "Identificación del cajero logueado con avatar e indicador de estado verde.",
-              "Botón 'Cerrar Sesión' (rojo con ícono LogOut)."
+              "Botón 'Cerrar Sesión' (rojo con ícono Cerrar Sesión)."
             ],
             controlsOrButtons: [
               "Logo: Enlace directo al catálogo público de clientes.",
-              "Botón 'Cerrar Sesión': Desconecta al usuario activo de la memoria y regresa a la pantalla de PIN Pad.",
+              "Botón 'Cerrar Sesión': Desconecta al usuario activo de la memoria y regresa a la pantalla de teclado numérico.",
               "Menú Hamburguesa (Mobile/Tablet): Abre el panel de pestañas en pantallas táctiles pequeñas."
             ],
-            interpretationTip: "Cada venta y cobro emitido se asocia automáticamente al cajero activo mostrado en el header para que el cierre de caja sea 100% auditable."
+            interpretationTip: "Cada venta y cobro emitido se asocia automáticamente al cajero activo mostrado en la barra superior para que el cierre de caja sea 100% auditable."
           }
         ],
         tips: [
@@ -344,7 +344,7 @@ export const MODULES_DATA: DocModule[] = [
         ]
       },
       {
-        title: "Nueva Venta (POS Táctil de Comandas)",
+        title: "Nueva Venta (Punto de Venta de Comandas)",
         shortTitle: "Nueva Venta",
         badge: "/recepcion/nueva-venta",
         route: "/recepcion/nueva-venta",
@@ -361,7 +361,7 @@ export const MODULES_DATA: DocModule[] = [
             ]
           },
           {
-            name: "Panel Lateral de la Comanda (Carrito POS)",
+            name: "Panel Lateral de la Comanda (Carrito del Punto de Venta)",
             purpose: "Construcción de la orden, datos del cliente, método de entrega, pago y cálculo de vuelto.",
             metricsOrDataShown: [
               "Lista de ítems con botones (+ / -) y botón de Nota especial.",
@@ -385,7 +385,7 @@ export const MODULES_DATA: DocModule[] = [
             required: false,
             description: "Permite escribir especificaciones culinarias puntuales para el pizzero.",
             exampleOrOptions: "'bien tostada', 'sin orégano', 'cortar en 12 porciones', 'cebolla suave'",
-            effect: "La aclaración se imprime en amarillo en la pantalla KDS de Cocina y en el ticket fiscal."
+            effect: "La aclaración se imprime en amarillo en la pantalla de cocina de Cocina y en el ticket fiscal."
           },
           {
             name: "Selector de Entrega (Retiro vs Delivery)",
@@ -415,7 +415,7 @@ export const MODULES_DATA: DocModule[] = [
         buttonsAndControls: [
           {
             name: "Botón 'Enviar a Cocina / Confirmar Pedido'",
-            description: "Crea la orden con ID único, impacta en tiempo real en la pantalla de cocina (o la saltea si es solo bebidas) y abre el modal de confirmación.",
+            description: "Crea la orden con ID único, impacta en tiempo real en la pantalla de cocina (o la saltea si es solo bebidas) y abre la ventana de confirmación.",
             type: "action"
           },
           {
@@ -440,7 +440,7 @@ export const MODULES_DATA: DocModule[] = [
           }
         ],
         tips: [
-          "Bypass de Cocina: Si una venta SOLO contiene bebidas, cervezas o postres, el sistema detecta que no requiere cocción y la pasa directamente al estado 'Listo' sin molestar a los pizzeros.",
+          "Salteo Automático de Cocina: Si una venta SOLO contiene bebidas, cervezas o postres, el sistema detecta que no requiere cocción y la pasa directamente al estado 'Listo' sin molestar a los pizzeros.",
           "Ventas Fiadas: Se puede confirmar un pedido con estado de pago 'Pendiente' (fiado). El pedido quedará registrado con alerta roja en el monitor y se sumará a la cuenta corriente del cliente en Deudores."
         ]
       },
@@ -464,13 +464,13 @@ export const MODULES_DATA: DocModule[] = [
             ]
           },
           {
-            name: "Tarjeta de Pedido (Card de Mostrador)",
+            name: "Tarjeta de Pedido (Tarjeta de Mostrador)",
             purpose: "Identificación integral del pedido, tiempos y estado de pago.",
             metricsOrDataShown: [
               "Enlace clickeable al ID: #{order.id} (abre el seguimiento en vivo del cliente).",
-              "Badge de Modalidad: 🛵 Envío vs 🏪 Retiro.",
-              "Badge '🥤 Solo Bebidas': Indica pedidos que omitieron la cocina.",
-              "Badge de Pago: '✓ PAGADO' (verde) vs '⚠️ IMPAGO' (rojo brillante pulsante con borde rojo).",
+              "Etiqueta de Modalidad: 🛵 Envío vs 🏪 Retiro.",
+              "Etiqueta '🥤 Solo Bebidas': Indica pedidos que omitieron la cocina.",
+              "Etiqueta de Pago: '✓ PAGADO' (verde) vs '⚠️ IMPAGO' (rojo brillante pulsante con borde rojo).",
               "Cronómetro de Espera: Minutos transcurridos con alerta amarilla a los 15' y llama roja a los 30'.",
               "Cliente, Dirección, Medio de Pago, Lista de productos con cantidades y Total en $."
             ],
@@ -502,7 +502,7 @@ export const MODULES_DATA: DocModule[] = [
           "Panel para auditar fiados, saldos adeudados, registrar pagos parciales (entregas a cuenta) y saldar deudas totales.",
         containers: [
           {
-            name: "3 Containers Superiores de Métricas",
+            name: "3 Contenedores Superiores de Métricas",
             purpose: "Visibilidad inmediata de la cartera de crédito del local.",
             metricsOrDataShown: [
               "1. Deuda Total en Calle: Importe monetario acumulado de todas las órdenes fiadas.",
@@ -515,7 +515,7 @@ export const MODULES_DATA: DocModule[] = [
             name: "Lista de Fichas de Deudores",
             purpose: "Gestión individualizada por cliente con historial de comandas adeudadas.",
             metricsOrDataShown: [
-              "Nombre del cliente y badge de cliente registrado/verificado.",
+              "Nombre del cliente y etiqueta de cliente registrado/verificado.",
               "Teléfono con enlace directo a llamada telefónica.",
               "Botón de WhatsApp con mensaje prearmado que informa el saldo adeudado exacto.",
               "Dirección habitual y fecha de la deuda más antigua.",
@@ -525,7 +525,7 @@ export const MODULES_DATA: DocModule[] = [
         ],
         fieldsAndCheckboxes: [
           {
-            name: "Modal 'Registrar Entrega a Cuenta (Pago Parcial)'",
+            name: "Ventana 'Registrar Entrega a Cuenta (Pago Parcial)'",
             type: "number",
             required: true,
             description: "Permite asentar un cobro parcial que reduce la deuda total del cliente.",
@@ -541,7 +541,7 @@ export const MODULES_DATA: DocModule[] = [
             effect: "Si se elige 'Tarjeta de Crédito', el sistema aplica matemáticamente el 15% de recargo sobre el importe abonado."
           },
           {
-            name: "Modal 'Editar Datos del Cliente'",
+            name: "Ventana 'Editar Datos del Cliente'",
             type: "text",
             required: true,
             description: "Permite actualizar Nombre, Apellido, Teléfono y Dirección del deudor.",
@@ -551,7 +551,7 @@ export const MODULES_DATA: DocModule[] = [
         buttonsAndControls: [
           {
             name: "Botón 'Entrega a Cuenta'",
-            description: "Abre el modal para registrar un pago parcial con desglose de medio de pago y recargo de tarjeta.",
+            description: "Abre la ventana para registrar un pago parcial con desglose de medio de pago y recargo de tarjeta.",
             type: "action"
           },
           {
@@ -578,7 +578,7 @@ export const MODULES_DATA: DocModule[] = [
           "Panel para consultar existencias de mercadería, detectar faltantes y realizar ajustes rápidos de inventario.",
         containers: [
           {
-            name: "Containers Superiores de Métricas (Scroll Natural)",
+            name: "Contenedores Superiores de Métricas (Desplazamiento Libre)",
             purpose: "Visión panorámica del estado del inventario sin tapar la pantalla.",
             metricsOrDataShown: [
               "1. Total Insumos Registrados.",
@@ -601,7 +601,7 @@ export const MODULES_DATA: DocModule[] = [
           }
         ],
         tips: [
-          "Los containers de arriba ya no están fijos: se desplazan con el scroll natural para dejar máximo espacio visual a la tabla de productos."
+          "Los contenedores superiores ya no están fijos: se desplazan con el desplazamiento continuo para dejar máximo espacio visual a la tabla de productos."
         ]
       },
       {
@@ -613,7 +613,7 @@ export const MODULES_DATA: DocModule[] = [
           "Hub de control para cambiar el teléfono oficial de WhatsApp del negocio y acceder a la administración del menú.",
         containers: [
           {
-            name: "Container de Teléfono Oficial de Pedidos",
+            name: "Panel de Teléfono Oficial de Pedidos",
             purpose: "Garantizar que todos los pedidos del catálogo web se dirijan al número de WhatsApp correcto.",
             metricsOrDataShown: [
               "Número de WhatsApp activo (+54 9 3513 05-9413).",
@@ -621,7 +621,7 @@ export const MODULES_DATA: DocModule[] = [
             ],
             controlsOrButtons: [
               "Botón 'Cambiar Teléfono': Abre el campo de edición.",
-              "Botón 'Guardar Teléfono': Aplica y persiste el nuevo número en el catálogo online de forma inmediata."
+              "Botón 'Guardar Teléfono': Aplica y persiste el nuevo número en el catálogo web de forma inmediata."
             ]
           },
           {
@@ -672,11 +672,11 @@ export const MODULES_DATA: DocModule[] = [
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 3. COCINA Y KDS (KITCHEN DISPLAY SYSTEM)
+  // 3. COCINA Y Monitor de Cocina (KITCHEN DISPLAY SYSTEM)
   // ─────────────────────────────────────────────────────────────────────────────
   {
     id: "cocina",
-    title: "3. Cocina y KDS (Kitchen Display System)",
+    title: "3. Cocina y Monitor de Pedidos",
     shortTitle: "Cocina",
     roleBadge: "Pizzeros & Cocina",
     roleColor: {
@@ -693,14 +693,14 @@ export const MODULES_DATA: DocModule[] = [
       "Pantalla táctil para la línea de producción y hornos. Permite visualizar comandas en tiempo real, filtrar notas especiales de clientes, cronometrar tiempos de horneado y omitir pedidos que no requieren cocción (Solo Bebidas).",
     sections: [
       {
-        title: "Login de Cocina y Header de Producción",
-        shortTitle: "Header y Sesión",
+        title: "Ingreso a Cocina y Barra Superior de Producción",
+        shortTitle: "Barra Superior y Sesión",
         badge: "Acceso & Seguridad",
         description:
-          "Ingreso ágil mediante PinPad de 4 dígitos y cabecera con control de sesión.",
+          "Ingreso ágil mediante teclado numérico de 4 dígitos y cabecera con control de sesión.",
         buttonsAndControls: [
           {
-            name: "PinPad Táctil de 4 Dígitos",
+            name: "teclado numérico Táctil de 4 Dígitos",
             description: "Permite a los cocineros iniciar sesión tocando 4 números grandes sin teclado físico.",
             type: "action"
           },
@@ -710,22 +710,22 @@ export const MODULES_DATA: DocModule[] = [
             type: "action"
           },
           {
-            name: "Botón 'Cerrar Sesión' en Header",
-            description: "Cierra la sesión del cocinero activo y devuelve la pantalla al PinPad de bloqueo.",
+            name: "Botón 'Cerrar Sesión' en Barra Superior",
+            description: "Cierra la sesión del cocinero activo y devuelve la pantalla al teclado numérico de bloqueo.",
             type: "alert"
           }
         ]
       },
       {
-        title: "Monitor KDS Responsive Horizontal",
-        shortTitle: "Monitor KDS",
+        title: "Monitor de Cocina Adaptable Horizontal",
+        shortTitle: "Monitor de Cocina",
         badge: "/cocina/monitor-pedidos",
         route: "/cocina/monitor-pedidos",
         description:
           "Pantalla de comandas en vivo con diseño adaptativo optimizado para verse de costado (apaisado/horizontal) en tablets y celulares.",
         containers: [
           {
-            name: "Comportamiento Responsive Horizontal",
+            name: "Diseño Adaptable en Pantalla Horizontal",
             purpose: "Aprovechar al máximo el ancho de pantalla en tablets de cocina y teléfonos móviles.",
             metricsOrDataShown: [
               "Al poner el celular o tablet de costado (horizontal), las tarjetas se reorganizan automáticamente en columnas panorámicas visibles sin desbordar la pantalla.",
@@ -733,7 +733,7 @@ export const MODULES_DATA: DocModule[] = [
             ]
           },
           {
-            name: "Tarjeta de Comanda de Cocina (KDS Card)",
+            name: "Tarjeta de Comanda de Cocina (Monitor de Cocina Tarjeta)",
             purpose: "Instrucciones de horneado y armado para el pizzero.",
             metricsOrDataShown: [
               "Número de comanda grande (#261013-012).",
@@ -749,7 +749,7 @@ export const MODULES_DATA: DocModule[] = [
           }
         ],
         tips: [
-          "Bypass Automático: Los pedidos que solo contienen gaseosas, aguas o postres envasados NO aparecen en esta pantalla para no interrumpir el trabajo de los pizzeros."
+          "Salteo Automático: Los pedidos que solo contienen gaseosas, aguas o postres envasados NO aparecen en esta pantalla para no interrumpir el trabajo de los pizzeros."
         ]
       },
       {
@@ -771,7 +771,7 @@ export const MODULES_DATA: DocModule[] = [
   // ─────────────────────────────────────────────────────────────────────────────
   {
     id: "delivery",
-    title: "4. Delivery y Logística de Reparto",
+    title: "4. Delivery y Logística de Envíos",
     shortTitle: "Delivery",
     roleBadge: "Cadetes & Repartidores",
     roleColor: {
@@ -788,14 +788,14 @@ export const MODULES_DATA: DocModule[] = [
       "Aplicación móvil para repartidores con tablero Kanban horizontal de 4 columnas, botón de llamada telefónica directa al cliente, enlace a mapa GPS, control de cobranzas en puerta y confirmación de entrega en tiempo real.",
     sections: [
       {
-        title: "Login de Delivery y Header",
-        shortTitle: "Header y Sesión",
+        title: "Ingreso a Delivery y Barra Superior",
+        shortTitle: "Barra Superior y Sesión",
         badge: "Acceso Móvil",
         description:
           "Acceso rápido mediante PIN numérico para cadetes y barra superior con control de sesión.",
         buttonsAndControls: [
           {
-            name: "PinPad Táctil de Repartidor",
+            name: "teclado numérico Táctil de Repartidor",
             description: "Permite desbloquear la app tocando 4 números grandes.",
             type: "action"
           },
@@ -805,14 +805,14 @@ export const MODULES_DATA: DocModule[] = [
             type: "action"
           },
           {
-            name: "Botón 'Cerrar Sesión' en Header",
+            name: "Botón 'Cerrar Sesión' en Barra Superior",
             description: "Cierra la sesión del cadete y regresa al PIN pad.",
             type: "alert"
           }
         ]
       },
       {
-        title: "Mis Viajes (Tablero Kanban 4 Columnas Responsive)",
+        title: "Mis Viajes (Tablero de 4 Columnas de Envíos)",
         shortTitle: "Mis Viajes",
         badge: "/delivery/mis-viajes",
         route: "/delivery/mis-viajes",
@@ -875,9 +875,9 @@ export const MODULES_DATA: DocModule[] = [
       "Suite integral para la toma de decisiones estratégicas. Incluye métricas ejecutivas, auditoría de ventas, finanzas con cálculo de CMV y márgenes netos, creador de productos campo por campo, gestión de personal, clientes y control de deudores.",
     sections: [
       {
-        title: "Header Gerencial, Selector de Período y Sesión",
-        shortTitle: "Header y Período",
-        badge: "Layout Gerencia",
+        title: "Barra Superior de Gerencia, Selector de Período y Sesión",
+        shortTitle: "Barra Superior y Período",
+        badge: "Estructura Gerencia",
         description:
           "Barra superior presente en todas las páginas de Gerencia para filtrar períodos de análisis y controlar la seguridad.",
         containers: [
@@ -892,21 +892,21 @@ export const MODULES_DATA: DocModule[] = [
             ],
             controlsOrButtons: [
               "Selector de Mes/Año: Filtra automáticamente todas las métricas, ventas y gastos del período elegido.",
-              "Botón 'Cerrar Sesión': Invalida la sesión administrativa y redirige al login seguro."
+              "Botón 'Cerrar Sesión': Invalida la sesión administrativa y redirige al inicio de sesión seguro."
             ]
           }
         ]
       },
       {
-        title: "Dashboard Ejecutivo y KPIs Globales",
-        shortTitle: "Dashboard Ejecutivo",
+        title: "Panel de Control e Indicadores Globales",
+        shortTitle: "Panel de Control",
         badge: "/gerencia/dashboard",
         route: "/gerencia/dashboard",
         description:
           "Tablero de mando con indicadores clave de rendimiento del negocio.",
         containers: [
           {
-            name: "Cards de Métricas Globales",
+            name: "Tarjetas de Métricas Globales",
             purpose: "Pulso del negocio en tiempo real.",
             metricsOrDataShown: [
               "Facturación Total Acumulada del período.",
@@ -919,35 +919,35 @@ export const MODULES_DATA: DocModule[] = [
         ]
       },
       {
-        title: "Finanzas y Rentabilidad (Explicación de Containers y Pestañas)",
-        shortTitle: "Finanzas (Containers)",
+        title: "Finanzas y Rentabilidad (Explicación de Contenedores y Pestañas)",
+        shortTitle: "Finanzas (Contenedores)",
         badge: "/gerencia/finanzas",
         route: "/gerencia/finanzas",
         description:
           "Centro neurálgico económico del negocio con cálculo automático de costos de mercadería, gastos fijos, punto de equilibrio y superávit/déficit neto.",
         containers: [
           {
-            name: "Container 1: Facturación Bruta (Devengada)",
+            name: "Contenedor 1: Facturación Bruta (Devengada)",
             purpose: "Total económico de todas las ventas emitidas en el período seleccionado.",
             metricsOrDataShown: [
               "Monto en pesos de todas las órdenes (pagadas y fiadas).",
-              "Badge de Crecimiento %: Comparativa contra el mes inmediatamente anterior (▲ verde o ▼ rojo).",
+              "Etiqueta de Crecimiento %: Comparativa contra el mes inmediatamente anterior (▲ verde o ▼ rojo).",
               "Alerta de Saldos Pendientes: Desglose en rojo de fiados/deudores pendientes de cobro."
             ],
             interpretationTip: "Si la facturación bruta es alta pero hay mucho saldo en 'Pendiente de cobro', significa que hay demasiado dinero en la calle que debe gestionarse en Deudores."
           },
           {
-            name: "Container 2: Efectivo Ingresado (Cobrado)",
+            name: "Contenedor 2: Efectivo Ingresado (Cobrado)",
             purpose: "Dinero que realmente ingresó a la caja o cuentas bancarias del negocio.",
             metricsOrDataShown: [
               "Monto neto cobrado en pesos.",
               "Badge de efectividad de cobranza (%): Relación entre lo cobrado y lo facturado.",
-              "Badge de Crecimiento % respecto al mes anterior."
+              "Etiqueta de Crecimiento % respecto al mes anterior."
             ],
             interpretationTip: "Representa el flujo de fondos real disponible para hacer frente a compras y gastos."
           },
           {
-            name: "Container 3: Costos + Gastos (Total de Egresos)",
+            name: "Contenedor 3: Costos + Gastos (Total de Egresos)",
             purpose: "Cálculo global de todas las salidas de dinero y consumo de materia prima del negocio.",
             metricsOrDataShown: [
               "Monto total en pesos de egresos.",
@@ -956,7 +956,7 @@ export const MODULES_DATA: DocModule[] = [
             interpretationTip: "Permite dimensionar la estructura de costos total de la pizzería."
           },
           {
-            name: "Container 4: Margen Bruto (Mercadería)",
+            name: "Contenedor 4: Margen Bruto (Mercadería)",
             purpose: "Ganancia directa generada por la venta de productos antes de pagar gastos de estructura.",
             metricsOrDataShown: [
               "Monto en pesos (Ingresos Cobrados menos CMV).",
@@ -966,7 +966,7 @@ export const MODULES_DATA: DocModule[] = [
             interpretationTip: "Muestra si los precios de venta son saludables en relación al costo de los ingredientes."
           },
           {
-            name: "Container 5: Ganancia Neta (Superávit / Déficit)",
+            name: "Contenedor 5: Ganancia Neta (Superávit / Déficit)",
             purpose: "Resultado final de explotación del negocio tras absorber todos los gastos.",
             metricsOrDataShown: [
               "Monto final neto en pesos.",
@@ -977,7 +977,7 @@ export const MODULES_DATA: DocModule[] = [
             interpretationTip: "Es el dinero limpio que genera la empresa para reinversión o retiro de socios."
           },
           {
-            name: "Container 6: Estructura de Egresos (Barra Segmentada)",
+            name: "Contenedor 6: Estructura de Egresos (Barra Segmentada)",
             purpose: "Desglose porcentual y visual de adónde se va el dinero.",
             metricsOrDataShown: [
               "Barra horizontal interactiva tricolor (Ámbar = CMV, Azul = Fijos, Violeta = Variables).",
@@ -987,7 +987,7 @@ export const MODULES_DATA: DocModule[] = [
             ]
           },
           {
-            name: "Container 7: Cobranzas por Medio de Pago",
+            name: "Contenedor 7: Cobranzas por Medio de Pago",
             purpose: "Distribución del dinero según el canal de cobro utilizado.",
             metricsOrDataShown: [
               "Efectivo ($ y cantidad de transacciones).",
@@ -997,7 +997,7 @@ export const MODULES_DATA: DocModule[] = [
             ]
           },
           {
-            name: "Container 8: Indicadores Clave y Punto de Equilibrio",
+            name: "Contenedor 8: Indicadores Clave y Punto de Equilibrio",
             purpose: "Brújula de supervivencia y metas de facturación.",
             metricsOrDataShown: [
               "Ticket Promedio por pedido ($).",
@@ -1007,7 +1007,7 @@ export const MODULES_DATA: DocModule[] = [
             ]
           },
           {
-            name: "Container 9: Gráfico de Evolución Semanal",
+            name: "Contenedor 9: Gráfico de Evolución Semanal",
             purpose: "Seguimiento semana por semana del mes.",
             metricsOrDataShown: [
               "Comparativa de barras entre Ingresos Cobrados (azul) y Egresos Totales (rojo) para las semanas 1, 2, 3 y 4+ del período."
@@ -1019,8 +1019,8 @@ export const MODULES_DATA: DocModule[] = [
             name: "Pestaña 'Gastos y Egresos' - Botón 'Nuevo Gasto'",
             type: "button",
             required: true,
-            description: "Abre el modal para registrar compras, pagos de servicios o sueldos.",
-            effect: "Abre el formulario modal de carga de gastos."
+            description: "Abre la ventana para registrar compras, pagos de servicios o sueldos.",
+            effect: "Abre el formulario de carga de gastos."
           },
           {
             name: "Campo Concepto del Gasto",
@@ -1080,7 +1080,7 @@ export const MODULES_DATA: DocModule[] = [
         badge: "/gerencia/catalogo/productos",
         route: "/gerencia/catalogo/productos",
         description:
-          "Guía detallada de todos los campos, selectores y casillas de verificación presentes en el modal de creación y modificación de productos.",
+          "Guía detallada de todos los campos, selectores y casillas de verificación presentes en la ventana de creación y modificación de productos.",
         fieldsAndCheckboxes: [
           {
             name: "Nombre del Producto",
@@ -1088,7 +1088,7 @@ export const MODULES_DATA: DocModule[] = [
             required: true,
             description: "Nombre comercial del producto que verá el cliente y los cocineros.",
             exampleOrOptions: "Pizza Napolitana Especial | Docena de Empanadas de Carne",
-            effect: "Obligatorio. Se muestra en el catálogo web, monitor KDS, recibos y reportes de ventas."
+            effect: "Obligatorio. Se muestra en el catálogo web, monitor de cocina, recibos y reportes de ventas."
           },
           {
             name: "Descripción Comercial e Ingredientes",
@@ -1104,10 +1104,10 @@ export const MODULES_DATA: DocModule[] = [
             required: true,
             description: "Asigna el producto dentro del árbol del menú del negocio.",
             exampleOrOptions: "Categoría Padre: Pizzas ➔ Subcategoría: Especiales",
-            effect: "Agrupa el producto en los filtros de la web y en el POS de recepción."
+            effect: "Agrupa el producto en los filtros de la web y en el punto de venta de recepción."
           },
           {
-            name: "Tipo de Venta (SaleType)",
+            name: "Tipo de Venta",
             type: "select",
             required: true,
             description: "Define la mecánica de comercialización del producto.",
@@ -1139,7 +1139,7 @@ export const MODULES_DATA: DocModule[] = [
             effect: "Se utiliza en Finanzas para calcular el Costo de Mercadería Vendida (CMV) y el Margen Bruto del negocio."
           },
           {
-            name: "Check 'Producto en Oferta / Promoción'",
+            name: "Casilla [✓] 'Producto en Oferta / Promoción'",
             type: "checkbox",
             required: false,
             description: "Indica si el producto está en descuento especial.",
@@ -1155,7 +1155,7 @@ export const MODULES_DATA: DocModule[] = [
             effect: "Aumenta la tasa de conversión en la tienda web."
           },
           {
-            name: "Check 'Stock Disponible (En Stock)'",
+            name: "Casilla [✓] 'Stock Disponible (En Stock)'",
             type: "checkbox",
             required: false,
             description: "Control de disponibilidad inmediata para venta.",
@@ -1163,7 +1163,7 @@ export const MODULES_DATA: DocModule[] = [
             effect: "Si está desmarcado, el producto desaparece automáticamente del catálogo web y se bloquea en recepción."
           },
           {
-            name: "Check 'Requiere Cocina (Bypass KDS)'",
+            name: "Check 'Requiere Cocina (Salteo Automático de Cocina)'",
             type: "checkbox",
             required: false,
             description: "Define si el producto requiere elaboración en horno o cocina.",
@@ -1184,7 +1184,7 @@ export const MODULES_DATA: DocModule[] = [
             required: false,
             description: "Para pizzas por metro: define cuántas filas tienen sabor impuesto y cuántas puede elegir el cliente.",
             exampleOrOptions: "Filas Fijas: 1 (Muzzarella) | Filas Personalizables: 2 (a elección del cliente)",
-            effect: "Genera los selectores de sabores correspondientes en el modal de compra."
+            effect: "Genera los selectores de sabores correspondientes en la ventana de compra."
           },
           {
             name: "Lista de Variedades y Sabores Propios",
@@ -1201,8 +1201,8 @@ export const MODULES_DATA: DocModule[] = [
           "Ingresar Nombre y Descripción.",
           "Seleccionar Categoría y Tipo de Venta.",
           "Ingresar Precios de Venta y Costos de Producción.",
-          "Verificar el check 'Requiere Cocina' (marcar si lleva horno, desmarcar si es bebida).",
-          "Tildar 'Producto en Oferta' si se desea destacar con precio anterior tachado.",
+          "Verificar el casilla 'Requiere Cocina' (marcar si lleva horno, desmarcar si es bebida).",
+          "Marcar la casilla 'Producto en Oferta' si se desea destacar con precio anterior tachado.",
           "Seleccionar la imagen del producto.",
           "Si es Quadra o Docena, configurar filas o variedades.",
           "Hacer clic en 'Guardar Producto'. Quedará activo de inmediato en todo el ERP."
@@ -1222,7 +1222,7 @@ export const MODULES_DATA: DocModule[] = [
             metricsOrDataShown: [
               "Nombre y apellido del empleado.",
               "Rol asignado: Gerente, Cajero, Cocinero o Repartidor.",
-              "PIN de 4 dígitos asignado para login táctil en terminales.",
+              "PIN de 4 dígitos asignado para ingreso táctil en terminales.",
               "Estado activo/inactivo."
             ],
             controlsOrButtons: [
@@ -1242,7 +1242,7 @@ export const MODULES_DATA: DocModule[] = [
   {
     id: "tracking",
     title: "6. Seguimiento en Vivo para el Cliente (/estado-pedido)",
-    shortTitle: "Tracking",
+    shortTitle: "Seguimiento",
     roleBadge: "Clientes & Repartidores",
     roleColor: {
       bg: "bg-rose-500/10",
@@ -1324,7 +1324,7 @@ export const MODULES_DATA: DocModule[] = [
         steps: [
           "Paso 1: El cliente envía su pedido desde el catálogo web por WhatsApp o el cajero lo toma en Recepción (Nueva Venta).",
           "Paso 2: La orden recibe un ID único (#YYMMDD-XXX) y el cliente recibe su link de seguimiento en vivo (/estado-pedido?id=...).",
-          "Paso 3: Si contiene pizzas o empanadas, la comanda aparece al instante en el KDS de Cocina con cronómetro y notas en amarillo. (Si es solo bebidas, saltea cocina directo a Listo).",
+          "Paso 3: Si contiene pizzas o empanadas, la comanda aparece al instante en el Monitor de Cocina de Cocina con cronómetro y notas en amarillo. (Si es solo bebidas, saltea cocina directo a Listo).",
           "Paso 4: El pizzero toma la orden ('En Preparación') y al sacarla del horno presiona 'Listo'. El tracking del cliente avanza solo.",
           "Paso 5: Si es con envío, el repartidor la ve en 'Mis Viajes', presiona 'Iniciar Viaje' y la lleva al domicilio con ayuda del mapa GPS y botón de llamada telefónica.",
           "Paso 6: El repartidor cobra en puerta si estaba impaga y toca 'Confirmar Entrega'.",

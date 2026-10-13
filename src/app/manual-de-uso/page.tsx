@@ -166,7 +166,7 @@ export default function ManualDeUsoPage() {
         };
       case "kpi":
         return {
-          label: "Métrica KPI",
+          label: "Indicador / Métrica",
           color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
         };
       default:
@@ -179,7 +179,7 @@ export default function ManualDeUsoPage() {
 
   return (
     <div className="min-h-screen bg-[#070709] text-zinc-100 flex flex-col selection:bg-orange-500 selection:text-white">
-      {/* ── Top Bar / Header ── */}
+      {/* ── Barra Superior Principal ── */}
       <header className="sticky top-0 z-50 bg-[#0c0c10]/90 backdrop-blur-xl border-b border-zinc-800/80 px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link
@@ -273,7 +273,7 @@ export default function ManualDeUsoPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar campo, check, container o función (ej: 'margen bruto', 'recargo 15%', 'bypass cocina', 'punto de equilibrio')..."
+                placeholder="Buscar campo, casilla, contenedor o función (ej: 'margen bruto', 'recargo 15%', 'salteo cocina', 'punto de equilibrio')..."
                 className="w-full bg-zinc-900/90 border border-zinc-700/80 rounded-2xl pl-11 pr-10 py-3.5 text-sm font-medium text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-orange-500/80 focus:ring-4 focus:ring-orange-500/10 shadow-2xl transition"
               />
               {searchQuery && (
@@ -411,7 +411,7 @@ export default function ManualDeUsoPage() {
                 id={mod.id}
                 className="bg-zinc-900/50 border border-zinc-800/80 rounded-3xl overflow-hidden shadow-2xl transition hover:border-zinc-700/80"
               >
-                {/* ── Header del Módulo ── */}
+                {/* ── Encabezado del Módulo ── */}
                 <div
                   className={`p-6 sm:p-8 border-b border-zinc-800/80 bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 relative overflow-hidden`}
                 >
@@ -524,7 +524,7 @@ export default function ManualDeUsoPage() {
                         <div className="space-y-3 pt-2">
                           <p className="text-xs font-black uppercase tracking-wider text-zinc-400 flex items-center gap-2">
                             <LayoutDashboard size={14} className="text-orange-400" />
-                            Containers y Paneles de Información (Uno por Uno):
+                            Paneles y Contenedores de Información (Uno por Uno):
                           </p>
 
                           <div className="grid grid-cols-1 gap-4">
@@ -610,7 +610,7 @@ export default function ManualDeUsoPage() {
                           <div className="space-y-3 pt-3">
                             <p className="text-xs font-black uppercase tracking-wider text-zinc-400 flex items-center gap-2">
                               <CheckSquare size={14} className="text-orange-400" />
-                              Guía Campo por Campo y Check por Check [✓]:
+                              Guía Campo por Campo y Casilla por Casilla [✓]:
                             </p>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
