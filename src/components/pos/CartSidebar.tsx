@@ -310,7 +310,7 @@ export function CartSidebar({
               <div className="w-full space-y-2.5 pt-2">
                 {createdOrderId && (
                   <a
-                    href={createdTrackingUrl || `/estado-pedido/${createdOrderId}`}
+                    href={createdTrackingUrl || `/estado-pedido?id=${encodeURIComponent(createdOrderId)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full py-3.5 px-4 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-black text-sm transition shadow-lg shadow-orange-950/40 flex items-center justify-center gap-2 active:scale-95"
@@ -323,7 +323,7 @@ export function CartSidebar({
                 {createdOrderId && (
                   <button
                     onClick={() => {
-                      const url = createdTrackingUrl || `${window.location.origin}/estado-pedido/${createdOrderId}`;
+                      const url = createdTrackingUrl || `${window.location.origin}/estado-pedido?id=${encodeURIComponent(createdOrderId)}`;
                       navigator.clipboard.writeText(url);
                       setCopiedLink(true);
                       setTimeout(() => setCopiedLink(false), 2000);

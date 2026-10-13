@@ -1,2 +1,2 @@
-/ticket/*  /ticket/demo.html  200
-/estado-pedido/*  /estado-pedido/demo.html  200
+/ticket/*  /ticket?id=:splat  302
+/estado-pedido/*  /estado-pedido?id=:splat  302

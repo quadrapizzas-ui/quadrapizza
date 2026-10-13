@@ -481,7 +481,7 @@ export default function NuevaVentaPage() {
                 
                 <div className="w-full max-w-sm space-y-3">
                   <a
-                    href={createdOrder.trackingUrl || `/estado-pedido/${createdOrder.id}`}
+                    href={createdOrder.trackingUrl || `/estado-pedido?id=${encodeURIComponent(createdOrder.id)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full py-4 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-black text-sm transition shadow-lg shadow-orange-950/40 flex items-center justify-center gap-2 active:scale-95"
@@ -492,7 +492,7 @@ export default function NuevaVentaPage() {
 
                   <button
                     onClick={() => {
-                      const url = createdOrder.trackingUrl || `${window.location.origin}/estado-pedido/${createdOrder.id}`;
+                      const url = createdOrder.trackingUrl || `${window.location.origin}/estado-pedido?id=${encodeURIComponent(createdOrder.id)}`;
                       navigator.clipboard.writeText(url);
                       setCopied(true);
                       setTimeout(() => setCopied(false), 2000);
@@ -505,7 +505,7 @@ export default function NuevaVentaPage() {
 
                   <button
                     onClick={() => {
-                      const url = createdOrder.trackingUrl || `${window.location.origin}/estado-pedido/${createdOrder.id}`;
+                      const url = createdOrder.trackingUrl || `${window.location.origin}/estado-pedido?id=${encodeURIComponent(createdOrder.id)}`;
                       const text = `¡Hola ${createdOrder.firstName}! 👋 Acá te dejamos el enlace para que sigas el estado de tu pedido: ${url}`;
                       const phoneDigits = createdOrder.phone ? createdOrder.phone.replace(/\D/g, "") : "";
                       const phone = phoneDigits ? (phoneDigits.startsWith("54") ? phoneDigits : `549${phoneDigits}`) : "";

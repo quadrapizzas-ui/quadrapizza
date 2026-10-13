@@ -109,7 +109,8 @@ export default function EstadoPedidoPage() {
 
   // 2. Sincronización en vivo: si cambia el estado en otra pestaña (recepción/cocina/delivery), actualizar en vivo
   useEffect(() => {
-    if (typeof window === "undefined" || !resolvedId) return;
+    const targetId = resolvedId || extractOrderIdFromUrl(params?.id);
+    if (typeof window === "undefined" || !targetId) return;
 
     const checkUpdates = () => {
       try {
@@ -119,11 +120,11 @@ export default function EstadoPedidoPage() {
           const localOrders: MockOrder[] = parsed?.state?.orders || [];
           const match = localOrders.find(
             (o) =>
-              o.id === resolvedId ||
-              o.id.toLowerCase() === resolvedId.toLowerCase() ||
-              o.id.endsWith(`-${resolvedId}`) ||
-              o.id.endsWith(resolvedId) ||
-              resolvedId.endsWith(o.id)
+              o.id === targetId ||
+              o.id.toLowerCase() === targetId.toLowerCase() ||
+              o.id.endsWith(`-${targetId}`) ||
+              o.id.endsWith(targetId) ||
+              targetId.endsWith(o.id)
           );
           if (match) {
             setOrder((prev) => {
@@ -145,7 +146,7 @@ export default function EstadoPedidoPage() {
       window.removeEventListener("storage", checkUpdates);
       clearInterval(interval);
     };
-  }, [resolvedId]);
+  }, [resolvedId, params?.id]);
 
   if (loading) {
     return (
