@@ -18,13 +18,6 @@ export function CatalogHeader({ cartItemCount, onOpenCart }: CatalogHeaderProps)
         </div>
         
         <div className="flex items-center gap-3">
-          <a
-            href="/recepcion/estado-pedidos"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-zinc-300 hover:text-white transition"
-          >
-            <span>Acceso Personal ERP</span>
-          </a>
-
           <button 
             onClick={onOpenCart}
             className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white transition active:scale-95 relative shrink-0 border border-zinc-800"
