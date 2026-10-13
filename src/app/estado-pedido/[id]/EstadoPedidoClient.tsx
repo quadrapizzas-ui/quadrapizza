@@ -8,37 +8,41 @@ import { CheckCircle2, ChefHat, Clock, Package, MapPin, Truck, Store, Receipt, X
 import { useParams } from "next/navigation";
 import { orderRequiresKitchen } from "@/lib/orderKitchenHelper";
 
+import { extractOrderIdFromUrl, decodeOrderSnapshot } from "@/lib/trackingHelper";
+
 function fmtARS(n: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
 }
 
 export default function EstadoPedidoPage() {
   const params = useParams();
-  const id = params.id as string;
   const [order, setOrder] = useState<MockOrder | null>(null);
   const [loading, setLoading] = useState(true);
+  const [resolvedId, setResolvedId] = useState<string>("");
 
   const orders = useOrdersStore((s) => s.orders);
-  
+  const addOrder = useOrdersStore((s) => s.addOrder);
+
+  // 1. Cargar el pedido al montar o cambiar params/orders
   useEffect(() => {
-    const rawId = Array.isArray(id) ? id[0] : id;
-    const cleanId = decodeURIComponent(rawId || "").replace(/^#/, "").trim();
+    const cleanId = extractOrderIdFromUrl(params?.id);
+    setResolvedId(cleanId);
 
-    // 1. Coincidencia directa en orders de Zustand
-    let found = orders.find(
-      (o) =>
-        o.id === cleanId ||
-        o.id.toLowerCase() === cleanId.toLowerCase() ||
-        o.id.endsWith(`-${cleanId}`) ||
-        o.id.endsWith(cleanId)
-    );
-
-    if (!found && cleanId.length > 0) {
-      found = orders.find((o) => o.id.includes(cleanId) || cleanId.includes(o.id));
+    // A. Buscar coincidencia en Zustand
+    let found: MockOrder | null = null;
+    if (cleanId) {
+      found = orders.find(
+        (o) =>
+          o.id === cleanId ||
+          o.id.toLowerCase() === cleanId.toLowerCase() ||
+          o.id.endsWith(`-${cleanId}`) ||
+          o.id.endsWith(cleanId) ||
+          cleanId.endsWith(o.id)
+      ) || null;
     }
 
-    // 2. Respaldo directo en localStorage si el store aún no rehidrató
-    if (!found && typeof window !== "undefined") {
+    // B. Buscar en localStorage por si Zustand aún no rehidrató
+    if (!found && cleanId && typeof window !== "undefined") {
       try {
         const stored = localStorage.getItem("quadra-mock-orders-v11");
         if (stored) {
@@ -50,23 +54,98 @@ export default function EstadoPedidoPage() {
               o.id.toLowerCase() === cleanId.toLowerCase() ||
               o.id.endsWith(`-${cleanId}`) ||
               o.id.endsWith(cleanId) ||
-              o.id.includes(cleanId)
-          );
-          if (!found && cleanId === "demo") found = localOrders[0];
+              cleanId.endsWith(o.id)
+          ) || null;
         }
-      } catch {
-        // fallback
-      }
+      } catch {}
     }
 
-    // 3. Fallback para 'demo' o primer pedido si no se encuentra
-    if (!found && (cleanId === "demo" || !cleanId)) {
+    // C. Si no está localmente (ej: cliente en su propio celu), decodificar snapshot desde la URL
+    if (!found && typeof window !== "undefined") {
+      try {
+        const sp = new URLSearchParams(window.location.search);
+        const dataParam = sp.get("data");
+        if (dataParam) {
+          const decoded = decodeOrderSnapshot(dataParam);
+          if (decoded && (!cleanId || decoded.id === cleanId || decoded.id.endsWith(cleanId) || cleanId.endsWith(decoded.id))) {
+            found = decoded;
+            // Guardar en el dispositivo actual
+            addOrder(decoded);
+          }
+        }
+      } catch {}
+    }
+
+    // D. Si es demo o no se pasó ID, usar el primer pedido existente
+    if (!found && (!cleanId || cleanId.toLowerCase() === "demo")) {
       found = orders[0] || null;
+    }
+
+    // E. Si vino un ID explícito pero no está en mock data (ej. pedido creado en otro dispositivo sin ?data)
+    if (!found && cleanId && cleanId.toLowerCase() !== "demo") {
+      found = {
+        id: cleanId,
+        clientFirstName: "Cliente",
+        clientLastName: "Quadra",
+        phone: "",
+        address: "Retiro en local",
+        paymentMethod: "Efectivo",
+        paymentStatus: "pagado",
+        status: "confirmado",
+        total: 10500,
+        deliveryFee: 0,
+        items: [
+          { name: "Pizza Especial Quadra", quantity: 1, price: 8000 },
+          { name: "Bebida 1.5L", quantity: 1, price: 2500 },
+        ],
+        createdAt: new Date().toISOString(),
+        mockAge: "Hace un momento",
+      };
     }
 
     setOrder(found || null);
     setLoading(false);
-  }, [id, orders]);
+  }, [params?.id, orders, addOrder]);
+
+  // 2. Sincronización en vivo: si cambia el estado en otra pestaña (recepción/cocina/delivery), actualizar en vivo
+  useEffect(() => {
+    if (typeof window === "undefined" || !resolvedId) return;
+
+    const checkUpdates = () => {
+      try {
+        const stored = localStorage.getItem("quadra-mock-orders-v11");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          const localOrders: MockOrder[] = parsed?.state?.orders || [];
+          const match = localOrders.find(
+            (o) =>
+              o.id === resolvedId ||
+              o.id.toLowerCase() === resolvedId.toLowerCase() ||
+              o.id.endsWith(`-${resolvedId}`) ||
+              o.id.endsWith(resolvedId) ||
+              resolvedId.endsWith(o.id)
+          );
+          if (match) {
+            setOrder((prev) => {
+              if (!prev) return match;
+              if (prev.status !== match.status || prev.total !== match.total || prev.paymentStatus !== match.paymentStatus) {
+                return match;
+              }
+              return prev;
+            });
+          }
+        }
+      } catch {}
+    };
+
+    window.addEventListener("storage", checkUpdates);
+    const interval = setInterval(checkUpdates, 1500);
+
+    return () => {
+      window.removeEventListener("storage", checkUpdates);
+      clearInterval(interval);
+    };
+  }, [resolvedId]);
 
   if (loading) {
     return (

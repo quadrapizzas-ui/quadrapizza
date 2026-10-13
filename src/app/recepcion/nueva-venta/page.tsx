@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
-import { Plus, Minus, Trash2, Search, ChevronDown, Send, ShoppingBasket, ShoppingCart, X, MessageSquare, User, Check, Copy } from "lucide-react";
+import { Plus, Minus, Trash2, Search, ChevronDown, Send, ShoppingBasket, ShoppingCart, X, MessageSquare, User, Check, Copy, ExternalLink } from "lucide-react";
 import { useProductsStore, Product } from "@/lib/store/productsStore";
 import { MockCustomer } from "@/types/models";
 import { useCustomersStore } from "@/lib/store/customersStore";
@@ -480,14 +480,24 @@ export default function NuevaVentaPage() {
                 <p className="text-zinc-400 mb-8 max-w-sm">El pedido #{createdOrder.id} para {createdOrder.firstName} se ha guardado correctamente.</p>
                 
                 <div className="w-full max-w-sm space-y-3">
+                  <a
+                    href={createdOrder.trackingUrl || `/estado-pedido/${createdOrder.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-4 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-black text-sm transition shadow-lg shadow-orange-950/40 flex items-center justify-center gap-2 active:scale-95"
+                  >
+                    <ExternalLink size={18} />
+                    Seguir Estado en Vivo
+                  </a>
+
                   <button
                     onClick={() => {
-                      const url = `${window.location.origin}/estado-pedido/${createdOrder.id}`;
+                      const url = createdOrder.trackingUrl || `${window.location.origin}/estado-pedido/${createdOrder.id}`;
                       navigator.clipboard.writeText(url);
                       setCopied(true);
                       setTimeout(() => setCopied(false), 2000);
                     }}
-                    className="w-full py-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition flex items-center justify-center gap-2"
+                    className="w-full py-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition flex items-center justify-center gap-2 active:scale-95"
                   >
                     {copied ? <Check size={18} className="text-emerald-400" /> : <Copy size={18} />}
                     {copied ? "¡Enlace copiado!" : "Copiar enlace de seguimiento"}
@@ -495,13 +505,14 @@ export default function NuevaVentaPage() {
 
                   <button
                     onClick={() => {
-                      const url = `${window.location.origin}/estado-pedido/${createdOrder.id}`;
+                      const url = createdOrder.trackingUrl || `${window.location.origin}/estado-pedido/${createdOrder.id}`;
                       const text = `¡Hola ${createdOrder.firstName}! 👋 Acá te dejamos el enlace para que sigas el estado de tu pedido: ${url}`;
-                      const phone = createdOrder.phone ? (createdOrder.phone.startsWith("54") ? createdOrder.phone : `549${createdOrder.phone}`) : "";
+                      const phoneDigits = createdOrder.phone ? createdOrder.phone.replace(/\D/g, "") : "";
+                      const phone = phoneDigits ? (phoneDigits.startsWith("54") ? phoneDigits : `549${phoneDigits}`) : "";
                       const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
                       window.open(waUrl, '_blank');
                     }}
-                    className="w-full py-4 rounded-xl bg-[#25D366]/20 hover:bg-[#25D366]/30 text-[#25D366] border border-[#25D366]/30 font-bold text-sm transition flex items-center justify-center gap-2"
+                    className="w-full py-4 rounded-xl bg-[#25D366]/20 hover:bg-[#25D366]/30 text-[#25D366] border border-[#25D366]/30 font-bold text-sm transition flex items-center justify-center gap-2 active:scale-95"
                   >
                     <MessageSquare size={18} />
                     Enviar por WhatsApp
@@ -511,7 +522,7 @@ export default function NuevaVentaPage() {
 
                   <button
                     onClick={handleNewOrder}
-                    className="w-full py-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-black text-sm transition shadow-lg shadow-sky-900/30"
+                    className="w-full py-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-black text-sm transition shadow-lg shadow-sky-900/30 active:scale-95"
                   >
                     Nuevo Pedido
                   </button>

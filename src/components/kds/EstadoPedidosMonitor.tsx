@@ -5,8 +5,9 @@ import Link from "next/link";
 import { MockOrder } from "@/types/models";
 import { useOrdersStore } from "@/lib/store/ordersStore";
 import { getBusinessDay } from "@/lib/businessDay";
-import { Clock, ChefHat, Truck, CheckCircle2, XCircle, ShoppingBag, Eye, RefreshCw, AlertTriangle, Flame, Copy, Check, ExternalLink } from "lucide-react";
+import { Clock, ChefHat, Truck, CheckCircle2, XCircle, ShoppingBag, Eye, RefreshCw, AlertTriangle, Flame, Copy, Check, ExternalLink, MessageSquare } from "lucide-react";
 import { orderRequiresKitchen } from "@/lib/orderKitchenHelper";
+import { getTrackingUrl } from "@/lib/trackingHelper";
 
 function fmtARS(n: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
@@ -54,8 +55,8 @@ const ReceptionCard = React.memo(function ReceptionCard({ order, expandedId, set
         }`}
       >
         <div className="flex items-center gap-1.5 flex-wrap">
-          <Link
-            href={`/estado-pedido/${order.id}`}
+          <a
+            href={getTrackingUrl(order)}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
@@ -64,7 +65,7 @@ const ReceptionCard = React.memo(function ReceptionCard({ order, expandedId, set
           >
             #{order.id}
             <ExternalLink size={10} className="opacity-70" />
-          </Link>
+          </a>
           <span className="shrink-0 text-[8px] font-black uppercase tracking-widest px-1 py-0.5 rounded bg-zinc-800 text-zinc-300">
             {isDelivery ? '🛵 Envío' : '🏪 Retiro'}
           </span>
@@ -123,20 +124,20 @@ const ReceptionCard = React.memo(function ReceptionCard({ order, expandedId, set
       {isExpanded && (
         <div className="px-3 pb-3 pt-2 border-t border-zinc-800/60 bg-zinc-950/30 flex flex-col gap-2">
            <div className="grid grid-cols-2 gap-2 mt-2">
-             <Link
-               href={`/estado-pedido/${order.id}`}
+             <a
+               href={getTrackingUrl(order)}
                target="_blank"
                rel="noopener noreferrer"
                onClick={(e) => e.stopPropagation()}
                className="w-full text-[10px] font-black uppercase tracking-widest text-white bg-sky-600 hover:bg-sky-500 py-2 rounded-xl flex items-center justify-center gap-1.5 transition shadow-sm active:scale-95"
              >
                <ExternalLink size={13} /> Ver Estado
-             </Link>
+             </a>
              <button 
                type="button"
                onClick={(e) => {
                  e.stopPropagation();
-                 const url = `${window.location.origin}/estado-pedido/${order.id}`;
+                 const url = getTrackingUrl(order);
                  if (navigator.clipboard) {
                    navigator.clipboard.writeText(url);
                  }
@@ -148,6 +149,23 @@ const ReceptionCard = React.memo(function ReceptionCard({ order, expandedId, set
                {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? "Copiado" : "Copiar Link"}
              </button>
            </div>
+
+           {order.phone && (
+             <button 
+               type="button"
+               onClick={(e) => {
+                 e.stopPropagation();
+                 const url = getTrackingUrl(order);
+                 const text = `¡Hola ${order.clientFirstName || "Cliente"}! 👋 Acá tenés el link para seguir tu pedido #${order.id} en vivo: ${url}`;
+                 const phoneDigits = order.phone!.replace(/\D/g, "");
+                 const cleanPhone = phoneDigits.startsWith("54") ? phoneDigits : `549${phoneDigits}`;
+                 window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
+               }}
+               className="w-full text-[10px] font-black uppercase tracking-widest text-[#25D366] bg-[#25D366]/10 border border-[#25D366]/30 py-2 rounded-xl flex items-center justify-center gap-1.5 hover:bg-[#25D366]/20 transition active:scale-95"
+             >
+               <MessageSquare size={13} /> Enviar Seguimiento por WhatsApp
+             </button>
+           )}
 
            {/* Acción de avance según el estado actual del pedido */}
            {!readOnly && order.status === "confirmado" && (

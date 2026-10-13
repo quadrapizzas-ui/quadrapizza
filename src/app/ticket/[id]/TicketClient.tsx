@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { MockOrder } from "@/types/models";
 import { useOrdersStore } from "@/lib/store/ordersStore";
 import { useParams } from "next/navigation";
+import { extractOrderIdFromUrl } from "@/lib/trackingHelper";
 
 export default function TicketClient() {
   const params = useParams();
@@ -11,10 +12,44 @@ export default function TicketClient() {
   const orders = useOrdersStore((s) => s.orders);
 
   useEffect(() => {
-    // Buscar la orden en el store local
-    const found = orders.find(o => o.id === params.id);
+    const cleanId = extractOrderIdFromUrl(params?.id);
+    let found: MockOrder | null = null;
+
+    if (cleanId) {
+      found = orders.find(
+        (o) =>
+          o.id === cleanId ||
+          o.id.toLowerCase() === cleanId.toLowerCase() ||
+          o.id.endsWith(`-${cleanId}`) ||
+          o.id.endsWith(cleanId) ||
+          cleanId.endsWith(o.id)
+      ) || null;
+    }
+
+    if (!found && cleanId && typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("quadra-mock-orders-v11");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          const localOrders: MockOrder[] = parsed?.state?.orders || [];
+          found = localOrders.find(
+            (o) =>
+              o.id === cleanId ||
+              o.id.toLowerCase() === cleanId.toLowerCase() ||
+              o.id.endsWith(`-${cleanId}`) ||
+              o.id.endsWith(cleanId) ||
+              cleanId.endsWith(o.id)
+          ) || null;
+        }
+      } catch {}
+    }
+
+    if (!found && (!cleanId || cleanId.toLowerCase() === "demo")) {
+      found = orders[0] || null;
+    }
+
     if (found) setOrder(found);
-  }, [params.id, orders]);
+  }, [params?.id, orders]);
 
   if (!order) {
     return (

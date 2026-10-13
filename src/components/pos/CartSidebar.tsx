@@ -27,6 +27,7 @@ import { isKitchenItem } from "@/lib/orderKitchenHelper";
 import { useProductsStore, type Neighborhood } from "@/lib/store/productsStore";
 import { useOrdersStore } from "@/lib/store/ordersStore";
 import { useCustomersStore } from "@/lib/store/customersStore";
+import { getTrackingUrl } from "@/lib/trackingHelper";
 
 interface CartSidebarProps {
   cartItems: CartItem[];
@@ -58,6 +59,7 @@ export function CartSidebar({
   const [paymentMethod, setPaymentMethod] = useState("Efectivo");
 
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
+  const [createdTrackingUrl, setCreatedTrackingUrl] = useState<string>("");
   const [lastWhatsAppUrl, setLastWhatsAppUrl] = useState<string>("");
   const [copiedLink, setCopiedLink] = useState(false);
 
@@ -165,7 +167,8 @@ export function CartSidebar({
     });
 
     // 4. Armar mensaje de WhatsApp con enlace de seguimiento en vivo
-    const trackingUrl = `${window.location.origin}/estado-pedido/${newOrder.id}`;
+    const trackingUrl = getTrackingUrl(newOrder);
+    setCreatedTrackingUrl(trackingUrl);
 
     let message = `¡Hola Quadra Pizza! 🍕 Soy *${fullName}* y quiero hacer el siguiente pedido:\n\n`;
     message += `📋 *Detalle del pedido:*\n`;
@@ -240,6 +243,7 @@ export function CartSidebar({
   const handleClose = () => {
     setCheckoutStep("cart");
     setCreatedOrderId(null);
+    setCreatedTrackingUrl("");
     onClose();
   };
 
@@ -305,19 +309,21 @@ export function CartSidebar({
 
               <div className="w-full space-y-2.5 pt-2">
                 {createdOrderId && (
-                  <Link
-                    href={`/estado-pedido/${createdOrderId}`}
+                  <a
+                    href={createdTrackingUrl || `/estado-pedido/${createdOrderId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="w-full py-3.5 px-4 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-black text-sm transition shadow-lg shadow-orange-950/40 flex items-center justify-center gap-2 active:scale-95"
                   >
                     <ExternalLink size={16} />
                     <span>Seguir Estado en Vivo</span>
-                  </Link>
+                  </a>
                 )}
 
                 {createdOrderId && (
                   <button
                     onClick={() => {
-                      const url = `${window.location.origin}/estado-pedido/${createdOrderId}`;
+                      const url = createdTrackingUrl || `${window.location.origin}/estado-pedido/${createdOrderId}`;
                       navigator.clipboard.writeText(url);
                       setCopiedLink(true);
                       setTimeout(() => setCopiedLink(false), 2000);

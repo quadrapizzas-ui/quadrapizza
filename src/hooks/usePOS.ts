@@ -2,12 +2,13 @@
 
 import { useState, useMemo } from "react";
 import { useProductsStore, Product } from "@/lib/store/productsStore";
-import { MockCustomer } from "@/types/models";
+import { MockCustomer, MockOrder } from "@/types/models";
 import { useCustomersStore } from "@/lib/store/customersStore";
 import { useOrdersStore } from "@/lib/store/ordersStore";
 import { useAuthStore } from "@/lib/store/authStore";
 import { isKitchenItem } from "@/lib/orderKitchenHelper";
 import { normalizeSearch } from "@/lib/utils";
+import { getTrackingUrl } from "@/lib/trackingHelper";
 
 export type UnitType = "unidad" | "media_docena" | "docena";
 
@@ -64,7 +65,14 @@ export function usePOS() {
   const [paymentStatus, setPaymentStatus] = useState<"pagado" | "pendiente">("pendiente");
   const [dineroRecibido, setDineroRecibido] = useState("");
   const [sending, setSending] = useState(false);
-  const [createdOrder, setCreatedOrder] = useState<{ id: string; phone?: string; firstName: string; lastName: string } | null>(null);
+  const [createdOrder, setCreatedOrder] = useState<{
+    id: string;
+    phone?: string;
+    firstName: string;
+    lastName: string;
+    trackingUrl?: string;
+    order?: MockOrder;
+  } | null>(null);
   const [copied, setCopied] = useState(false);
   
   const [showMobileCart, setShowMobileCart] = useState(false);
@@ -300,7 +308,15 @@ export function usePOS() {
 
     setTimeout(() => {
       setSending(false);
-      setCreatedOrder({ id: newOrder.id, phone: customerPhone.trim(), firstName: formattedFirstName, lastName: formattedLastName });
+      const trackingUrl = getTrackingUrl(newOrder);
+      setCreatedOrder({
+        id: newOrder.id,
+        phone: customerPhone.trim(),
+        firstName: formattedFirstName,
+        lastName: formattedLastName,
+        trackingUrl,
+        order: newOrder,
+      });
     }, 600);
   }
 
