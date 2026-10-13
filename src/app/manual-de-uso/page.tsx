@@ -26,7 +26,8 @@ import {
   LayoutDashboard,
   CheckSquare,
   Activity,
-  Zap
+  Zap,
+  ChevronRight
 } from "lucide-react";
 
 import {
@@ -51,26 +52,48 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 export default function ManualDeUsoPage() {
   const [activeModule, setActiveModule] = useState<ModuleKey>("todos");
+  const [activeSection, setActiveSection] = useState<string>("todas");
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Filtrado reactivo por texto y pestaña
+  // Módulo actualmente seleccionado (si no es 'todos')
+  const activeModObj = useMemo(() => {
+    if (activeModule === "todos") return null;
+    return MODULES_DATA.find((m) => m.id === activeModule) || null;
+  }, [activeModule]);
+
+  // Manejo de cambio de módulo: reinicia sub-sección a 'todas'
+  const handleSelectModule = (modId: ModuleKey) => {
+    setActiveModule(modId);
+    setActiveSection("todas");
+  };
+
+  // Filtrado reactivo por texto, módulo y subsección
   const filteredModules = useMemo(() => {
     return MODULES_DATA.filter((mod) => {
-      // Filtro por pestaña
+      // Filtro por pestaña de sector
       if (activeModule !== "todos" && mod.id !== activeModule) return false;
+
+      // Filtro por sub-sección seleccionada
+      if (activeModule !== "todos" && activeSection !== "todas") {
+        const hasSection = mod.sections.some((s) => s.title === activeSection);
+        if (!hasSection) return false;
+      }
 
       // Filtro por búsqueda de texto
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase().trim();
 
-      const matchTitle = mod.title.toLowerCase().includes(q);
+      const matchTitle =
+        mod.title.toLowerCase().includes(q) ||
+        mod.shortTitle.toLowerCase().includes(q);
       const matchSummary = mod.summary.toLowerCase().includes(q);
       const matchRole = mod.roleBadge.toLowerCase().includes(q);
 
       const matchSections = mod.sections.some(
         (s) =>
           s.title.toLowerCase().includes(q) ||
+          (s.shortTitle && s.shortTitle.toLowerCase().includes(q)) ||
           (s.badge && s.badge.toLowerCase().includes(q)) ||
           s.description.toLowerCase().includes(q) ||
           s.containers?.some(
@@ -101,7 +124,7 @@ export default function ManualDeUsoPage() {
 
       return matchTitle || matchSummary || matchRole || matchSections;
     });
-  }, [activeModule, searchQuery]);
+  }, [activeModule, activeSection, searchQuery]);
 
   const copyManualUrl = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -266,11 +289,12 @@ export default function ManualDeUsoPage() {
         </div>
       </section>
 
-      {/* ── Selector Rápido de Módulos (Tabs) ── */}
-      <div className="sticky top-[57px] z-40 bg-[#070709]/95 backdrop-blur-md border-b border-zinc-800/80 px-4 sm:px-8 py-3">
+      {/* ── Navegación Principal y Sub-Botones de Páginas ── */}
+      <div className="sticky top-[57px] z-40 bg-[#070709]/95 backdrop-blur-md border-b border-zinc-800/80 px-4 sm:px-8 py-3 space-y-2.5">
+        {/* Fila 1: Botones Principales de Sectores */}
         <div className="max-w-6xl mx-auto flex items-center gap-1.5 overflow-x-auto no-scrollbar">
           <button
-            onClick={() => setActiveModule("todos")}
+            onClick={() => handleSelectModule("todos")}
             className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition border ${
               activeModule === "todos"
                 ? "bg-zinc-100 text-zinc-950 border-white shadow-sm"
@@ -287,7 +311,7 @@ export default function ManualDeUsoPage() {
             return (
               <button
                 key={mod.id}
-                onClick={() => setActiveModule(mod.id)}
+                onClick={() => handleSelectModule(mod.id)}
                 className={`shrink-0 flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition border ${
                   isActive
                     ? `${mod.roleColor.bg} ${mod.roleColor.text} ${mod.roleColor.border} shadow-md`
@@ -295,11 +319,56 @@ export default function ManualDeUsoPage() {
                 }`}
               >
                 <Icon size={14} />
-                <span>{mod.title.replace(/^\d+\.\s*/, "")}</span>
+                <span>{mod.shortTitle}</span>
               </button>
             );
           })}
         </div>
+
+        {/* Fila 2: Sub-Botones de Páginas Específicas del Sector Activo */}
+        {activeModObj && (
+          <div className="max-w-6xl mx-auto pt-2 border-t border-zinc-800/60 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <span className="text-[10px] uppercase font-black tracking-widest text-zinc-500 shrink-0 flex items-center gap-1 mr-1">
+              <ChevronRight size={12} className="text-orange-500" />
+              Páginas de {activeModObj.shortTitle}:
+            </span>
+
+            {/* Botón para ver todas las páginas del módulo */}
+            <button
+              onClick={() => setActiveSection("todas")}
+              className={`shrink-0 px-2.5 py-1 rounded-lg text-xs font-bold transition border ${
+                activeSection === "todas"
+                  ? "bg-zinc-100 text-zinc-950 border-white shadow-sm"
+                  : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+              }`}
+            >
+              Todas ({activeModObj.sections.length})
+            </button>
+
+            {/* Sub-botones para cada página/sección individual */}
+            {activeModObj.sections.map((sec, idx) => {
+              const isSecActive = activeSection === sec.title;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setActiveSection(sec.title)}
+                  className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition border ${
+                    isSecActive
+                      ? `${activeModObj.roleColor.bg} ${activeModObj.roleColor.text} ${activeModObj.roleColor.border} shadow-sm ring-1 ring-orange-500/30`
+                      : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      isSecActive ? "bg-orange-400" : "bg-zinc-600"
+                    }`}
+                  />
+                  <span>{sec.shortTitle || sec.title}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── Contenido Principal ── */}
@@ -318,6 +387,7 @@ export default function ManualDeUsoPage() {
               onClick={() => {
                 setSearchQuery("");
                 setActiveModule("todos");
+                setActiveSection("todas");
               }}
               className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-xs font-bold rounded-xl text-white transition"
             >
@@ -328,6 +398,13 @@ export default function ManualDeUsoPage() {
         ) : (
           filteredModules.map((mod) => {
             const Icon = ICON_MAP[mod.iconName] || Layers;
+
+            // Filtro de secciones: si se seleccionó una subsección específica, se muestra solo esa
+            const sectionsToDisplay =
+              activeModule === mod.id && activeSection !== "todas"
+                ? mod.sections.filter((s) => s.title === activeSection)
+                : mod.sections;
+
             return (
               <section
                 key={mod.id}
@@ -385,7 +462,31 @@ export default function ManualDeUsoPage() {
 
                 {/* ── Subsecciones / Pantallas ── */}
                 <div className="p-6 sm:p-8 space-y-10">
-                  {mod.sections.map((sec, sIdx) => (
+                  {/* Banner de página activa cuando hay sub-sección seleccionada */}
+                  {activeModule === mod.id && activeSection !== "todas" && (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-orange-500/10 border border-orange-500/25 rounded-2xl">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse shrink-0" />
+                        <div className="text-xs text-zinc-300">
+                          <span className="text-orange-400 font-black uppercase tracking-wider text-[10px] block">
+                            Página Seleccionada:
+                          </span>
+                          <span className="text-white font-bold text-sm">
+                            {sectionsToDisplay[0]?.title || activeSection}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setActiveSection("todas")}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-orange-400 hover:text-orange-300 text-xs font-bold rounded-xl border border-orange-500/30 transition shadow-sm active:scale-95 shrink-0"
+                      >
+                        <RotateCcw size={12} />
+                        <span>Ver todas las páginas de {mod.shortTitle}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {sectionsToDisplay.map((sec, sIdx) => (
                     <div
                       key={sIdx}
                       className="bg-zinc-950/70 border border-zinc-800/70 rounded-2xl p-5 sm:p-7 space-y-6"

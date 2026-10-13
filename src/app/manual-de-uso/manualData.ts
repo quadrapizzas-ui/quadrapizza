@@ -27,6 +27,7 @@ export interface ContainerDetail {
 
 export interface SubSection {
   title: string;
+  shortTitle?: string;
   badge?: string;
   route?: string;
   description: string;
@@ -44,6 +45,7 @@ export interface SubSection {
 export interface DocModule {
   id: ModuleKey;
   title: string;
+  shortTitle: string;
   roleBadge: string;
   roleColor: {
     bg: string;
@@ -66,6 +68,7 @@ export const MODULES_DATA: DocModule[] = [
   {
     id: "catalogo",
     title: "1. Catálogo Online y Tienda Web Pública",
+    shortTitle: "Catálogo",
     roleBadge: "Clientes & Público General",
     roleColor: {
       bg: "bg-amber-500/10",
@@ -82,6 +85,7 @@ export const MODULES_DATA: DocModule[] = [
     sections: [
       {
         title: "Cabecera Pública, Buscador y Categorías",
+        shortTitle: "Cabecera y Menú",
         badge: "Navegación Web",
         route: "/",
         description:
@@ -131,6 +135,7 @@ export const MODULES_DATA: DocModule[] = [
       },
       {
         title: "Modal de Configuración y Personalización del Producto",
+        shortTitle: "Personalizar Sabores",
         badge: "Modal Interactivo",
         description:
           "Ventana interactiva que se abre al hacer clic sobre cualquier producto de la grilla para configurar cantidades, sabores, formatos y adicionales.",
@@ -186,6 +191,7 @@ export const MODULES_DATA: DocModule[] = [
       },
       {
         title: "Carrito de Compras y Checkout por WhatsApp",
+        shortTitle: "Carrito y WhatsApp",
         badge: "Checkout en 2 Pasos",
         description:
           "Panel lateral deslizable (drawer) donde el cliente revisa su pedido, ingresa sus datos de entrega, selecciona el método de pago y despacha la orden hacia el WhatsApp del local.",
@@ -294,6 +300,7 @@ export const MODULES_DATA: DocModule[] = [
   {
     id: "recepcion",
     title: "2. Recepción y Punto de Venta (POS)",
+    shortTitle: "Recepción",
     roleBadge: "Cajeros & Mostrador",
     roleColor: {
       bg: "bg-sky-500/10",
@@ -310,6 +317,7 @@ export const MODULES_DATA: DocModule[] = [
     sections: [
       {
         title: "Header Superior y Navegación del Cajero",
+        shortTitle: "Header y Sesión",
         badge: "Layout Recepción",
         description:
           "Barra superior presente en todas las pantallas del módulo de Recepción para supervisar la sesión activa.",
@@ -337,6 +345,7 @@ export const MODULES_DATA: DocModule[] = [
       },
       {
         title: "Nueva Venta (POS Táctil de Comandas)",
+        shortTitle: "Nueva Venta",
         badge: "/recepcion/nueva-venta",
         route: "/recepcion/nueva-venta",
         description:
@@ -437,6 +446,7 @@ export const MODULES_DATA: DocModule[] = [
       },
       {
         title: "Estado de Pedidos (Kanban de Mostrador)",
+        shortTitle: "Estado de Pedidos",
         badge: "/recepcion/estado-pedidos",
         route: "/recepcion/estado-pedidos",
         description:
@@ -485,6 +495,7 @@ export const MODULES_DATA: DocModule[] = [
       },
       {
         title: "Clientes Deudores y Cuentas Corrientes",
+        shortTitle: "Deudores y Pagos",
         badge: "/recepcion/deudores",
         route: "/recepcion/deudores",
         description:
@@ -560,6 +571,7 @@ export const MODULES_DATA: DocModule[] = [
       },
       {
         title: "Control de Stock en Mostrador",
+        shortTitle: "Control de Stock",
         badge: "/recepcion/stock",
         route: "/recepcion/stock",
         description:
@@ -594,6 +606,7 @@ export const MODULES_DATA: DocModule[] = [
       },
       {
         title: "Gestor del Catálogo y WhatsApp Oficial",
+        shortTitle: "Catálogo y Teléfono",
         badge: "/recepcion/catalogo",
         route: "/recepcion/catalogo",
         description:
@@ -625,6 +638,7 @@ export const MODULES_DATA: DocModule[] = [
       },
       {
         title: "Cierre de Caja y Arqueo de Turno",
+        shortTitle: "Cierre de Caja",
         badge: "/recepcion/cierre-caja",
         route: "/recepcion/cierre-caja",
         description:
@@ -663,6 +677,7 @@ export const MODULES_DATA: DocModule[] = [
   {
     id: "cocina",
     title: "3. Cocina y KDS (Kitchen Display System)",
+    shortTitle: "Cocina",
     roleBadge: "Pizzeros & Cocina",
     roleColor: {
       bg: "bg-orange-500/10",
@@ -679,6 +694,7 @@ export const MODULES_DATA: DocModule[] = [
     sections: [
       {
         title: "Login de Cocina y Header de Producción",
+        shortTitle: "Header y Sesión",
         badge: "Acceso & Seguridad",
         description:
           "Ingreso ágil mediante PinPad de 4 dígitos y cabecera con control de sesión.",
@@ -702,6 +718,7 @@ export const MODULES_DATA: DocModule[] = [
       },
       {
         title: "Monitor KDS Responsive Horizontal",
+        shortTitle: "Monitor KDS",
         badge: "/cocina/monitor-pedidos",
         route: "/cocina/monitor-pedidos",
         description:
@@ -737,6 +754,7 @@ export const MODULES_DATA: DocModule[] = [
       },
       {
         title: "Stock Crítico de Cocina",
+        shortTitle: "Stock Crítico",
         badge: "/cocina/stock-critico",
         route: "/cocina/stock-critico",
         description:
@@ -754,6 +772,7 @@ export const MODULES_DATA: DocModule[] = [
   {
     id: "delivery",
     title: "4. Delivery y Logística de Reparto",
+    shortTitle: "Delivery",
     roleBadge: "Cadetes & Repartidores",
     roleColor: {
       bg: "bg-emerald-500/10",
@@ -770,6 +789,7 @@ export const MODULES_DATA: DocModule[] = [
     sections: [
       {
         title: "Login de Delivery y Header",
+        shortTitle: "Header y Sesión",
         badge: "Acceso Móvil",
         description:
           "Acceso rápido mediante PIN numérico para cadetes y barra superior con control de sesión.",
@@ -793,6 +813,7 @@ export const MODULES_DATA: DocModule[] = [
       },
       {
         title: "Mis Viajes (Tablero Kanban 4 Columnas Responsive)",
+        shortTitle: "Mis Viajes",
         badge: "/delivery/mis-viajes",
         route: "/delivery/mis-viajes",
         description:
@@ -838,6 +859,7 @@ export const MODULES_DATA: DocModule[] = [
   {
     id: "gerencia",
     title: "5. Gerencia y Administración Central",
+    shortTitle: "Gerencia",
     roleBadge: "Dueños & Administradores",
     roleColor: {
       bg: "bg-purple-500/10",
@@ -854,6 +876,7 @@ export const MODULES_DATA: DocModule[] = [
     sections: [
       {
         title: "Header Gerencial, Selector de Período y Sesión",
+        shortTitle: "Header y Período",
         badge: "Layout Gerencia",
         description:
           "Barra superior presente en todas las páginas de Gerencia para filtrar períodos de análisis y controlar la seguridad.",
@@ -876,6 +899,7 @@ export const MODULES_DATA: DocModule[] = [
       },
       {
         title: "Dashboard Ejecutivo y KPIs Globales",
+        shortTitle: "Dashboard Ejecutivo",
         badge: "/gerencia/dashboard",
         route: "/gerencia/dashboard",
         description:
@@ -896,6 +920,7 @@ export const MODULES_DATA: DocModule[] = [
       },
       {
         title: "Finanzas y Rentabilidad (Explicación de Containers y Pestañas)",
+        shortTitle: "Finanzas (Containers)",
         badge: "/gerencia/finanzas",
         route: "/gerencia/finanzas",
         description:
@@ -1051,6 +1076,7 @@ export const MODULES_DATA: DocModule[] = [
       },
       {
         title: "Creación y Edición de Productos (Campo por Campo, Check por Check)",
+        shortTitle: "Crear Producto",
         badge: "/gerencia/catalogo/productos",
         route: "/gerencia/catalogo/productos",
         description:
@@ -1184,6 +1210,7 @@ export const MODULES_DATA: DocModule[] = [
       },
       {
         title: "Gestión de Personal y Seguridad (Usuarios)",
+        shortTitle: "Usuarios y Seguridad",
         badge: "/gerencia/usuarios",
         route: "/gerencia/usuarios",
         description:
@@ -1215,6 +1242,7 @@ export const MODULES_DATA: DocModule[] = [
   {
     id: "tracking",
     title: "6. Seguimiento en Vivo para el Cliente (/estado-pedido)",
+    shortTitle: "Tracking",
     roleBadge: "Clientes & Repartidores",
     roleColor: {
       bg: "bg-rose-500/10",
@@ -1231,6 +1259,7 @@ export const MODULES_DATA: DocModule[] = [
     sections: [
       {
         title: "Línea de Tiempo y Sincronización en Tiempo Real",
+        shortTitle: "Seguimiento en Vivo",
         badge: "Seguimiento en Vivo",
         route: "/estado-pedido",
         description:
@@ -1271,6 +1300,7 @@ export const MODULES_DATA: DocModule[] = [
   {
     id: "flujo",
     title: "7. Flujo Integral de una Comanda (De Punta a Punta)",
+    shortTitle: "Flujo de Orden",
     roleBadge: "Visión Global",
     roleColor: {
       bg: "bg-indigo-500/10",
@@ -1287,6 +1317,7 @@ export const MODULES_DATA: DocModule[] = [
     sections: [
       {
         title: "Paso a Paso del Flujo Operativo",
+        shortTitle: "Ciclo Paso a Paso",
         badge: "Ciclo de Vida",
         description:
           "Secuencia cronológica que conecta todos los módulos del sistema Quadra Pizza ERP.",
