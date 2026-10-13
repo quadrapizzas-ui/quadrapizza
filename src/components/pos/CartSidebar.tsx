@@ -167,7 +167,8 @@ export function CartSidebar({
     // 4. Armar mensaje de WhatsApp con enlace de seguimiento en vivo
     const trackingUrl = `${window.location.origin}/estado-pedido/${newOrder.id}`;
 
-    let message = `¡Hola Quadra Pizza! Soy *${fullName}* y quiero hacer el siguiente pedido:\n\n`;
+    let message = `¡Hola Quadra Pizza! 🍕 Soy *${fullName}* y quiero hacer el siguiente pedido:\n\n`;
+    message += `📋 *Detalle del pedido:*\n`;
     cartItems.forEach((item) => {
       const subtotal = getItemSubtotal(item);
       const qLabel =
@@ -189,9 +190,12 @@ export function CartSidebar({
       message += `- ${qLabel} de *${item.name}* -> ${formatPrice(subtotal)}${itemDetails}\n`;
     });
 
-    message += `\n*TOTAL: ${formatPrice(cartTotal)}*\n`;
-    message += `\n*Entrega:*\n`;
-    message += `- Método: ${deliveryMethod === "envio" ? "Envío a domicilio" : "Retiro en el local"}\n`;
+    if (deliveryCost > 0 || creditCardSurcharge > 0) {
+      message += `\n*Subtotal productos:* ${formatPrice(cartTotal)}\n`;
+    }
+
+    message += `\n📍 *Entrega:*\n`;
+    message += `- Tipo: ${deliveryMethod === "envio" ? "Envío a domicilio" : "Retiro en el local"}\n`;
     if (deliveryMethod === "envio") {
       message += `- Dirección: ${customerAddress.trim()}\n`;
       if (selectedNeighborhood) message += `- Barrio/Zona: ${selectedNeighborhood.name}\n`;
@@ -201,14 +205,19 @@ export function CartSidebar({
     if (customerPhone.trim()) {
       message += `- Teléfono: ${customerPhone.trim()}\n`;
     }
-    message += `- Pago: ${paymentMethod}\n`;
+
+    message += `\n💳 *Forma de pago:*\n`;
+    message += `- ${paymentMethod}\n`;
     if (creditCardSurcharge > 0) {
-      message += `- Recargo Tarjeta (15%): ${formatPrice(creditCardSurcharge)}\n`;
+      message += `- Recargo tarjeta (15%): ${formatPrice(creditCardSurcharge)}\n`;
     }
-    message += `\n*TOTAL FINAL: ${formatPrice(finalTotal)}*\n`;
-    message += `\n*Pedido Nº: #${newOrder.id}*`;
-    message += `\n*Seguí tu pedido en vivo aquí:*\n${trackingUrl}`;
-    message += `\n\n¡Muchas gracias!`;
+
+    message += `\n━━━━━━━━━━━━━━━━━━━━\n`;
+    message += `💰 *TOTAL A PAGAR: ${formatPrice(finalTotal)}*\n`;
+    message += `━━━━━━━━━━━━━━━━━━━━\n`;
+    message += `\n🔖 *Pedido Nº:* #${newOrder.id}\n`;
+    message += `📍 *Seguí tu pedido en vivo aquí:*\n${trackingUrl}\n`;
+    message += `\n¡Muchas gracias!`;
 
     const storedPhone = useProductsStore.getState().whatsappNumber;
     const savedPhone = typeof window !== "undefined" ? localStorage.getItem("quadra_catalog_phone") : null;
