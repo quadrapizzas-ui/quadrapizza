@@ -12,9 +12,13 @@ export type Product = {
   oldPrice?: string;       // Precio anterior tachado (cuando es oferta)
   pricePerHalfDozen?: string; // Precio por media docena (cuando aplica)
   pricePerDozen?: string;  // Precio por docena (cuando aplica)
+  cost?: number;           // Costo de elaboración/insumos por unidad
+  costPerHalfDozen?: number;
+  costPerDozen?: number;
   category: string;
   categoryId?: number;
   stock: boolean;
+  requiresKitchen?: boolean; // true: cocina/KDS para hornear; false: despacho directo sin cocción
   image: string;
   isOffer: boolean;
   saleType: "unidad" | "docena" | "combo" | "quadra";
@@ -52,6 +56,7 @@ export type Category = {
   id: number;
   name: string;
   parentId: number | null;
+  requiresKitchen?: boolean; // true: sector cocina/elaboración (KDS); false: despacho directo / bebidas / almacén
 };
 
 // ─── Initial Data ─────────────────────────────────────────────────────────────
@@ -63,18 +68,18 @@ const INITIAL_NEIGHBORHOODS: Neighborhood[] = [
 ];
 
 const INITIAL_CATEGORIES: Category[] = [
-  { id: 1, name: "Pizzas", parentId: null },
-  { id: 101, name: "Tradicionales", parentId: 1 },
-  { id: 102, name: "Especiales", parentId: 1 },
-  { id: 103, name: "Rellenas", parentId: 1 },
-  { id: 2, name: "Empanadas", parentId: null },
-  { id: 201, name: "Al Horno", parentId: 2 },
-  { id: 202, name: "Fritas", parentId: 2 },
-  { id: 3, name: "Sándwiches", parentId: null },
-  { id: 4, name: "Bebidas", parentId: null },
-  { id: 5, name: "Postres", parentId: null },
-  { id: 6, name: "Menú del día", parentId: null },
-  { id: 7, name: "Almacén", parentId: null },
+  { id: 1, name: "Pizzas", parentId: null, requiresKitchen: true },
+  { id: 101, name: "Tradicionales", parentId: 1, requiresKitchen: true },
+  { id: 102, name: "Especiales", parentId: 1, requiresKitchen: true },
+  { id: 103, name: "Rellenas", parentId: 1, requiresKitchen: true },
+  { id: 2, name: "Empanadas", parentId: null, requiresKitchen: true },
+  { id: 201, name: "Al Horno", parentId: 2, requiresKitchen: true },
+  { id: 202, name: "Fritas", parentId: 2, requiresKitchen: true },
+  { id: 3, name: "Sándwiches", parentId: null, requiresKitchen: true },
+  { id: 4, name: "Bebidas", parentId: null, requiresKitchen: false },
+  { id: 5, name: "Postres", parentId: null, requiresKitchen: false },
+  { id: 6, name: "Menú del día", parentId: null, requiresKitchen: true },
+  { id: 7, name: "Almacén", parentId: null, requiresKitchen: false },
 ];
 
 const INITIAL_EXTRAS: Extra[] = [
@@ -102,6 +107,7 @@ const INITIAL_PRODUCTS: Product[] = [
     name: "Muzzarella Clásica",
     description: "Salsa de tomate casera, abundante muzzarella, orégano y aceitunas negras.",
     price: "$6.500",
+    cost: 2300,
     category: "Pizzas",
     categoryId: 101,
     stock: true,
@@ -114,9 +120,10 @@ const INITIAL_PRODUCTS: Product[] = [
     name: "Pizza Napolitana",
     description: "Muzzarella, rodajas de tomate natural, ajo fileteado y perejil fresco.",
     price: "$7.800",
+    cost: 2700,
     category: "Pizzas",
     categoryId: 101,
-    stock: false,
+    stock: true,
     image: "/3.webp",
     isOffer: false,
     saleType: "unidad"
@@ -126,6 +133,7 @@ const INITIAL_PRODUCTS: Product[] = [
     name: "Pizza de Jamón y Morrones",
     description: "Muzzarella, jamón cocido natural y morrones asados.",
     price: "$8.200",
+    cost: 2900,
     category: "Pizzas",
     categoryId: 102,
     stock: true,
@@ -138,6 +146,7 @@ const INITIAL_PRODUCTS: Product[] = [
     name: "Fainá",
     description: "Porción de fainá clásica de garbanzo, esponjosa por dentro y crocante por fuera.",
     price: "$1.200",
+    cost: 400,
     category: "Pizzas",
     categoryId: 103,
     stock: true,
@@ -150,6 +159,7 @@ const INITIAL_PRODUCTS: Product[] = [
     name: "Quadra 1 (1 Variedad Extra)",
     description: "Pizza cuadrada de 9 porciones en 3 filas. 2 filas de Muzzarella y 1 fila a elección.",
     price: "$9.000",
+    cost: 3100,
     category: "Pizzas",
     categoryId: 102,
     stock: true,
@@ -167,6 +177,7 @@ const INITIAL_PRODUCTS: Product[] = [
     name: "Quadra 2 (2 Variedades Extra)",
     description: "Pizza cuadrada de 9 porciones en 3 filas. 1 fila de Muzzarella y 2 filas a elección.",
     price: "$10.500",
+    cost: 3600,
     category: "Pizzas",
     categoryId: 102,
     stock: true,
@@ -184,6 +195,7 @@ const INITIAL_PRODUCTS: Product[] = [
     name: "Quadra 3 (3 Variedades)",
     description: "Pizza cuadrada de 9 porciones en 3 filas. Elegí las 3 variedades que más te gusten.",
     price: "$12.000",
+    cost: 4200,
     category: "Pizzas",
     categoryId: 102,
     stock: true,
@@ -204,6 +216,9 @@ const INITIAL_PRODUCTS: Product[] = [
     price: "$950",
     pricePerHalfDozen: "$5.500",
     pricePerDozen: "$10.500",
+    cost: 320,
+    costPerHalfDozen: 1900,
+    costPerDozen: 3600,
     category: "Empanadas",
     categoryId: 201,
     stock: true,
@@ -219,6 +234,9 @@ const INITIAL_PRODUCTS: Product[] = [
     price: "$850",
     pricePerHalfDozen: "$5.000",
     pricePerDozen: "$9.500",
+    cost: 290,
+    costPerHalfDozen: 1700,
+    costPerDozen: 3300,
     category: "Empanadas",
     categoryId: 201,
     stock: true,
@@ -234,6 +252,9 @@ const INITIAL_PRODUCTS: Product[] = [
     price: "$850",
     pricePerHalfDozen: "$5.000",
     pricePerDozen: "$9.500",
+    cost: 290,
+    costPerHalfDozen: 1700,
+    costPerDozen: 3300,
     category: "Empanadas",
     categoryId: 202,
     stock: true,
@@ -247,6 +268,7 @@ const INITIAL_PRODUCTS: Product[] = [
     name: "Sándwich de Milanesa Completo",
     description: "Milanesa de ternera apanada, lechuga, tomate, jamón, queso y huevo frito. ¡Gigante!",
     price: "$7.000",
+    cost: 2500,
     category: "Sándwiches",
     categoryId: 3,
     stock: true,
@@ -261,6 +283,7 @@ const INITIAL_PRODUCTS: Product[] = [
     name: "Sándwich de Pollo Crocante",
     description: "Pechuga rebozada, mayonesa de ajo, lechuga y tomate en pan de campo.",
     price: "$5.800",
+    cost: 2000,
     category: "Sándwiches",
     categoryId: 3,
     stock: true,
@@ -274,9 +297,11 @@ const INITIAL_PRODUCTS: Product[] = [
     name: "Coca-Cola 1.5L",
     description: "Gaseosa línea Coca-Cola de litro y medio.",
     price: "$2.500",
+    cost: 1300,
     category: "Bebidas",
     categoryId: 4,
     stock: true,
+    requiresKitchen: false,
     image: "/coca.webp",
     isOffer: false,
     saleType: "unidad"
@@ -286,9 +311,11 @@ const INITIAL_PRODUCTS: Product[] = [
     name: "Cerveza Quilmes 1L",
     description: "Cerveza rubia clásica bien fría.",
     price: "$3.200",
+    cost: 1600,
     category: "Bebidas",
     categoryId: 4,
     stock: true,
+    requiresKitchen: false,
     image: "/cerveza.webp",
     isOffer: false,
     saleType: "unidad"
@@ -299,9 +326,11 @@ const INITIAL_PRODUCTS: Product[] = [
     name: "Flan con Dulce de Leche",
     description: "Flan casero con una generosa porción de dulce de leche.",
     price: "$1.500",
+    cost: 500,
     category: "Postres",
     categoryId: 5,
     stock: true,
+    requiresKitchen: false,
     image: "/postre.png",
     isOffer: false,
     saleType: "unidad"
@@ -311,9 +340,11 @@ const INITIAL_PRODUCTS: Product[] = [
     name: "Tiramisú",
     description: "Clásico postre italiano con mascarpone, café y cacao.",
     price: "$2.200",
+    cost: 800,
     category: "Postres",
     categoryId: 5,
     stock: true,
+    requiresKitchen: false,
     image: "/tiramisu.png",
     isOffer: false,
     saleType: "unidad"
@@ -324,9 +355,11 @@ const INITIAL_PRODUCTS: Product[] = [
     name: "Suprema de Pollo con Puré",
     description: "Suprema tierna con puré de papas cremoso.",
     price: "$4.500",
+    cost: 1600,
     category: "Menú del día",
     categoryId: 6,
     stock: true,
+    requiresKitchen: true,
     image: "/menu.png",
     isOffer: false,
     saleType: "unidad"
@@ -337,9 +370,11 @@ const INITIAL_PRODUCTS: Product[] = [
     name: "Alfajor Jorgito Chocolate",
     description: "Clásico alfajor de chocolate relleno con dulce de leche.",
     price: "$800",
+    cost: 350,
     category: "Almacén",
     categoryId: 7,
     stock: true,
+    requiresKitchen: false,
     image: "/alfajor.png",
     isOffer: false,
     saleType: "unidad"
@@ -351,6 +386,7 @@ const INITIAL_PRODUCTS: Product[] = [
     description: "Muzzarella y rodajas de longaniza calabresa picante. ¡Irresistible!",
     price: "$7.500",
     oldPrice: "$8.900",
+    cost: 2600,
     category: "Pizzas",
     categoryId: 102,
     stock: true,
@@ -364,6 +400,7 @@ const INITIAL_PRODUCTS: Product[] = [
     description: "2 pizzas muzzarella grandes para compartir en familia. ¡No te las pierdas!",
     price: "$11.000",
     oldPrice: "$13.000",
+    cost: 4500,
     category: "Pizzas",
     categoryId: 1,
     stock: true,
@@ -377,6 +414,7 @@ const INITIAL_PRODUCTS: Product[] = [
     description: "Elegí los sabores. Carne, jamón y queso, pollo o caprese.",
     price: "$9.500",
     oldPrice: "$11.500",
+    cost: 3300,
     category: "Empanadas",
     categoryId: 2,
     stock: true,
@@ -388,6 +426,8 @@ const INITIAL_PRODUCTS: Product[] = [
 
 // ─── Store Interface ──────────────────────────────────────────────────────────
 
+import { persist } from "zustand/middleware";
+
 interface ProductsState {
   products: Product[];
   categories: Category[];
@@ -395,6 +435,10 @@ interface ProductsState {
   extras: Extra[];
   varieties: Variety[];
   toggleProductStock: (id: number) => void;
+  updateProduct: (id: number, data: Partial<Product>) => void;
+  addProduct: (product: Omit<Product, "id">) => Product;
+  deleteProduct: (id: number) => void;
+  setProducts: (products: Product[]) => void;
   setNeighborhoods: (neighborhoods: Neighborhood[]) => void;
   setExtras: (extras: Extra[]) => void;
   setVarieties: (varieties: Variety[]) => void;
@@ -403,22 +447,50 @@ interface ProductsState {
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
-export const useProductsStore = create<ProductsState>((set) => ({
-  products: INITIAL_PRODUCTS,
-  categories: INITIAL_CATEGORIES,
-  neighborhoods: INITIAL_NEIGHBORHOODS,
-  extras: INITIAL_EXTRAS,
-  varieties: INITIAL_VARIETIES,
+export const useProductsStore = create<ProductsState>()(
+  persist(
+    (set, get) => ({
+      products: INITIAL_PRODUCTS,
+      categories: INITIAL_CATEGORIES,
+      neighborhoods: INITIAL_NEIGHBORHOODS,
+      extras: INITIAL_EXTRAS,
+      varieties: INITIAL_VARIETIES,
 
-  toggleProductStock: (id) =>
-    set((state) => ({
-      products: state.products.map((p) =>
-        p.id === id ? { ...p, stock: !p.stock } : p
-      ),
-    })),
+      toggleProductStock: (id) =>
+        set((state) => ({
+          products: state.products.map((p) =>
+            p.id === id ? { ...p, stock: !p.stock } : p
+          ),
+        })),
 
-  setNeighborhoods: (neighborhoods) => set({ neighborhoods }),
-  setExtras: (extras) => set({ extras }),
-  setVarieties: (varieties) => set({ varieties }),
-  setCategories: (categories) => set({ categories }),
-}));
+      updateProduct: (id, data) =>
+        set((state) => ({
+          products: state.products.map((p) =>
+            p.id === id ? { ...p, ...data } : p
+          ),
+        })),
+
+      addProduct: (productData) => {
+        const nextId = Math.max(0, ...get().products.map((p) => p.id)) + 1;
+        const newProduct: Product = { ...productData, id: nextId } as Product;
+        set((state) => ({ products: [...state.products, newProduct] }));
+        return newProduct;
+      },
+
+      deleteProduct: (id) =>
+        set((state) => ({
+          products: state.products.filter((p) => p.id !== id),
+        })),
+
+      setProducts: (products) => set({ products }),
+      setNeighborhoods: (neighborhoods) => set({ neighborhoods }),
+      setExtras: (extras) => set({ extras }),
+      setVarieties: (varieties) => set({ varieties }),
+      setCategories: (categories) => set({ categories }),
+    }),
+    {
+      name: "quadra-products-storage-v1",
+    }
+  )
+);
+

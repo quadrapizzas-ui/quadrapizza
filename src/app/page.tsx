@@ -6,12 +6,12 @@ import { Tag, Utensils, ShoppingBasket, Coffee } from "lucide-react";
 import { useProductsStore } from "@/lib/store/productsStore";
 import type { Product } from "@/lib/store/productsStore";
 import { useCart } from "@/hooks/useCart";
-import { CatalogHeader } from "@/components/catalog/CatalogHeader";
-import { SearchBar } from "@/components/catalog/SearchBar";
-import { ProductSection } from "@/components/catalog/ProductSection";
-import { ProductGrid } from "@/components/catalog/ProductGrid";
-const AddToCartModal = dynamic(() => import("@/components/catalog/AddToCartModal").then(mod => mod.AddToCartModal), { ssr: false });
-const CartSidebar = dynamic(() => import("@/components/catalog/CartSidebar").then(mod => mod.CartSidebar), { ssr: false });
+import { CatalogHeader } from "@/components/pos/CatalogHeader";
+import { SearchBar } from "@/components/pos/SearchBar";
+import { ProductSection } from "@/components/pos/ProductSection";
+import { ProductGrid } from "@/components/pos/ProductGrid";
+const AddToCartModal = dynamic(() => import("@/components/pos/AddToCartModal").then(mod => mod.AddToCartModal), { ssr: false });
+const CartSidebar = dynamic(() => import("@/components/pos/CartSidebar").then(mod => mod.CartSidebar), { ssr: false });
 
 export default function CatalogPage() {
   const { products, categories, neighborhoods, extras, varieties } = useProductsStore();
@@ -23,6 +23,7 @@ export default function CatalogPage() {
     removeFromCart,
     updateCartItemQuantity,
     cartTotal,
+    clearCart,
   } = useCart();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -92,6 +93,7 @@ export default function CatalogPage() {
           onUpdateQuantity={updateCartItemQuantity}
           onRemove={removeFromCart}
           onClose={() => setIsCartOpen(false)}
+          onClearCart={clearCart}
         />
       )}
     </div>

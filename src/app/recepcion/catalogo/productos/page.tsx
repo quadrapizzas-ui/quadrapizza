@@ -4,8 +4,8 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Plus, Search, Edit2, Trash2, X, UploadCloud, Link as LinkIcon, ImageIcon, ChevronDown, ArrowLeft } from "lucide-react";
-import { useProductsStore } from "@/lib/store/productsStore";
+import { Plus, Search, Edit2, Trash2, X, UploadCloud, Link as LinkIcon, ImageIcon, ChevronDown, ArrowLeft, ChefHat } from "lucide-react";
+import { useProductsStore, type Product } from "@/lib/store/productsStore";
 
 export default function ProductosPage() {
   const pathname = usePathname();
@@ -14,6 +14,7 @@ export default function ProductosPage() {
   const [isOffer, setIsOffer] = useState(false);
   const [imageType, setImageType] = useState("upload");
   const [inStock, setInStock] = useState(true);
+  const [requiresKitchen, setRequiresKitchen] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [saleType, setSaleType] = useState<"unidad" | "docena" | "combo" | "quadra">("unidad");
   const [searchQuery, setSearchQuery] = useState("");
@@ -27,18 +28,22 @@ export default function ProductosPage() {
   const [statusFilter, setStatusFilter] = useState("todos");
 
   // Formularios de producto
+  const [editingProductId, setEditingProductId] = useState<number | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState<number | "">("");
   const [price, setPrice] = useState("");
   const [pricePerHalfDozen, setPricePerHalfDozen] = useState("");
   const [pricePerDozen, setPricePerDozen] = useState("");
+  const [cost, setCost] = useState("");
+  const [costPerHalfDozen, setCostPerHalfDozen] = useState("");
+  const [costPerDozen, setCostPerDozen] = useState("");
   const [oldPrice, setOldPrice] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [customVarieties, setCustomVarieties] = useState<{name: string; price: number}[]>([]);
   const [customExtras, setCustomExtras] = useState<{name: string; price: number}[]>([]);
 
-  const { products, toggleProductStock, extras, setExtras, varieties, setVarieties, categories } = useProductsStore();
+  const { products, toggleProductStock, updateProduct, addProduct, deleteProduct, extras, setExtras, varieties, setVarieties, categories } = useProductsStore();
 
   const parents = categories.filter(c => c.parentId === null);
   const activeParent = categories.find(c => c.name === selectedParent);
@@ -96,8 +101,10 @@ export default function ProductosPage() {
           <button
             onClick={() => {
               setIsEditing(false);
+              setEditingProductId(null);
               setIsOffer(false);
               setInStock(true);
+              setRequiresKitchen(true);
               setImageType("upload");
               setSaleType("unidad");
               setIsQuadra(false);
@@ -111,6 +118,9 @@ export default function ProductosPage() {
               setPricePerHalfDozen("");
               setPricePerDozen("");
               setOldPrice("");
+              setCost("");
+              setCostPerHalfDozen("");
+              setCostPerDozen("");
               setImageUrl("");
               setCustomVarieties([]);
               setCustomExtras([]);
@@ -229,6 +239,7 @@ export default function ProductosPage() {
                   <th className="p-4">Producto</th>
                   <th className="p-4">Categoría</th>
                   <th className="p-4">Precio</th>
+                  <th className="p-4">Costo (CMV)</th>
                   <th className="p-4">Venta</th>
                   <th className="p-4">Estado</th>
                   <th className="p-4 pr-5 text-right">Acciones</th>
@@ -254,13 +265,34 @@ export default function ProductosPage() {
                               <p className="font-bold text-sm text-zinc-100">{p.name}</p>
                               <div className="sm:hidden flex flex-wrap items-center gap-2 mt-1">
                                 <span className="text-[10px] font-bold bg-zinc-800 px-2 py-0.5 rounded border border-zinc-700 text-zinc-400">{catName}</span>
+                                {p.requiresKitchen === false ? (
+                                  <span className="text-[9px] font-black bg-sky-500/15 text-sky-400 px-2 py-0.5 rounded border border-sky-500/20 uppercase tracking-widest">Directo</span>
+                                ) : (
+                                  <span className="text-[9px] font-black bg-orange-500/15 text-orange-400 px-2 py-0.5 rounded border border-orange-500/20 uppercase tracking-widest">Cocina</span>
+                                )}
                                 {p.isOffer && <span className="text-[9px] font-black bg-sky-500/15 text-sky-400 px-2 py-0.5 rounded border border-sky-500/20 uppercase tracking-widest">Oferta</span>}
+                                {p.cost !== undefined && p.cost > 0 && (
+                                  <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                                    CMV: ${p.cost.toLocaleString("es-AR")}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="sm:p-4 hidden sm:table-cell">
-                          <span className="text-[10px] font-bold uppercase tracking-widest bg-zinc-800 px-2 py-1 rounded-lg border border-zinc-700 text-zinc-400">{catName}</span>
+                          <div className="flex flex-col gap-1 items-start">
+                            <span className="text-[10px] font-bold uppercase tracking-widest bg-zinc-800 px-2 py-1 rounded-lg border border-zinc-700 text-zinc-400">{catName}</span>
+                            {p.requiresKitchen === false ? (
+                              <span className="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 inline-flex items-center gap-1">
+                                🥤 Despacho Directo
+                              </span>
+                            ) : (
+                              <span className="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 inline-flex items-center gap-1">
+                                👨‍🍳 Cocina KDS
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="sm:p-4 hidden sm:table-cell">
                           <div className="flex flex-col">
@@ -268,6 +300,25 @@ export default function ProductosPage() {
                             <span className={`font-black text-sm ${p.isOffer ? "text-sky-400" : "text-zinc-100"}`}>{p.price}</span>
                             {p.pricePerHalfDozen && <span className="text-[10px] text-zinc-500 mt-0.5">Media: {p.pricePerHalfDozen}</span>}
                             {p.pricePerDozen && <span className="text-[10px] text-zinc-500 mt-0.5">Docena: {p.pricePerDozen}</span>}
+                          </div>
+                        </td>
+                        <td className="sm:p-4 hidden sm:table-cell">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-sm text-amber-400">
+                              {p.cost !== undefined && p.cost !== null && p.cost > 0 ? `$${p.cost.toLocaleString("es-AR")}` : <span className="text-zinc-600 font-medium text-xs italic">Sin costo</span>}
+                            </span>
+                            {p.cost !== undefined && p.cost > 0 && (() => {
+                              const priceNum = Number(p.price.replace(/\D/g, ''));
+                              if (priceNum > 0) {
+                                const margin = Math.round(((priceNum - p.cost) / priceNum) * 100);
+                                return (
+                                  <span className={`text-[10px] font-bold mt-0.5 ${margin >= 40 ? "text-emerald-400" : "text-amber-400"}`}>
+                                    Margen: {margin}%
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })()}
                           </div>
                         </td>
                         <td className="sm:p-4 hidden sm:table-cell">
@@ -294,8 +345,10 @@ export default function ProductosPage() {
                             <button
                               onClick={() => {
                                 setIsEditing(true);
+                                setEditingProductId(p.id);
                                 setIsOffer(!!p.isOffer);
                                 setInStock(p.stock);
+                                setRequiresKitchen(p.requiresKitchen !== undefined ? p.requiresKitchen : (p.categoryId !== 4 && !p.category.toLowerCase().includes("bebida")));
                                 setImageType("upload");
                                 setSaleType(p.saleType);
                                 setIsQuadra(p.saleType === 'quadra');
@@ -315,6 +368,9 @@ export default function ProductosPage() {
                                 setPricePerHalfDozen(p.pricePerHalfDozen || "");
                                 setPricePerDozen(p.pricePerDozen || "");
                                 setOldPrice(p.oldPrice || "");
+                                setCost(p.cost !== undefined && p.cost !== null ? String(p.cost) : "");
+                                setCostPerHalfDozen(p.costPerHalfDozen !== undefined && p.costPerHalfDozen !== null ? String(p.costPerHalfDozen) : "");
+                                setCostPerDozen(p.costPerDozen !== undefined && p.costPerDozen !== null ? String(p.costPerDozen) : "");
                                 if (p.image) {
                                   setImageType("url");
                                   setImageUrl(p.image);
@@ -327,10 +383,19 @@ export default function ProductosPage() {
                                 setIsModalOpen(true);
                               }}
                               className="p-2 rounded-xl text-zinc-500 hover:text-white hover:bg-zinc-700 transition"
+                              title="Editar producto"
                             >
                               <Edit2 size={15} />
                             </button>
-                            <button className="p-2 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-zinc-700 transition">
+                            <button
+                              onClick={() => {
+                                if (confirm(`¿Estás seguro de eliminar el producto "${p.name}"?`)) {
+                                  deleteProduct(p.id);
+                                }
+                              }}
+                              className="p-2 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-zinc-700 transition"
+                              title="Eliminar producto"
+                            >
                               <Trash2 size={15} />
                             </button>
                           </div>
@@ -340,7 +405,7 @@ export default function ProductosPage() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={7} className="p-12 text-center text-zinc-600 font-bold text-xs uppercase tracking-widest">
+                    <td colSpan={8} className="p-12 text-center text-zinc-600 font-bold text-xs uppercase tracking-widest">
                       No se encontraron productos con estos filtros.
                     </td>
                   </tr>
@@ -399,9 +464,36 @@ export default function ProductosPage() {
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) {
+                            const img = new globalThis.Image();
                             const localUrl = URL.createObjectURL(file);
-                            setImageUrl(localUrl);
-                            setImageType("url");
+                            img.onload = () => {
+                              let width = img.width;
+                              let height = img.height;
+                              const MAX_SIZE = 800;
+                              
+                              if (width > MAX_SIZE || height > MAX_SIZE) {
+                                if (width > height) {
+                                  height = Math.round((height * MAX_SIZE) / width);
+                                  width = MAX_SIZE;
+                                } else {
+                                  width = Math.round((width * MAX_SIZE) / height);
+                                  height = MAX_SIZE;
+                                }
+                              }
+                              
+                              const canvas = document.createElement("canvas");
+                              canvas.width = width;
+                              canvas.height = height;
+                              const ctx = canvas.getContext("2d");
+                              if (ctx) {
+                                ctx.drawImage(img, 0, 0, width, height);
+                                const webpUrl = canvas.toDataURL("image/webp", 0.8);
+                                setImageUrl(webpUrl);
+                                setImageType("url");
+                              }
+                              URL.revokeObjectURL(localUrl);
+                            };
+                            img.src = localUrl;
                           }
                         }}
                       />
@@ -451,6 +543,30 @@ export default function ProductosPage() {
                   </div>
                   <button type="button" onClick={() => setIsOffer(!isOffer)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isOffer ? "bg-sky-500" : "bg-zinc-600"}`}>
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isOffer ? "translate-x-6" : "translate-x-1"}`} />
+                  </button>
+                </div>
+
+                {/* Toggle Requiere Cocina */}
+                <div className="flex items-center justify-between bg-zinc-800 border border-zinc-700 rounded-xl p-4">
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <ChefHat size={14} className={requiresKitchen ? "text-orange-400" : "text-sky-400"} />
+                      <p className={`font-bold text-sm ${requiresKitchen ? "text-orange-400" : "text-sky-400"}`}>
+                        {requiresKitchen ? "Requiere Cocina" : "Despacho Directo"}
+                      </p>
+                    </div>
+                    <p className="text-[10px] text-zinc-500 mt-0.5">
+                      {requiresKitchen
+                        ? "Pasa a pantalla KDS para hornear o preparar."
+                        : "Sin cocción (bebidas, helados, golosinas). Va directo a entrega."}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setRequiresKitchen(!requiresKitchen)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${requiresKitchen ? "bg-orange-500" : "bg-sky-600"}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${requiresKitchen ? "translate-x-6" : "translate-x-1"}`} />
                   </button>
                 </div>
               </div>
@@ -572,7 +688,24 @@ export default function ProductosPage() {
                   <div className="relative">
                     <select
                       value={categoryId}
-                      onChange={(e) => setCategoryId(Number(e.target.value))}
+                      onChange={(e) => {
+                        const newCatId = Number(e.target.value);
+                        setCategoryId(newCatId);
+                        const catObj = categories.find((c) => c.id === newCatId);
+                        if (catObj) {
+                          if (typeof catObj.requiresKitchen === "boolean") {
+                            setRequiresKitchen(catObj.requiresKitchen);
+                          } else {
+                            const isDrinkOrStore =
+                              catObj.id === 4 ||
+                              catObj.name.toLowerCase().includes("bebida") ||
+                              catObj.id === 7 ||
+                              catObj.name.toLowerCase().includes("almacén") ||
+                              catObj.name.toLowerCase().includes("almacen");
+                            setRequiresKitchen(!isDrinkOrStore);
+                          }
+                        }
+                      }}
                       className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 outline-none focus:border-sky-500/60 transition text-sm font-bold text-zinc-100"
                     >
                       <option value="" disabled>Seleccionar...</option>
@@ -638,6 +771,93 @@ export default function ProductosPage() {
                       </div>
                     </>
                   )}
+                </div>
+
+                {/* ── Costo de Elaboración / Insumos (CMV) ── */}
+                <div className="p-3.5 bg-amber-500/5 rounded-xl border border-amber-500/20 space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-black text-amber-400 uppercase tracking-widest">
+                      Costo de Elaboración / CMV
+                    </label>
+                    <p className="text-[10px] text-zinc-400 font-medium">
+                      Insumos y materia prima para calcular rentabilidad y margen en Finanzas.
+                    </p>
+                  </div>
+
+                  <div className={`grid gap-4 ${saleType === "combo" ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1"}`}>
+                    <div>
+                      <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">
+                        {saleType === "docena" ? "Costo por Docena" : "Costo por Unidad"}
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">$</span>
+                        <input
+                          type="text"
+                          value={cost}
+                          onChange={e => setCost(e.target.value)}
+                          className="w-full bg-zinc-900 border border-zinc-700 rounded-xl pl-8 pr-4 py-2.5 outline-none focus:border-amber-500/60 transition text-sm font-bold text-amber-300 placeholder:text-zinc-600"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+
+                    {saleType === "combo" && (
+                      <>
+                        <div>
+                          <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">
+                            Costo Media Docena
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">$</span>
+                            <input
+                              type="text"
+                              value={costPerHalfDozen}
+                              onChange={e => setCostPerHalfDozen(e.target.value)}
+                              className="w-full bg-zinc-900 border border-zinc-700 rounded-xl pl-8 pr-4 py-2.5 outline-none focus:border-amber-500/60 transition text-sm font-bold text-amber-300 placeholder:text-zinc-600"
+                              placeholder="0"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">
+                            Costo Docena
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">$</span>
+                            <input
+                              type="text"
+                              value={costPerDozen}
+                              onChange={e => setCostPerDozen(e.target.value)}
+                              className="w-full bg-zinc-900 border border-zinc-700 rounded-xl pl-8 pr-4 py-2.5 outline-none focus:border-amber-500/60 transition text-sm font-bold text-amber-300 placeholder:text-zinc-600"
+                              placeholder="0"
+                            />
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Margen Calculado en Vivo */}
+                  {(() => {
+                    const pNum = Number(price.replace(/\D/g, ''));
+                    const cNum = Number(cost.replace(/\D/g, ''));
+                    if (pNum > 0 && cNum > 0) {
+                      const ganancia = pNum - cNum;
+                      const margin = Math.round((ganancia / pNum) * 100);
+                      return (
+                        <div className="flex items-center justify-between bg-zinc-900/80 px-3 py-2 rounded-lg border border-zinc-800 text-xs">
+                          <span className="text-zinc-400 font-medium">Margen estimado:</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-zinc-300 font-bold">Ganancia: ${ganancia.toLocaleString("es-AR")}</span>
+                            <span className={`px-2 py-0.5 rounded font-black text-[10px] ${margin >= 40 ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30" : "bg-amber-500/15 text-amber-400 border border-amber-500/30"}`}>
+                              {margin}%
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
 
                 {isOffer && (
@@ -708,7 +928,57 @@ export default function ProductosPage() {
 
                 <div className="pt-2">
                   <button
-                    onClick={() => setIsModalOpen(false)}
+                    onClick={() => {
+                      if (!name.trim()) {
+                        alert("Por favor ingrese el nombre del producto");
+                        return;
+                      }
+
+                      const formattedPrice = price.trim().startsWith("$") ? price.trim() : `$${Number(price.replace(/\D/g, "") || 0).toLocaleString("es-AR")}`;
+                      const formattedOldPrice = oldPrice.trim() ? (oldPrice.trim().startsWith("$") ? oldPrice.trim() : `$${Number(oldPrice.replace(/\D/g, "") || 0).toLocaleString("es-AR")}`) : undefined;
+                      const formattedHalf = pricePerHalfDozen.trim() ? (pricePerHalfDozen.trim().startsWith("$") ? pricePerHalfDozen.trim() : `$${Number(pricePerHalfDozen.replace(/\D/g, "") || 0).toLocaleString("es-AR")}`) : undefined;
+                      const formattedDozen = pricePerDozen.trim() ? (pricePerDozen.trim().startsWith("$") ? pricePerDozen.trim() : `$${Number(pricePerDozen.replace(/\D/g, "") || 0).toLocaleString("es-AR")}`) : undefined;
+
+                      const numCost = cost.trim() ? Number(cost.replace(/\D/g, "")) : undefined;
+                      const numCostHalf = costPerHalfDozen.trim() ? Number(costPerHalfDozen.replace(/\D/g, "")) : undefined;
+                      const numCostDozen = costPerDozen.trim() ? Number(costPerDozen.replace(/\D/g, "")) : undefined;
+
+                      const catObj = categories.find(c => c.id === Number(categoryId));
+
+                      const productPayload = {
+                        name: name.trim(),
+                        description: description.trim(),
+                        categoryId: categoryId ? Number(categoryId) : undefined,
+                        category: catObj ? catObj.name : "General",
+                        price: formattedPrice,
+                        oldPrice: isOffer ? formattedOldPrice : undefined,
+                        pricePerHalfDozen: saleType === "combo" ? formattedHalf : undefined,
+                        pricePerDozen: saleType === "combo" ? formattedDozen : undefined,
+                        cost: numCost,
+                        costPerHalfDozen: saleType === "combo" ? numCostHalf : undefined,
+                        costPerDozen: saleType === "combo" ? numCostDozen : undefined,
+                        isOffer,
+                        saleType,
+                        stock: inStock,
+                        requiresKitchen,
+                        image: imageUrl.trim() || "/1.webp",
+                        customVarieties: customVarieties.filter(v => v.name.trim() !== ""),
+                        customExtras: customExtras.filter(e => e.name.trim() !== ""),
+                        quadraConfig: isQuadra ? {
+                          totalRows: 3,
+                          fixedRows: quadraFixedRowsCount > 0 ? [{ variety: quadraFixedVariety || "Muzzarella", rowCount: quadraFixedRowsCount }] : [],
+                          customizableRowsCount: quadraCustomizableRows,
+                        } : undefined,
+                      };
+
+                      if (isEditing && editingProductId !== null) {
+                        updateProduct(editingProductId, productPayload);
+                      } else {
+                        addProduct(productPayload as Omit<Product, "id">);
+                      }
+
+                      setIsModalOpen(false);
+                    }}
                     className="w-full bg-sky-600 hover:bg-sky-500 text-white font-black py-3 rounded-xl transition active:scale-95 shadow-lg shadow-sky-900/30 text-sm"
                   >
                     {isEditing ? "Guardar Cambios" : "Guardar Producto"}

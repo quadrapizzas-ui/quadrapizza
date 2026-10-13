@@ -4,8 +4,9 @@ import { useState, useMemo } from "react";
 import Image from "next/image";
 import { Plus, Minus, Trash2, Search, ChevronDown, Send, ShoppingBasket, ShoppingCart, X, MessageSquare, User, Check, Copy } from "lucide-react";
 import { useProductsStore, Product } from "@/lib/store/productsStore";
-import { mockOrdersStore, mockCustomersStore, MockCustomer } from "@/lib/mockData";
-import { useSyncExternalStore } from "react";
+import { MockCustomer } from "@/types/models";
+import { useCustomersStore } from "@/lib/store/customersStore";
+import { useOrdersStore } from "@/lib/store/ordersStore";
 import { useAuthStore } from "@/lib/store/authStore";
 
 type UnitType = "unidad" | "media_docena" | "docena";
@@ -39,255 +40,48 @@ function itemSubtotal(item: CartItem): number {
   return base + extrasTotal;
 }
 
+import { usePOS } from "@/hooks/usePOS";
+
 export default function NuevaVentaPage() {
-  const { products, neighborhoods, extras, varieties, categories } = useProductsStore();
-
-  const [selectedParent, setSelectedParent] = useState("Todos");
-  const [selectedSub, setSelectedSub] = useState("Todas");
-  const [search, setSearch] = useState("");
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const { activeUser } = useAuthStore();
-
-  const customers = useSyncExternalStore(mockCustomersStore.subscribe, mockCustomersStore.getSnapshot);
-
-  const [showModal, setShowModal] = useState(false);
-  const [customerId, setCustomerId] = useState<string | null>(null);
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [deliveryMethod, setDeliveryMethod] = useState<"retiro" | "envio">("retiro");
-  const [selectedNeighId, setSelectedNeighId] = useState<number | null>(null);
-  const [address, setAddress] = useState("");
-  const [addressDetail, setAddressDetail] = useState("");
-  const [payment, setPayment] = useState("Efectivo");
-  const [dineroRecibido, setDineroRecibido] = useState("");
-  const [sending, setSending] = useState(false);
-  const [createdOrder, setCreatedOrder] = useState<{ id: string; phone?: string; name: string } | null>(null);
-  const [copied, setCopied] = useState(false);
-
-  function handleNewOrder() {
-    setShowModal(false);
-    setCreatedOrder(null);
-    setCopied(false);
-    setCart([]);
-    setCustomerId(null); setCustomerName(""); setCustomerPhone(""); setAddress(""); setAddressDetail("");
-    setDeliveryMethod("retiro"); setSelectedNeighId(null); setPayment("Efectivo"); setDineroRecibido("");
-  }
-
-  const [showMobileCart, setShowMobileCart] = useState(false);
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [tempNote, setTempNote] = useState("");
-  const [selectedProd, setSelectedProd] = useState<Product | null>(null);
-  const [modalQty, setModalQty] = useState(1);
-  const [modalUnit, setModalUnit] = useState<UnitType>("unidad");
-  const [quadraSelections, setQuadraSelections] = useState<string[]>([]);
-  const [selectedExtras, setSelectedExtras] = useState<typeof extras>([]);
-  const [selectedCustomVariety, setSelectedCustomVariety] = useState("");
-  const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
-  const [customerSearchType, setCustomerSearchType] = useState<"name" | "phone" | null>(null);
-
-  const parentCats = useMemo(() => categories.filter(c => c.parentId === null), [categories]);
-  const activeParent = useMemo(() => categories.find(c => c.name === selectedParent), [categories, selectedParent]);
-  const subCats = useMemo(() => activeParent ? categories.filter(c => c.parentId === activeParent.id) : [], [categories, activeParent]);
-  const hasSubCats = subCats.length > 0;
-
-  const suggestedCustomers = useMemo(() => {
-    if (!showCustomerSuggestions || !customerSearchType) return [];
-    const query = customerSearchType === "name" ? customerName.toLowerCase() : customerPhone.replace(/\D/g, "");
-    if (query.length < 2) return [];
-    
-    return customers.filter(c => {
-      if (customerSearchType === "name") {
-        return c.name.toLowerCase().includes(query);
-      } else {
-        return c.phone.replace(/\D/g, "").includes(query);
-      }
-    }).slice(0, 4);
-  }, [customers, customerName, customerPhone, showCustomerSuggestions, customerSearchType]);
-
-  function selectCustomer(c: MockCustomer) {
-    setCustomerId(c.id);
-    setCustomerName(c.name);
-    setCustomerPhone(c.phone);
-    if (c.address || c.neighborhoodId) {
-      setDeliveryMethod("envio");
-      setAddress(c.address || "");
-      setAddressDetail(c.addressDetail || "");
-      setSelectedNeighId(c.neighborhoodId || null);
-    }
-    setShowCustomerSuggestions(false);
-    setCustomerSearchType(null);
-  }
-
-  const handleParentSelect = (name: string) => {
-    setSelectedParent(name);
-    setSelectedSub("Todas");
-  };
-
-  const filtered = useMemo(() => {
-    return products.filter(p => {
-      if (!p.stock) return false;
-
-      if (selectedParent !== "Todos" && activeParent) {
-        if (hasSubCats && selectedSub !== "Todas") {
-          const subObj = subCats.find(c => c.name === selectedSub);
-          if (p.categoryId !== subObj?.id) return false;
-        } else if (hasSubCats) {
-          const childIds = subCats.map(c => c.id);
-          if (p.categoryId !== activeParent.id && !childIds.includes(p.categoryId ?? -1)) return false;
-        } else {
-          if (p.categoryId !== activeParent.id) return false;
-        }
-      }
-
-      if (search.trim().length >= 2) {
-        const q = search.toLowerCase();
-        return p.name.toLowerCase().includes(q) || (p.description || "").toLowerCase().includes(q);
-      }
-      return true;
-    });
-  }, [products, selectedParent, selectedSub, search, activeParent, hasSubCats, subCats]);
-
-  function openProdModal(p: Product) {
-    setSelectedProd(p);
-    setModalQty(1);
-    setSelectedExtras([]);
-    setModalUnit(p.saleType === "docena" ? "docena" : "unidad");
-    if (p.saleType === "quadra" && p.quadraConfig) {
-      setQuadraSelections(Array(p.quadraConfig.customizableRowsCount).fill(""));
-    } else {
-      setQuadraSelections([]);
-    }
-    if (p.customVarieties && p.customVarieties.length > 0) {
-      setSelectedCustomVariety("");
-    } else {
-      setSelectedCustomVariety("");
-    }
-  }
-
-  function handleProductClick(p: Product) {
-    if (p.saleType !== "unidad" || (p.customVarieties && p.customVarieties.length > 0)) {
-      openProdModal(p);
-    } else {
-      const unit: UnitType = "unidad";
-      const key = `${p.id}-${unit}`;
-      const unitPriceVal = getPriceForUnit(p, unit);
-      setCart(prev => {
-        const idx = prev.findIndex(i => i.key === key);
-        if (idx >= 0) {
-          const next = [...prev];
-          next[idx] = { ...next[idx], quantity: next[idx].quantity + 1 };
-          return next;
-        }
-        return [...prev, { key, productId: p.id, name: p.name, image: p.image, unitType: unit, price: unitPriceVal, quantity: 1 }];
-      });
-    }
-  }
-
-  function getPriceForUnit(p: Product, unit: UnitType): number {
-    if (unit === "docena") return p.pricePerDozen ? parsePrice(p.pricePerDozen) : parsePrice(p.price) * 12;
-    if (unit === "media_docena") return p.pricePerHalfDozen ? parsePrice(p.pricePerHalfDozen) : parsePrice(p.price) * 6;
-    return parsePrice(p.price);
-  }
-
-  function confirmAdd() {
-    if (!selectedProd) return;
-    const selectionsKey = quadraSelections.length > 0 ? `-${quadraSelections.join('-')}` : '';
-    const extrasKey = selectedExtras.length > 0 ? `-ext-${selectedExtras.map(e => e.id).join('-')}` : '';
-    const varietyKey = selectedCustomVariety ? `-var-${selectedCustomVariety}` : '';
-    const key = `${selectedProd.id}-${modalUnit}${selectionsKey}${extrasKey}${varietyKey}`;
-    const customVarietyData = selectedProd.customVarieties?.find(v => v.name === selectedCustomVariety);
-    const unitPriceVal = getPriceForUnit(selectedProd, modalUnit) + (customVarietyData?.price || 0);
-    setCart(prev => {
-      const idx = prev.findIndex(i => i.key === key);
-      if (idx >= 0) {
-        const next = [...prev];
-        next[idx] = { ...next[idx], quantity: next[idx].quantity + modalQty };
-        return next;
-      }
-      return [...prev, { 
-        key, 
-        productId: selectedProd.id, 
-        name: selectedProd.name, 
-        image: selectedProd.image, 
-        unitType: modalUnit, 
-        price: unitPriceVal, 
-        quantity: modalQty,
-        quadraSelections: selectedProd.saleType === 'quadra' ? [...quadraSelections] : undefined,
-        extras: selectedExtras.length > 0 ? [...selectedExtras.map(e => ({ name: e.name, price: e.price }))] : undefined,
-        customVariety: selectedCustomVariety || undefined
-      }];
-    });
-    setSelectedProd(null);
-  }
-
-  function updateQty(key: string, delta: number) {
-    setCart(prev => prev.map(i => i.key === key ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i).filter(i => i.quantity > 0));
-  }
-
-  const subtotal = cart.reduce((s, i) => s + itemSubtotal(i), 0);
-  const selectedNeigh = neighborhoods.find(n => n.id === selectedNeighId);
-  const deliveryCost = deliveryMethod === "envio" && selectedNeigh ? selectedNeigh.deliveryCost : 0;
-  const baseTotal = subtotal + deliveryCost;
-  const creditCardSurcharge = payment === "Tarjeta de crédito" ? baseTotal * 0.15 : 0;
-  const total = baseTotal + creditCardSurcharge;
-
-  function handleSend() {
-    if (!customerName.trim() || cart.length === 0) return;
-    setSending(true);
-
-    const formattedCustomerName = customerName.trim().split(/\s+/).map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-    ).join(' ');
-
-    mockCustomersStore.addOrUpdateCustomer({
-      id: customerId || undefined,
-      name: formattedCustomerName,
-      phone: customerPhone.trim(),
-      address: deliveryMethod === "envio" ? address : "",
-      neighborhoodId: deliveryMethod === "envio" && selectedNeighId ? selectedNeighId : undefined,
-      addressDetail: deliveryMethod === "envio" ? addressDetail : "",
-      orders: 1,
-      total,
-    });
-
-    const itemsForStore = cart.map(i => {
-      let itemName = `${i.name}${i.unitType !== "unidad" ? ` (${i.unitType === "docena" ? "Docena" : "1/2 Doc"})` : ""}`;
-      if (i.quadraSelections && i.quadraSelections.length > 0) {
-        itemName += ` [${i.quadraSelections.join(', ')}]`;
-      }
-      if (i.customVariety) {
-        itemName += ` [${i.customVariety}]`;
-      }
-      if (i.extras && i.extras.length > 0) {
-        itemName += ` (+ ${i.extras.map(e => e.name).join(', ')})`;
-      }
-      if (i.note) itemName += ` - Nota: ${i.note}`;
-      return {
-        name: itemName,
-        quantity: i.quantity,
-        price: i.price,
-      };
-    });
-
-    const newOrder = mockOrdersStore.addOrder({
-      items: itemsForStore,
-      clientName: formattedCustomerName,
-      phone: customerPhone.trim() || undefined,
-      address: deliveryMethod === "retiro" ? "Retiro en local" : `${address}${selectedNeigh ? ` - ${selectedNeigh.name}` : ""}`,
-      paymentMethod: payment,
-      deliveryFee: deliveryCost,
-      total,
-      cajero_id: activeUser?.id,
-      cajero_name: activeUser?.name,
-    });
-
-    setTimeout(() => {
-      setSending(false);
-      setCreatedOrder({ id: newOrder.id, phone: customerPhone.trim(), name: formattedCustomerName });
-    }, 600);
-  }
-
-  const unitLabel: Record<UnitType, string> = { unidad: "Unidad", media_docena: "Media Docena", docena: "Docena" };
+  const {
+    products, neighborhoods, extras, varieties, categories,
+    cart, setCart,
+    search, setSearch,
+    selectedParent, setSelectedParent,
+    selectedSub, setSelectedSub,
+    showModal, setShowModal,
+    customerId, setCustomerId,
+    customerFirstName, setCustomerFirstName,
+    customerLastName, setCustomerLastName,
+    customerPhone, setCustomerPhone,
+    deliveryMethod, setDeliveryMethod,
+    selectedNeighId, setSelectedNeighId,
+    address, setAddress,
+    addressDetail, setAddressDetail,
+    payment, setPayment,
+    paymentStatus, setPaymentStatus,
+    dineroRecibido, setDineroRecibido,
+    sending, setSending,
+    createdOrder, setCreatedOrder,
+    showMobileCart, setShowMobileCart,
+    editingNoteId, setEditingNoteId,
+    tempNote, setTempNote,
+    selectedProd, setSelectedProd,
+    modalQty, setModalQty,
+    modalUnit, setModalUnit,
+    quadraSelections, setQuadraSelections,
+    selectedExtras, setSelectedExtras,
+    selectedCustomVariety, setSelectedCustomVariety,
+    showCustomerSuggestions, setShowCustomerSuggestions,
+    customerSearchType, setCustomerSearchType,
+    parentCats, activeParent, subCats, hasSubCats,
+    suggestedCustomers, selectCustomer, handleParentSelect,
+    filteredProducts: filtered, getPriceForUnit, openProdModal, handleProductClick,
+    confirmAdd, updateQty, subtotal, deliveryCost, total, handleSend, handleNewOrder,
+    copied, setCopied, selectedNeigh, creditCardSurcharge
+  } = usePOS();
+  
+  const unitLabel: Record<"unidad" | "media_docena" | "docena", string> = { unidad: "Unidad", media_docena: "Media Docena", docena: "Docena" };
 
   return (
     <div className="flex h-full overflow-hidden bg-[#09090b] gap-2 p-2">
@@ -354,7 +148,7 @@ export default function NuevaVentaPage() {
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar p-3">
+        <div className="flex-1 overflow-y-auto no-scrollbar p-3 pb-24 lg:pb-3">
           {filtered.length === 0 ? (
             <div className="h-full flex items-center justify-center text-zinc-600 text-sm font-bold">Sin productos</div>
           ) : (
@@ -683,7 +477,7 @@ export default function NuevaVentaPage() {
                   <Check size={40} />
                 </div>
                 <h2 className="font-black text-2xl text-white mb-2">¡Pedido Confirmado!</h2>
-                <p className="text-zinc-400 mb-8 max-w-sm">El pedido #{createdOrder.id} para {createdOrder.name} se ha guardado correctamente.</p>
+                <p className="text-zinc-400 mb-8 max-w-sm">El pedido #{createdOrder.id} para {createdOrder.firstName} se ha guardado correctamente.</p>
                 
                 <div className="w-full max-w-sm space-y-3">
                   <button
@@ -702,7 +496,7 @@ export default function NuevaVentaPage() {
                   <button
                     onClick={() => {
                       const url = `${window.location.origin}/estado-pedido/${createdOrder.id}`;
-                      const text = `¡Hola ${createdOrder.name}! 👋 Acá te dejamos el enlace para que sigas el estado de tu pedido: ${url}`;
+                      const text = `¡Hola ${createdOrder.firstName}! 👋 Acá te dejamos el enlace para que sigas el estado de tu pedido: ${url}`;
                       const phone = createdOrder.phone ? (createdOrder.phone.startsWith("54") ? createdOrder.phone : `549${createdOrder.phone}`) : "";
                       const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
                       window.open(waUrl, '_blank');
@@ -742,25 +536,37 @@ export default function NuevaVentaPage() {
                 
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative">
-                    <div className="relative">
-                      <label className="block text-xs font-bold text-zinc-400 mb-1.5">Nombre del cliente *</label>
-                      <input value={customerName} 
-                        onChange={e => {
-                          setCustomerName(e.target.value);
-                          setCustomerId(null);
-                          setCustomerSearchType("name");
-                          setShowCustomerSuggestions(true);
-                        }}
-                        onFocus={() => {
-                          if (customerName.length >= 2) {
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="relative">
+                        <label className="block text-xs font-bold text-zinc-400 mb-1.5">Nombre *</label>
+                        <input value={customerFirstName} 
+                          onChange={e => {
+                            setCustomerFirstName(e.target.value);
+                            setCustomerId(null);
                             setCustomerSearchType("name");
                             setShowCustomerSuggestions(true);
-                          }
-                        }}
-                        onBlur={() => setTimeout(() => setShowCustomerSuggestions(false), 200)}
-                        autoFocus
-                        placeholder="Ej. Juan García"
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-sky-500/60 transition" />
+                          }}
+                          onFocus={() => {
+                            if (customerFirstName.length >= 2) {
+                              setCustomerSearchType("name");
+                              setShowCustomerSuggestions(true);
+                            }
+                          }}
+                          onBlur={() => setTimeout(() => setShowCustomerSuggestions(false), 200)}
+                          autoFocus
+                          placeholder="Ej. Juan"
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-sky-500/60 transition" />
+                      </div>
+                      <div className="relative">
+                        <label className="block text-xs font-bold text-zinc-400 mb-1.5">Apellido</label>
+                        <input value={customerLastName} 
+                          onChange={e => {
+                            setCustomerLastName(e.target.value);
+                            setCustomerId(null);
+                          }}
+                          placeholder="Ej. Pérez"
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-sky-500/60 transition" />
+                      </div>
                     </div>
                     <div className="relative">
                       <label className="block text-xs font-bold text-zinc-400 mb-1.5">Teléfono *</label>
@@ -792,7 +598,7 @@ export default function NuevaVentaPage() {
                           <button key={c.id} onMouseDown={(e) => { e.preventDefault(); selectCustomer(c); }}
                             className="w-full text-left px-4 py-3 hover:bg-zinc-700 transition flex flex-col gap-1 border-b border-zinc-700/50 last:border-0">
                             <div className="flex items-center justify-between">
-                              <span className="text-sm font-bold text-white">{c.name}</span>
+                              <span className="text-sm font-bold text-white">{c.firstName} {c.lastName}</span>
                               <span className="text-xs font-bold text-sky-400">{c.phone}</span>
                             </div>
                             {c.address && (
@@ -860,7 +666,20 @@ export default function NuevaVentaPage() {
                         </button>
                       ))}
                     </div>
-                    {payment === "Efectivo" && (
+
+                    <label className="block text-xs font-bold text-zinc-400 mb-1.5 mt-4">Estado del Pago</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+                      <button onClick={() => setPaymentStatus("pendiente")}
+                        className={`py-2.5 text-xs font-bold rounded-xl border transition ${paymentStatus === "pendiente" ? "bg-orange-500/15 border-orange-500/40 text-orange-400" : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300"}`}>
+                        Pendiente / A cobrar
+                      </button>
+                      <button onClick={() => setPaymentStatus("pagado")}
+                        className={`py-2.5 text-xs font-bold rounded-xl border transition ${paymentStatus === "pagado" ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400" : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300"}`}>
+                        Ya pagado
+                      </button>
+                    </div>
+
+                    {payment === "Efectivo" && paymentStatus === "pendiente" && (
                       <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
                         <div>
                           <label className="block text-xs font-bold text-zinc-400 mb-1.5">Dinero recibido</label>
@@ -922,7 +741,7 @@ export default function NuevaVentaPage() {
               </button>
               <button
                 onClick={handleSend}
-                disabled={sending || !customerName.trim() || !customerPhone.trim() || (deliveryMethod === "envio" && (!address.trim() || !selectedNeighId))}
+                disabled={sending || !customerFirstName.trim() || !customerPhone.trim() || (deliveryMethod === "envio" && (!address.trim() || !selectedNeighId))}
                 className="flex-2 flex-[2] flex items-center justify-center gap-2 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-black text-sm transition active:scale-95 disabled:opacity-40 disabled:pointer-events-none shadow-lg shadow-sky-900/30"
               >
                 <Send size={15} />

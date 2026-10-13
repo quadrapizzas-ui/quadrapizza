@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Plus, Edit2, Trash2, X, CornerDownRight, ChevronDown, ArrowLeft } from "lucide-react";
+import { Plus, Edit2, Trash2, X, CornerDownRight, ChevronDown, ArrowLeft, ChefHat, Package } from "lucide-react";
 import { useProductsStore, type Category } from "@/lib/store/productsStore";
 
 const CategoryNode = ({
@@ -20,19 +20,32 @@ const CategoryNode = ({
   depth?: number;
 }) => {
   const children = allCategories.filter((c) => c.parentId === category.id);
+  const isKitchen = category.requiresKitchen !== false;
+
   return (
     <div className="group">
       <div className={`flex items-center justify-between border transition rounded-xl ${depth === 0 ? "border-zinc-800 bg-zinc-900/60 p-4 hover:border-zinc-700" : "bg-zinc-950 border-zinc-800 p-3 hover:border-zinc-700"}`}>
         <div className="flex items-center gap-3">
           {depth > 0 && <CornerDownRight size={13} className="text-zinc-600" />}
           <span className={`font-bold ${depth > 0 ? "text-sm text-zinc-300" : "text-sm text-zinc-100"}`}>{category.name}</span>
+          
+          {isKitchen ? (
+            <span className="text-[9px] font-black uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+              <ChefHat size={10} /> Cocina
+            </span>
+          ) : (
+            <span className="text-[9px] font-black uppercase tracking-wider bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+              <Package size={10} /> Despacho Directo
+            </span>
+          )}
+
           {children.length > 0 && depth === 0 && (
             <span className="text-[9px] font-black uppercase tracking-widest bg-zinc-800 text-zinc-500 border border-zinc-700 px-2 py-0.5 rounded-full">
               {children.length} sub
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
           <button onClick={() => onEdit(category)} className="p-2 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-700 transition">
             <Edit2 size={13} />
           </button>
@@ -62,11 +75,27 @@ export default function CategoriesPage() {
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [name, setName] = useState("");
   const [parentId, setParentId] = useState<number | null>(null);
+  const [requiresKitchen, setRequiresKitchen] = useState<boolean>(true);
 
   const mainCategories = categories.filter((c) => c.parentId === null);
 
-  const openCreateModal = () => { setModalMode("create"); setCurrentId(null); setName(""); setParentId(null); setIsModalOpen(true); };
-  const openEditModal = (cat: Category) => { setModalMode("edit"); setCurrentId(cat.id); setName(cat.name); setParentId(cat.parentId); setIsModalOpen(true); };
+  const openCreateModal = () => {
+    setModalMode("create");
+    setCurrentId(null);
+    setName("");
+    setParentId(null);
+    setRequiresKitchen(true);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (cat: Category) => {
+    setModalMode("edit");
+    setCurrentId(cat.id);
+    setName(cat.name);
+    setParentId(cat.parentId);
+    setRequiresKitchen(cat.requiresKitchen !== false);
+    setIsModalOpen(true);
+  };
 
   const handleDelete = (id: number) => {
     const getDescendants = (catId: number): number[] => {
@@ -80,9 +109,9 @@ export default function CategoriesPage() {
     if (!name.trim()) return;
     if (modalMode === "create") {
       const newId = Math.max(...categories.map((c) => c.id), 0) + 1;
-      setCategories([...categories, { id: newId, name, parentId }]);
+      setCategories([...categories, { id: newId, name, parentId, requiresKitchen }]);
     } else {
-      setCategories(categories.map((c) => (c.id === currentId ? { ...c, name, parentId } : c)));
+      setCategories(categories.map((c) => (c.id === currentId ? { ...c, name, parentId, requiresKitchen } : c)));
     }
     setIsModalOpen(false);
   };
@@ -174,7 +203,16 @@ export default function CategoriesPage() {
                 <div className="relative">
                   <select
                     value={parentId === null ? "" : parentId}
-                    onChange={(e) => setParentId(e.target.value === "" ? null : Number(e.target.value))}
+                    onChange={(e) => {
+                      const pid = e.target.value === "" ? null : Number(e.target.value);
+                      setParentId(pid);
+                      if (pid !== null && modalMode === "create") {
+                        const parentCat = categories.find((c) => c.id === pid);
+                        if (parentCat && typeof parentCat.requiresKitchen === "boolean") {
+                          setRequiresKitchen(parentCat.requiresKitchen);
+                        }
+                      }
+                    }}
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-4 pr-10 py-2.5 outline-none focus:border-sky-500/60 transition text-sm font-bold appearance-none text-zinc-100"
                   >
                     <option value="" className="bg-zinc-900 text-zinc-100">Ninguna (Es categoría principal)</option>
@@ -187,6 +225,46 @@ export default function CategoriesPage() {
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none" size={14} />
                 </div>
               </div>
+
+              {/* Selector Destino Operativo (Cocina vs Despacho Directo) */}
+              <div>
+                <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">
+                  Destino Operativo
+                </label>
+                <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-800/80 border border-zinc-700/80">
+                  <div className="flex items-center gap-2.5">
+                    {requiresKitchen ? (
+                      <ChefHat size={16} className="text-orange-400 shrink-0" />
+                    ) : (
+                      <Package size={16} className="text-sky-400 shrink-0" />
+                    )}
+                    <div>
+                      <p className={`font-bold text-xs ${requiresKitchen ? "text-orange-400" : "text-sky-400"}`}>
+                        {requiresKitchen ? "Sector Cocina" : "Despacho Directo"}
+                      </p>
+                      <p className="text-[10px] text-zinc-400 font-medium">
+                        {requiresKitchen
+                          ? "Pasa a comanda táctil de cocina (KDS)"
+                          : "Bebidas / Almacén (sin cocción)"}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setRequiresKitchen(!requiresKitchen)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      requiresKitchen ? "bg-orange-500" : "bg-sky-600"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        requiresKitchen ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+
               <div className="pt-1">
                 <button
                   onClick={handleSave}

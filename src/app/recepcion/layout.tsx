@@ -5,15 +5,16 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  ShoppingBasket, ClipboardList, Users, Package, BookOpen, LogOut, Menu, X, FileText, UserCircle
+  ShoppingBasket, ClipboardList, Users, Package, BookOpen, LogOut, Menu, X, FileText, UserCircle, AlertCircle
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store/authStore";
 
 const NAV_ITEMS = [
   { href: "/recepcion/nueva-venta",   label: "Nueva Venta",      icon: ShoppingBasket },
   { href: "/recepcion/estado-pedidos",label: "Estado Pedidos",   icon: ClipboardList  },
+  { href: "/recepcion/deudores",      label: "Deudores",         icon: AlertCircle    },
   { href: "/recepcion/clientes",      label: "Clientes",         icon: Users          },
-  { href: "/recepcion/stock",  label: "Stock",            icon: Package        },
+  { href: "/recepcion/stock",         label: "Stock",            icon: Package        },
   { href: "/recepcion/catalogo",      label: "Catálogo",         icon: BookOpen       },
   { href: "/recepcion/cierre-caja",   label: "Cierre de Caja",   icon: FileText       },
 ];
@@ -93,10 +94,10 @@ export default function RecepcionLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        <div className="hidden md:block w-px h-6 bg-zinc-800 shrink-0" />
+        <div className="hidden xl:block w-px h-6 bg-zinc-800 shrink-0" />
 
         {/* Nav links — desktop */}
-        <nav className="hidden md:flex items-center gap-1 flex-1">
+        <nav className="hidden xl:flex items-center gap-1 flex-1">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const active = pathname.startsWith(href);
             return (
@@ -117,7 +118,7 @@ export default function RecepcionLayout({ children }: { children: React.ReactNod
         </nav>
 
         {/* Spacer */}
-        <div className="flex-1 md:hidden" />
+        <div className="flex-1 xl:hidden" />
 
         {/* Reloj */}
         <span className="hidden sm:block font-mono text-sm font-bold text-zinc-300 shrink-0 tabular-nums">
@@ -146,7 +147,7 @@ export default function RecepcionLayout({ children }: { children: React.ReactNod
         {/* Mobile menu toggle */}
         <button
           onClick={() => setMobileOpen(o => !o)}
-          className="md:hidden p-2 rounded-lg bg-zinc-900 text-zinc-400 hover:text-white transition"
+          className="xl:hidden p-2 rounded-lg bg-zinc-900 text-zinc-400 hover:text-white transition"
         >
           {mobileOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
@@ -154,7 +155,7 @@ export default function RecepcionLayout({ children }: { children: React.ReactNod
 
       {/* ─── MOBILE NAV DRAWER ───────────────────────────────────────── */}
       {mobileOpen && (
-        <div className="md:hidden absolute top-14 left-0 right-0 z-50 bg-zinc-950 border-b border-zinc-800 p-3 flex flex-col gap-1">
+        <div className="xl:hidden absolute top-14 left-0 right-0 z-50 bg-zinc-950 border-b border-zinc-800 p-3 flex flex-col gap-1 shadow-2xl">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const active = pathname.startsWith(href);
             return (

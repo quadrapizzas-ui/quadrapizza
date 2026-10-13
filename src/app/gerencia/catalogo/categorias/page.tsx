@@ -1,3 +1,7 @@
-export { default } from "@/app/recepcion/catalogo/categorias/page";
+"use client";
 
-export const runtime = 'edge';
+import CategoriasPage from "@/app/recepcion/catalogo/categorias/page";
+
+export default function GerenciaCategoriasPage() {
+  return <CategoriasPage />;
+}

@@ -27,6 +27,7 @@ export default function GerenciaUsuariosPage() {
   
   // Form state
   const [name, setName] = React.useState("");
+  const [dni, setDni] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [role, setRole] = React.useState("Recepción");
   const [pin, setPin] = React.useState("");
@@ -41,6 +42,7 @@ export default function GerenciaUsuariosPage() {
     if (user) {
       setEditingUser(user);
       setName(user.name);
+      setDni(user.dni || "");
       setEmail(user.email);
       setRole(user.role);
       setPin(user.pin);
@@ -48,6 +50,7 @@ export default function GerenciaUsuariosPage() {
     } else {
       setEditingUser(null);
       setName("");
+      setDni("");
       setEmail("");
       setRole("Recepción");
       setPin("");
@@ -57,23 +60,17 @@ export default function GerenciaUsuariosPage() {
   };
 
   const handleSave = () => {
-    if (!name || !email || !pin || pin.length !== 4) {
-      setErrorMsg("Completa los datos y asegúrate que el PIN tenga 4 dígitos.");
-      return;
-    }
-
-    // Validar PIN único
-    const pinExists = users.find(u => u.pin === pin && u.id !== editingUser?.id);
-    if (pinExists) {
-      setErrorMsg("El PIN ingresado ya está en uso por otro usuario. Debe ser único.");
+    const cleanDni = dni.trim().replace(/\D/g, "");
+    if (!name || !email || !cleanDni || !pin || pin.length !== 4) {
+      setErrorMsg("Completa todos los datos (incluyendo DNI) y asegúrate que el PIN tenga 4 dígitos.");
       return;
     }
 
     if (editingUser) {
-      setUsers(users.map(u => u.id === editingUser.id ? { ...u, name, email, role, pin, active } : u));
+      setUsers(users.map(u => u.id === editingUser.id ? { ...u, name, dni: cleanDni, email, role, pin, active } : u));
     } else {
       const newId = Math.max(...users.map(u => u.id), 0) + 1;
-      setUsers([...users, { id: newId, name, email, role, pin, active }]);
+      setUsers([...users, { id: newId, name, dni: cleanDni, email, role, pin, active }]);
     }
     setIsModalOpen(false);
   };
@@ -123,9 +120,9 @@ export default function GerenciaUsuariosPage() {
           <ShieldCheck size={22} />
         </div>
         <div>
-          <h3 className="text-sm font-bold text-zinc-100 leading-tight">Seguridad por PIN</h3>
+          <h3 className="text-sm font-bold text-zinc-100 leading-tight">Seguridad Reforzada (DNI + PIN)</h3>
           <p className="text-zinc-500 text-xs font-medium mt-0.5 leading-snug">
-            Cada usuario tiene un PIN único para acceder a su módulo correspondiente.
+            Cada colaborador ingresa con su DNI y su clave única de 4 dígitos para acceder al sistema.
           </p>
         </div>
       </div>
@@ -164,13 +161,16 @@ export default function GerenciaUsuariosPage() {
               <p className="text-zinc-500 text-xs font-medium mt-0.5 truncate">{u.email}</p>
             </div>
 
-            {/* PIN */}
-            <div className="bg-zinc-950 border border-zinc-800/80 rounded-xl p-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Key size={13} className="text-zinc-600" />
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">PIN</span>
+            {/* DNI & PIN */}
+            <div className="grid grid-cols-2 gap-2 bg-zinc-950 border border-zinc-800/80 rounded-xl p-3">
+              <div>
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">DNI</span>
+                <span className="font-mono font-bold text-zinc-200 text-xs">{u.dni || "—"}</span>
               </div>
-              <span className="font-mono font-black text-zinc-300 tracking-[4px] text-sm">{u.pin}</span>
+              <div className="text-right">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">PIN</span>
+                <span className="font-mono font-black text-purple-400 tracking-[3px] text-xs">{u.pin}</span>
+              </div>
             </div>
 
             {/* Actions */}
@@ -194,7 +194,7 @@ export default function GerenciaUsuariosPage() {
       {/* ── Modal Crear/Editar ── */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto no-scrollbar p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-lg font-black text-white">{editingUser ? "Editar Usuario" : "Nuevo Usuario"}</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-zinc-500 hover:text-white transition">
@@ -214,11 +214,11 @@ export default function GerenciaUsuariosPage() {
                 <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Nombre</label>
                 <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-white outline-none focus:border-purple-500/50" />
               </div>
-              <div>
-                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Email</label>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-white outline-none focus:border-purple-500/50" />
-              </div>
               <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">DNI (Documento)</label>
+                  <input type="text" maxLength={10} value={dni} onChange={e => setDni(e.target.value.replace(/\D/g, ''))} placeholder="Ej: 35123456" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-white outline-none focus:border-purple-500/50 font-mono" />
+                </div>
                 <div>
                   <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Rol</label>
                   <select value={role} onChange={e => setRole(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-white outline-none focus:border-purple-500/50">
@@ -228,10 +228,14 @@ export default function GerenciaUsuariosPage() {
                     <option value="Gerencia">Gerencia</option>
                   </select>
                 </div>
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">PIN (4 dígitos)</label>
-                  <input type="text" maxLength={4} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-white outline-none focus:border-purple-500/50 font-mono tracking-widest" />
-                </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Email</label>
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-white outline-none focus:border-purple-500/50" />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">PIN (4 dígitos)</label>
+                <input type="text" maxLength={4} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-white outline-none focus:border-purple-500/50 font-mono tracking-widest" />
               </div>
               <div className="flex items-center gap-2 pt-2">
                 <input type="checkbox" id="active" checked={active} onChange={e => setActive(e.target.checked)} className="rounded bg-zinc-950 border-zinc-800 text-purple-500" />

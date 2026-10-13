@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useCartStore } from "@/lib/store/cartStore";
-import { ExtendedProduct } from "@/lib/mockData";
+import { ExtendedProduct } from "@/types/models";
 import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Plus, Filter, ChevronRight } from "lucide-react";
 import type { Product, Category } from "@/lib/store/productsStore";
 
@@ -12,7 +12,7 @@ interface ProductGridProps {
   onAddToCart: (product: Product) => void;
 }
 
-export function ProductGrid({ products, categories, searchQuery, onAddToCart }: ProductGridProps) {
+export const ProductGrid = React.memo(function ProductGrid({ products, categories, searchQuery, onAddToCart }: ProductGridProps) {
   const [selectedPath, setSelectedPath] = useState<number[]>([]);
 
   const handleSelectCategory = (categoryId: number | null, depth: number) => {
@@ -36,20 +36,22 @@ export function ProductGrid({ products, categories, searchQuery, onAddToCart }: 
 
   const activeCategoryId = selectedPath.length > 0 ? selectedPath[selectedPath.length - 1] : null;
 
-  const filteredProducts = products.filter((p) => {
-    if (searchQuery.trim().length >= 3) {
-      const q = searchQuery.toLowerCase();
-      if (
-        !p.name.toLowerCase().includes(q) &&
-        !(p.description || "").toLowerCase().includes(q)
-      ) {
-        return false;
+  const filteredProducts = React.useMemo(() => {
+    return products.filter((p) => {
+      if (searchQuery.trim().length >= 3) {
+        const q = searchQuery.toLowerCase();
+        if (
+          !p.name.toLowerCase().includes(q) &&
+          !(p.description || "").toLowerCase().includes(q)
+        ) {
+          return false;
+        }
       }
-    }
-    if (activeCategoryId === null) return true;
-    const validIds = [activeCategoryId, ...getDescendantIds(activeCategoryId)];
-    return validIds.includes(p.categoryId || 0);
-  });
+      if (activeCategoryId === null) return true;
+      const validIds = [activeCategoryId, ...getDescendantIds(activeCategoryId)];
+      return validIds.includes(p.categoryId || 0);
+    });
+  }, [products, searchQuery, activeCategoryId, categories]);
 
   const getCategoryBreadcrumbs = (categoryId: number) => {
     const crumbs: string[] = [];
@@ -182,4 +184,4 @@ export function ProductGrid({ products, categories, searchQuery, onAddToCart }: 
       </div>
     </>
   );
-}
+});

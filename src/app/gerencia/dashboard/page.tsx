@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { mockOrdersStore, MockOrder } from "@/lib/mockData";
+import { MockOrder } from "@/types/models";
+import { useOrdersStore } from "@/lib/store/ordersStore";
 import { getBusinessDay } from "@/lib/businessDay";
 import {
   TrendingUp,
@@ -17,6 +18,7 @@ import {
   Store,
   Smartphone
 } from "lucide-react";
+import { Timeframe, filterOrdersByTimeframe, KpiCard, getBarStyle, TimeframeSelector } from "@/components/admin/DashboardComponents";
 
 function fmtARS(n: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
@@ -28,140 +30,33 @@ function fmtChartVal(v: number) {
   return String(v);
 }
 
-type Timeframe = "Hoy" | "Semanal" | "Mensual" | "Anual";
+import dynamic from "next/dynamic";
 
-function filterOrdersByTimeframe(orders: MockOrder[], tf: Timeframe) {
-  const now = new Date();
-  const todayMs = getBusinessDay().getTime();
-  
-  return orders.filter(o => {
-    const oDate = new Date(o.createdAt);
-    const ms = oDate.getTime();
-    if (tf === "Hoy") return getBusinessDay(o.createdAt).getTime() === todayMs;
-    if (tf === "Semanal") return (now.getTime() - ms) <= 7 * 24 * 60 * 60 * 1000;
-    if (tf === "Mensual") return (now.getTime() - ms) <= 30 * 24 * 60 * 60 * 1000;
-    if (tf === "Anual") return (now.getTime() - ms) <= 365 * 24 * 60 * 60 * 1000;
-    return true;
-  });
-}
-
-function KpiCard({ title, value, icon: Icon, color, trend }: {
-  title: string; value: string; icon: React.ElementType; color: string;
-  trend?: { val: string; up: boolean };
-}) {
-  return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 sm:p-5 flex flex-col gap-3 shadow-sm hover:border-zinc-700 transition">
-      <div className="flex justify-between items-start">
-        <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center ${color}`}>
-          <Icon size={18} />
-        </div>
-        {trend && (
-          <div className={`flex items-center gap-0.5 text-[10px] font-bold ${trend.up ? "text-emerald-400" : "text-red-400"}`}>
-            {trend.up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-            {trend.val}
-          </div>
-        )}
-      </div>
-      <div>
-        <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
-        <p className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function getBarStyle(val: number, max: number) {
-  if (max === 0) max = 1;
-  const pct = val / max;
-  if (pct >= 0.8) return {
-    background: "linear-gradient(to top, #a855f7, #c084fc)",
-    borderColor: "#e9d5ff", shadowColor: "rgba(192,132,252,0.3)", labelColor: "#e9d5ff",
-  };
-  if (pct >= 0.4) return {
-    background: "linear-gradient(to top, #9333ea, #a855f7)",
-    borderColor: "#d8b4fe", shadowColor: "rgba(168,85,247,0.2)", labelColor: "#d8b4fe",
-  };
-  return {
-    background: "linear-gradient(to top, #7e22ce, #9333ea)",
-    borderColor: "#c084fc", shadowColor: "rgba(147,51,234,0.1)", labelColor: "#c084fc",
-  };
-}
-
-function TimeframeSelector({ value, onChange }: { value: Timeframe, onChange: (v: Timeframe) => void }) {
-  const options: Timeframe[] = ["Hoy", "Semanal", "Mensual", "Anual"];
-  return (
-    <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded-lg p-0.5 shrink-0 z-10">
-      {options.map(opt => (
-        <button
-          key={opt}
-          onClick={() => onChange(opt)}
-          className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest rounded-md transition ${
-            value === opt ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
-          }`}
-        >
-          {opt}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function CustomPieChart({ data }: { data: { label: string; value: number; color: string }[] }) {
-  const total = data.reduce((s, d) => s + d.value, 0) || 1;
-  
-  let currentStart = 0;
-  const gradientStops = data.map(d => {
-    const pct = (d.value / total) * 100;
-    const stop = `${d.color} ${currentStart}% ${currentStart + pct}%`;
-    currentStart += pct;
-    return stop;
-  }).join(", ");
-
-  return (
-    <div className="flex flex-col sm:flex-row items-center gap-8 justify-center mt-8 mb-4">
-      <div 
-        className="w-48 h-48 sm:w-56 sm:h-56 rounded-full shadow-2xl shrink-0"
-        style={{ background: `conic-gradient(${gradientStops})` }}
-      />
-      <div className="flex flex-col gap-4">
-        {data.map(d => {
-          const pct = Math.round((d.value / total) * 100);
-          return (
-            <div key={d.label} className="flex items-center gap-3">
-              <div className="w-4 h-4 rounded-md shrink-0" style={{ backgroundColor: d.color }} />
-              <div>
-                <p className="text-[11px] sm:text-xs font-bold text-zinc-400 uppercase tracking-widest mb-0.5">{d.label}</p>
-                <p className="text-xl sm:text-2xl font-black text-white">{d.value} <span className="text-zinc-500 text-sm font-bold">({pct}%)</span></p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+const CustomPieChart = dynamic(() => import('@/components/admin/Charts').then(mod => mod.CustomPieChart), { ssr: false, loading: () => <div className="h-48 flex items-center justify-center text-zinc-500 font-bold">Cargando gráfico...</div> });
+const CustomBarChart = dynamic(() => import('@/components/admin/Charts').then(mod => mod.CustomBarChart), { ssr: false, loading: () => <div className="h-48 flex items-center justify-center text-zinc-500 font-bold">Cargando gráfico...</div> });
 
 export default function GerenciaDashboardPage() {
-  const [orders, setOrders] = useState<MockOrder[]>([]);
+  const orders = useOrdersStore((s) => s.orders);
 
   const [salesTf, setSalesTf] = useState<Timeframe>("Hoy");
   const [deliveryTf, setDeliveryTf] = useState<Timeframe>("Hoy");
   const [paymentTf, setPaymentTf] = useState<Timeframe>("Hoy");
 
-  useEffect(() => {
-    setOrders(mockOrdersStore.getSnapshot());
-    return mockOrdersStore.subscribe(() => setOrders([...mockOrdersStore.getSnapshot()]));
-  }, []);
-
   // Compute KPIs (Always 'Hoy' for the top KPIs)
+  // Compute KPIs
   const { todayOrders, todaySales, activeCount, avgTicket, topProducts } = useMemo(() => {
+    // Hoy for sales/orders count
     const todayOrdersList = filterOrdersByTimeframe(orders, "Hoy").filter(o => o.status !== "cancelado");
     const todaySalesVal = todayOrdersList.reduce((acc, o) => acc + o.total, 0);
     const activeCountVal = todayOrdersList.filter(o => o.status !== "completado").length;
-    const avgTicketVal = todayOrdersList.length > 0 ? todaySalesVal / todayOrdersList.length : 0;
+    
+    // 30 days for avgTicket and topProducts
+    const last30DaysList = filterOrdersByTimeframe(orders, "Mensual").filter(o => o.status !== "cancelado");
+    const monthSalesVal = last30DaysList.reduce((acc, o) => acc + o.total, 0);
+    const avgTicketVal = last30DaysList.length > 0 ? monthSalesVal / last30DaysList.length : 0;
 
     const productCounts: Record<string, { name: string, qty: number, revenue: number }> = {};
-    todayOrdersList.forEach(o => {
+    last30DaysList.forEach(o => {
       o.items.forEach(it => {
         if (!productCounts[it.name]) productCounts[it.name] = { name: it.name, qty: 0, revenue: 0 };
         productCounts[it.name].qty += it.quantity;
@@ -201,21 +96,39 @@ export default function GerenciaDashboardPage() {
     if (salesTf === "Hoy") {
       const hours = Object.keys(map).sort();
       if (hours.length > 0) {
-        for (let h = parseInt(hours[0]); h <= parseInt(hours[hours.length - 1]); h++) {
+        let startH = parseInt(hours[0]);
+        let endH = parseInt(hours[hours.length - 1]);
+        if (endH - startH < 4) {
+          startH = Math.max(0, startH - 1);
+          endH = Math.min(23, startH + 4);
+        }
+        for (let h = startH; h <= endH; h++) {
           const hourLabel = h.toString().padStart(2, '0') + ":00";
           res.push({ label: hourLabel, val: map[hourLabel] || 0 });
         }
       } else {
-        res.push({ label: "20:00", val: 0 }, { label: "21:00", val: 0 }, { label: "22:00", val: 0 });
+        ["19:00", "20:00", "21:00", "22:00", "23:00"].forEach(h => res.push({ label: h, val: 0 }));
       }
     } else if (salesTf === "Semanal") {
       const days = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
       days.forEach(d => res.push({ label: d, val: map[d] || 0 }));
     } else if (salesTf === "Mensual") {
-      for (let i = 1; i <= 31; i++) {
-        if (map[`Día ${i}`]) res.push({ label: String(i), val: map[`Día ${i}`] });
-      }
-      if (res.length === 0) res.push({ label: "1", val: 0 });
+      const weeks = [
+        { label: "Sem 1", minDay: 1, maxDay: 7 },
+        { label: "Sem 2", minDay: 8, maxDay: 14 },
+        { label: "Sem 3", minDay: 15, maxDay: 21 },
+        { label: "Sem 4", minDay: 22, maxDay: 31 },
+      ];
+      weeks.forEach(w => {
+        let weekTotal = 0;
+        filtered.forEach(o => {
+          const day = new Date(o.createdAt).getDate();
+          if (day >= w.minDay && day <= w.maxDay) {
+            weekTotal += o.total;
+          }
+        });
+        res.push({ label: w.label, val: weekTotal });
+      });
     } else if (salesTf === "Anual") {
       const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
       months.forEach(m => res.push({ label: m, val: map[m] || 0 }));
@@ -305,50 +218,10 @@ export default function GerenciaDashboardPage() {
             </div>
 
             {/* Chart area */}
-            <div className="relative flex-1 min-h-[220px] mt-4">
-              {[100, 75, 50, 25].map(pct => (
-                <div
-                  key={pct}
-                  className="absolute left-0 right-0 border-t border-dashed border-zinc-800/70 flex items-center"
-                  style={{ bottom: `${pct}%` }}
-                >
-                  <span className="absolute left-0 text-[9px] sm:text-[10px] font-bold text-zinc-600 whitespace-nowrap bg-zinc-900 pr-2">
-                    {fmtChartVal(Math.round(maxChartVal * pct / 100))}
-                  </span>
-                </div>
-              ))}
-              <div className="absolute inset-0 flex items-end justify-between gap-1 sm:gap-2 pl-10 sm:pl-12">
-                {salesCurve.map((d, i) => {
-                  const style = getBarStyle(d.val, maxChartVal);
-                  const heightPct = (d.val / maxChartVal) * 100;
-                  return (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-1.5 group h-full justify-end">
-                      <div className="w-full relative flex flex-col justify-end" style={{ height: "100%" }}>
-                        {/* Tooltip */}
-                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 pointer-events-none">
-                          <div
-                            className="px-2 py-1 rounded-lg text-[11px] font-black whitespace-nowrap shadow-lg bg-zinc-950"
-                            style={{ border: `1px solid ${style.borderColor}`, color: style.labelColor }}
-                          >
-                            {fmtARS(d.val)}
-                          </div>
-                        </div>
-                        <div
-                          className="w-full rounded-t-md transition-all duration-500 ease-out min-h-[4px]"
-                          style={{
-                            height: `${heightPct}%`,
-                            background: style.background,
-                            borderTop: `2px solid ${style.borderColor}`,
-                            boxShadow: `0 -4px 20px ${style.shadowColor}`,
-                          }}
-                        />
-                      </div>
-                      <span className="text-[8px] sm:text-[9px] font-bold text-zinc-500 uppercase tracking-widest truncate max-w-full">{d.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <CustomBarChart 
+              data={salesCurve.map(d => ({ label: d.label, value: d.val }))} 
+              maxValue={maxChartVal} 
+            />
           </div>
 
           {/* Top Products */}

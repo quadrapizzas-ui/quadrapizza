@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { mockOrdersStore, MockOrder, getFirstName } from "@/lib/mockData";
-import { CheckCircle2, ChefHat, Clock, Package, MapPin, Truck, Store, Receipt, XCircle } from "lucide-react";
+import { MockOrder } from "@/types/models";
+import { useOrdersStore } from "@/lib/store/ordersStore";
+import { CheckCircle2, ChefHat, Clock, Package, MapPin, Truck, Store, Receipt, XCircle, GlassWater, ShoppingBag } from "lucide-react";
 import { useParams } from "next/navigation";
+import { orderRequiresKitchen } from "@/lib/orderKitchenHelper";
 
 function fmtARS(n: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
@@ -16,24 +18,13 @@ export default function EstadoPedidoPage() {
   const [order, setOrder] = useState<MockOrder | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const orders = useOrdersStore((s) => s.orders);
+  
   useEffect(() => {
-    // Initial fetch
-    const fetchOrder = () => {
-      const allOrders = mockOrdersStore.getSnapshot();
-      const found = allOrders.find(o => o.id === id);
-      setOrder(found || null);
-      setLoading(false);
-    };
-    
-    fetchOrder();
-
-    // Subscribe to changes
-    const unsubscribe = mockOrdersStore.subscribe(() => {
-      fetchOrder();
-    });
-
-    return unsubscribe;
-  }, [id]);
+    const found = orders.find((o) => o.id === id);
+    setOrder(found || null);
+    setLoading(false);
+  }, [id, orders]);
 
   if (loading) {
     return (
@@ -106,19 +97,49 @@ export default function EstadoPedidoPage() {
 
   // Actually, let's simplify for delivery: if it's "listo", we just show it as "En Preparación" (done) and waiting for "En Camino".
   // A better approach is to just map it exactly to the UI steps.
-  const firstName = getFirstName(order.clientName);
+  // A better approach is to just map it exactly to the UI steps.
+  const firstName = order.clientFirstName ? order.clientFirstName.split(' ')[0] : 'Cliente';
+  const requiresKitchen = orderRequiresKitchen(order);
 
   const mappedSteps = isDelivery 
     ? [
         { id: "confirmado", label: "¡Pedido Confirmado!", desc: `¡Mil gracias por elegirnos, ${firstName}! Ya anotamos todo para mimarte hoy.`, icon: Clock },
-        { id: "en-cocina", label: "¡Manos a la Obra!", desc: "Nuestros pizzeros están preparando tu pedido con muchísimo amor y cuidado.", icon: ChefHat },
-        { id: "en-camino", label: "¡En Camino!", desc: order.status === "listo" ? "Asignando al mejor repartidor para que te lo lleve súper calentito." : `¡Tu pedido ya salió, ${firstName}! Va en viaje con mucho cuidado para que lo disfrutes como te merecés.`, icon: Truck },
+        { 
+          id: "en-cocina", 
+          label: requiresKitchen ? "¡Manos a la Obra!" : "¡Preparando tus Bebidas!", 
+          desc: requiresKitchen 
+            ? "Nuestros pizzeros están preparando tu pedido con muchísimo amor y cuidado." 
+            : "Estamos enfriando y empaquetando tus bebidas para que las disfrutes bien frías.", 
+          icon: requiresKitchen ? ChefHat : GlassWater 
+        },
+        { 
+          id: "en-camino", 
+          label: "¡En Camino!", 
+          desc: order.status === "listo" 
+            ? (requiresKitchen ? "Asignando al mejor repartidor para que te lo lleve súper calentito." : "Asignando al repartidor para llevarte tus bebidas bien frías.") 
+            : `¡Tu pedido ya salió, ${firstName}! Va en viaje con mucho cuidado para que lo disfrutes como te merecés.`, 
+          icon: Truck 
+        },
         { id: "completado", label: "¡Entregado!", desc: "¡Que lo disfrutes muchísimo! Gracias por dejarnos ser parte de tu mesa hoy. ❤️", icon: CheckCircle2 }
       ]
     : [
         { id: "confirmado", label: "¡Pedido Confirmado!", desc: `¡Mil gracias por elegirnos, ${firstName}! Ya anotamos todo para mimarte hoy.`, icon: Clock },
-        { id: "en-cocina", label: "¡Manos a la Obra!", desc: "Nuestros pizzeros están preparando tu pedido con muchísimo amor y cuidado.", icon: ChefHat },
-        { id: "listo", label: "¡Listo para Retirar!", desc: `¡Tu pedido está súper calentito y esperándote con los brazos abiertos, ${firstName}!`, icon: Store },
+        { 
+          id: "en-cocina", 
+          label: requiresKitchen ? "¡Manos a la Obra!" : "¡Preparando tus Bebidas!", 
+          desc: requiresKitchen 
+            ? "Nuestros pizzeros están preparando tu pedido con muchísimo amor y cuidado." 
+            : "Estamos preparando y enfriando tu pedido en el mostrador.", 
+          icon: requiresKitchen ? ChefHat : GlassWater 
+        },
+        { 
+          id: "listo", 
+          label: "¡Listo para Retirar!", 
+          desc: requiresKitchen 
+            ? `¡Tu pedido está súper calentito y esperándote con los brazos abiertos, ${firstName}!` 
+            : `¡Tus bebidas están listas y bien frías esperándote en el local, ${firstName}!`, 
+          icon: Store 
+        },
         { id: "completado", label: "¡Entregado!", desc: "¡Que lo disfrutes muchísimo! Gracias por tu visita, ¡nos vemos la próxima! ❤️", icon: CheckCircle2 }
       ];
 
@@ -151,6 +172,12 @@ export default function EstadoPedidoPage() {
 
       <main className="flex-1 max-w-xl mx-auto w-full p-4 sm:p-6 flex flex-col gap-6 overflow-y-auto">
         
+        {/* Saludo */}
+        <div className="flex flex-col mb-[-0.5rem]">
+          <h1 className="text-2xl font-black text-zinc-100 tracking-tight">¡Hola, {firstName}! 👋</h1>
+          <p className="text-zinc-400 text-sm font-medium mt-1">Acá podés seguir tu pedido en tiempo real.</p>
+        </div>
+
         {/* Status Card */}
         <div className="bg-zinc-900 border border-zinc-800/80 rounded-3xl p-6 shadow-xl relative overflow-hidden">
           {order.status === "cancelado" ? (

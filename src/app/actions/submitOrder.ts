@@ -1,7 +1,36 @@
 "use server"
 // Server Action de Next.js. Esto es código Backend real protegido.
+import { logger } from "@/lib/logger";
+import { z } from "zod";
 
-export async function submitOrderToWebhook(orderData: any) {
+const orderSchema = z.object({
+  customer: z.object({
+    name: z.string().min(2, "Nombre requerido"),
+    phone: z.string().min(6, "Teléfono requerido"),
+  }),
+  delivery_type: z.enum(["delivery", "takeaway"]),
+  delivery_address: z.string().optional(),
+  delivery_cost: z.number().default(0),
+  payment_method: z.string().min(1),
+  subtotal: z.number().min(0),
+  total: z.number().min(0),
+  cash_amount: z.number().optional().nullable(),
+  items: z.array(z.object({
+    name: z.string(),
+    price: z.number(),
+    quantity: z.number().min(1),
+    modifiers: z.record(z.string(), z.any()).optional(),
+  })).min(1, "Debe haber al menos 1 item"),
+});
+
+export async function submitOrderToWebhook(orderDataRaw: any) {
+  // Validate payload with Zod
+  const parsed = orderSchema.safeParse(orderDataRaw);
+  if (!parsed.success) {
+    logger.warn("Payload de orden inválido", { errors: parsed.error.format() });
+    return { success: false, error: "Datos de orden inválidos", details: parsed.error.issues };
+  }
+  const orderData = parsed.data;
   // Te sugiero poner esto en el .env.local: N8N_WEBHOOK_URL="https://n8n.tu-servidor.com/webhook/quadrapizza-order"
   const webhookUrl = process.env.N8N_WEBHOOK_URL || "https://webhook.site/test-mock-url"; 
   
@@ -69,13 +98,13 @@ ${formattedItemsString}
     });
 
     if (!res.ok) {
-      console.error("Fallo respuesta de n8n", res.statusText);
+      logger.error("Fallo respuesta de n8n", { statusText: res.statusText });
       return { success: false, error: "Error en Webhook N8N" };
     }
 
     return { success: true, orderId: payload.metadata.order_id };
   } catch (err: any) {
-    console.error("Fallo de red a n8n:", err.message);
+    logger.error("Fallo de red a n8n:", { error: err.message });
     return { success: false, error: err.message };
   }
 }

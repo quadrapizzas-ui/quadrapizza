@@ -1,0 +1,279 @@
+"use client";
+
+import React, { useState } from "react";
+import { Search, UserPlus, Phone, MapPin, ShoppingBag, Trash2, Pencil, X, ChevronDown, AlertTriangle, Info } from "lucide-react";
+import { normalizeSearch } from "@/lib/utils";
+import { useProductsStore } from "@/lib/store/productsStore";
+import { useCustomersStore } from "@/lib/store/customersStore";
+import { useOrdersStore } from "@/lib/store/ordersStore";
+
+export function ClientesPanel() {
+  const { neighborhoods } = useProductsStore();
+  const [search, setSearch] = useState("");
+  const { customers, updateCanonicalCustomer, deleteCustomer } = useCustomersStore();
+  const orders = useOrdersStore((s) => s.orders);
+
+  const [editingCustomer, setEditingCustomer] = useState<any>(null);
+  const [editData, setEditData] = useState({ firstName: "", lastName: "", phone: "", address: "", neighborhoodId: "", addressDetail: "" });
+  const [deleteModal, setDeleteModal] = useState<{ customer: any; error?: string } | null>(null);
+
+  const handleEditClick = (c: any) => {
+    setEditingCustomer(c);
+    setEditData({
+      firstName: c.firstName || "",
+      lastName: c.lastName || "",
+      phone: c.phone || "",
+      address: c.address || "",
+      neighborhoodId: c.neighborhoodId ? String(c.neighborhoodId) : "",
+      addressDetail: c.addressDetail || ""
+    });
+  };
+
+  const handleSave = () => {
+    if (editingCustomer) {
+      updateCanonicalCustomer(editingCustomer.id, {
+        firstName: editData.firstName,
+        lastName: editData.lastName,
+        phone: editData.phone,
+        address: editData.address,
+        neighborhoodId: editData.neighborhoodId ? Number(editData.neighborhoodId) : undefined,
+        addressDetail: editData.addressDetail,
+      });
+    }
+    setEditingCustomer(null);
+  };
+
+  const handleDelete = (c: any) => {
+    const activeOrders = orders.filter(
+      o => o.clientFirstName.toLowerCase() === c.firstName.toLowerCase() && 
+           o.clientLastName.toLowerCase() === c.lastName.toLowerCase() && 
+      ["confirmado", "en-cocina", "en-camino"].includes(o.status)
+    );
+    if (activeOrders.length > 0) {
+      setDeleteModal({ customer: c, error: "No se puede borrar este cliente porque tiene pedidos activos en curso." });
+      return;
+    }
+    setDeleteModal({ customer: c });
+  };
+
+  const confirmDelete = () => {
+    if (deleteModal?.customer) {
+      deleteCustomer(deleteModal.customer.id);
+    }
+    setDeleteModal(null);
+  };
+
+  const [visibleCount, setVisibleCount] = useState(20);
+
+  React.useEffect(() => {
+    setVisibleCount(20);
+  }, [search]);
+
+  const filtered = customers.filter(c => {
+    const searchNorm = normalizeSearch(search);
+    const searchDigits = search.replace(/\D/g, "");
+    const phoneDigits = c.phone.replace(/\D/g, "");
+    const fullNameNorm = normalizeSearch(c.firstName + ' ' + c.lastName);
+    
+    return fullNameNorm.includes(searchNorm) || 
+           (searchDigits.length > 0 && phoneDigits.includes(searchDigits));
+  });
+
+  const paginated = filtered.slice(0, visibleCount);
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="shrink-0 px-5 py-4 border-b border-zinc-800/60 bg-zinc-950 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-black text-white tracking-tight">Base de Clientes</h1>
+          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">{customers.length} clientes registrados</p>
+        </div>
+        <button className="flex items-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-black rounded-xl transition active:scale-95 shadow-lg shadow-sky-900/30">
+          <UserPlus size={14} />
+          Nuevo
+        </button>
+      </div>
+
+      <div className="shrink-0 px-5 py-3 border-b border-zinc-800/60 bg-zinc-950/80">
+        <div className="relative">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nombre o teléfono..."
+            className="w-full pl-9 pr-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-sm font-bold text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-sky-500/60 transition" />
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-3">
+        {paginated.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-zinc-700">
+            <Search size={36} strokeWidth={1.5} />
+            <p className="font-bold text-sm uppercase tracking-widest">Sin resultados</p>
+          </div>
+        ) : paginated.map(c => (
+          <div key={c.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex items-start gap-4 hover:border-zinc-700 transition group">
+            <div className="w-11 h-11 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-500 font-black text-lg shrink-0 group-hover:bg-sky-500/15 group-hover:text-sky-400 transition">
+              {c.firstName.charAt(0)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-wrap min-w-0">
+                  <h3 className="font-bold text-sm text-white truncate">{c.firstName} {c.lastName}</h3>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => handleEditClick(c)} className="p-1.5 text-zinc-700 hover:text-sky-500 transition shrink-0" title="Editar Cliente">
+                    <Pencil size={14} />
+                  </button>
+                  <button onClick={() => handleDelete(c)} className="p-1.5 text-zinc-700 hover:text-red-500 transition shrink-0" title="Borrar Cliente">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5 mt-2">
+                <span className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium">
+                  <Phone size={12} className="text-zinc-500" />
+                  {c.phone || "Sin teléfono"}
+                </span>
+                {(c.address || c.addressDetail || c.neighborhoodId) && (
+                  <span className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium">
+                    <MapPin size={12} className="text-zinc-500 shrink-0" />
+                    <span className="truncate">
+                      {c.address || "Retiro en local"}
+                      {c.neighborhoodId && neighborhoods.find((n: any) => n.id === c.neighborhoodId) ? ` · ${neighborhoods.find((n: any) => n.id === c.neighborhoodId)?.name}` : ""}
+                      {c.addressDetail ? ` · ${c.addressDetail}` : ""}
+                    </span>
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+        {visibleCount < filtered.length && (
+          <div className="py-4 flex flex-col items-center gap-2">
+            <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
+              Mostrando {paginated.length} de {filtered.length} resultados
+            </p>
+            <button 
+              onClick={() => setVisibleCount(prev => prev + 20)}
+              className="px-6 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 transition active:scale-95"
+            >
+              Cargar más
+            </button>
+          </div>
+        )}
+      </div>
+
+      {editingCustomer && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-sm shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="px-5 py-4 border-b border-zinc-800 flex justify-between items-center shrink-0">
+              <div>
+                <h2 className="text-lg font-black text-white">Editar Cliente Canónico</h2>
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Identidad oficial por teléfono</p>
+              </div>
+              <button onClick={() => setEditingCustomer(null)} className="p-1.5 text-zinc-500 hover:text-white bg-zinc-900 rounded-xl transition">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="p-5 overflow-y-auto no-scrollbar space-y-4">
+              <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-xs text-sky-300 flex items-start gap-2">
+                <Info size={15} className="shrink-0 mt-0.5 text-sky-400" />
+                <p className="text-[11px] leading-tight">
+                  El teléfono es el identificador único. Al actualizar el nombre, se sincronizarán todas sus órdenes registradas.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-zinc-400 mb-1.5">Nombre</label>
+                  <input value={editData.firstName} onChange={e => setEditData({...editData, firstName: e.target.value})}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold text-zinc-100 outline-none focus:border-sky-500/60" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-zinc-400 mb-1.5">Apellido</label>
+                  <input value={editData.lastName} onChange={e => setEditData({...editData, lastName: e.target.value})}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold text-zinc-100 outline-none focus:border-sky-500/60" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-zinc-400 mb-1.5">Teléfono</label>
+                <input value={editData.phone} onChange={e => setEditData({...editData, phone: e.target.value})}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold text-zinc-100 outline-none focus:border-sky-500/60" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-zinc-400 mb-1.5">Barrio</label>
+                <div className="relative">
+                  <select value={editData.neighborhoodId} onChange={e => setEditData({...editData, neighborhoodId: e.target.value})}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold text-zinc-100 outline-none focus:border-sky-500/60 appearance-none">
+                    <option value="">Seleccionar barrio...</option>
+                    {neighborhoods.map((n: any) => (
+                      <option key={n.id} value={n.id}>{n.name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-zinc-400 mb-1.5">Dirección</label>
+                <input value={editData.address} onChange={e => setEditData({...editData, address: e.target.value.toUpperCase()})}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-bold uppercase text-zinc-100 outline-none focus:border-sky-500/60" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-zinc-400 mb-1.5">Detalles (piso, depto...)</label>
+                <input value={editData.addressDetail} onChange={e => setEditData({...editData, addressDetail: e.target.value})}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm font-medium text-zinc-100 outline-none focus:border-sky-500/60" />
+              </div>
+            </div>
+            <div className="p-5 border-t border-zinc-800 shrink-0 flex gap-2">
+              <button onClick={() => setEditingCustomer(null)} className="flex-1 py-3 rounded-xl bg-zinc-900 text-zinc-400 font-bold text-sm hover:text-white transition">Cancelar</button>
+              <button onClick={handleSave} className="flex-1 py-3 rounded-xl bg-sky-600 text-white font-black text-sm hover:bg-sky-500 transition">Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setDeleteModal(null)}>
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-sm shadow-2xl animate-in fade-in zoom-in-95" onClick={e => e.stopPropagation()}>
+            <div className="p-6 flex flex-col items-center text-center">
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${deleteModal.error ? "bg-amber-500/15" : "bg-red-500/15"}`}>
+                <AlertTriangle size={24} className={deleteModal.error ? "text-amber-400" : "text-red-400"} />
+              </div>
+              <h3 className="text-lg font-black text-white mb-1">
+                {deleteModal.error ? "Acción no permitida" : "Eliminar cliente"}
+              </h3>
+              <p className="text-sm text-zinc-400 font-medium leading-relaxed">
+                {deleteModal.error
+                  ? deleteModal.error
+                  : <span>¿Estás seguro de que deseas eliminar a <strong className="text-white">{deleteModal.customer.firstName}</strong>? Esta acción no se puede deshacer.</span>
+                }
+              </p>
+            </div>
+            <div className="px-5 pb-5 flex gap-2">
+              {deleteModal.error ? (
+                <button
+                  onClick={() => setDeleteModal(null)}
+                  className="flex-1 py-3 rounded-xl bg-zinc-800 text-white font-bold text-sm hover:bg-zinc-700 transition active:scale-[0.98]"
+                >
+                  Entendido
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setDeleteModal(null)}
+                    className="flex-1 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 font-bold text-sm hover:text-white transition active:scale-[0.98]"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-sm transition active:scale-[0.98] shadow-lg shadow-red-900/20"
+                  >
+                    Eliminar
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

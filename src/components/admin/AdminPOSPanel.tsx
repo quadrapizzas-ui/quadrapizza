@@ -31,7 +31,8 @@ export const AdminPOSPanel = ({
 }) => {
   const [items, setItems] = useState<OrderItem[]>([])
   const [paymentMethod, setPaymentMethod] = useState<'efectivo' | 'transferencia'>('efectivo')
-  const [clientName, setClientName] = useState('')
+  const [clientFirstName, setClientFirstName] = useState('')
+  const [clientLastName, setClientLastName] = useState('')
   const [address, setAddress] = useState('')
 
   const addToBody = (product: any) => {
@@ -57,7 +58,8 @@ export const AdminPOSPanel = ({
       id: "M-" + Math.floor(Math.random() * 10000), // ID manual simulado
       items,
       paymentMethod,
-      clientName: clientName || "Mostrador",
+      clientFirstName: clientFirstName || "Mostrador",
+      clientLastName: clientLastName || "",
       address: address || "Local",
       total,
       createdAt: new Date().toISOString()
@@ -65,7 +67,8 @@ export const AdminPOSPanel = ({
 
     // Resetear formulario
     setItems([])
-    setClientName('')
+    setClientFirstName('')
+    setClientLastName('')
     setAddress('')
     setPaymentMethod('efectivo')
   }
@@ -156,7 +159,8 @@ export const AdminPOSPanel = ({
               <div className="flex flex-col gap-4 shrink-0">
                  <div>
                    <label className="text-xs uppercase tracking-widest font-black text-zinc-500 mb-2 block">Nombre Cliente (Opc.)</label>
-                   <Input placeholder="Ej. Juan Pérez" value={clientName} onChange={(e) => setClientName(e.target.value)} className="bg-zinc-900 border-zinc-800" />
+                   <Input placeholder="Nombre" value={clientFirstName} onChange={(e) => setClientFirstName(e.target.value)} className="bg-zinc-900 border-zinc-800" />
+                   <Input placeholder="Apellido" value={clientLastName} onChange={(e) => setClientLastName(e.target.value)} className="bg-zinc-900 border-zinc-800" />
                  </div>
                  <div>
                    <label className="text-xs uppercase tracking-widest font-black text-zinc-500 mb-2 block">Domicilio (Vacio = Mostrador)</label>

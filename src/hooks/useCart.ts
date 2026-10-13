@@ -144,6 +144,10 @@ export function useCart() {
     );
   }, []);
 
+  const clearCart = useCallback(() => {
+    setCartItems([]);
+  }, []);
+
   const cartTotal = cartItems.reduce(
     (acc, item) => acc + getItemSubtotal(item),
     0
@@ -157,5 +161,6 @@ export function useCart() {
     removeFromCart,
     updateCartItemQuantity,
     cartTotal,
+    clearCart,
   };
 }

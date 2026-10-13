@@ -1,3 +1,7 @@
-export { default } from "@/app/recepcion/catalogo/envios/page";
+"use client";
 
-export const runtime = 'edge';
+import EnviosPage from "@/app/recepcion/catalogo/envios/page";
+
+export default function GerenciaEnviosPage() {
+  return <EnviosPage />;
+}

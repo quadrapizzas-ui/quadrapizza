@@ -1,9 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { mockOrdersStore, MockOrder } from "@/lib/mockData";
+import { MockOrder } from "@/types/models";
+import { useOrdersStore } from "@/lib/store/ordersStore";
 import { getBusinessDay } from "@/lib/businessDay";
 import { ChefHat, Clock, Truck, Flame, AlertTriangle } from "lucide-react";
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
+import { orderRequiresKitchen, getKitchenItems, getDrinkItems } from "@/lib/orderKitchenHelper";
 
 function useElapsedMinutes(isoDate: string) {
   const calc = useCallback(() => Math.floor((Date.now() - new Date(isoDate).getTime()) / 60000), [isoDate]);
@@ -27,6 +30,10 @@ function KdsCard({ order, onAdvance, advanceLabel, advanceColor }: {
   const borderColor = isHot ? "border-red-500/70" : isWarm ? "border-yellow-500/50" : "border-zinc-800/80";
   const headerBg    = isHot ? "bg-red-600" : isWarm ? "bg-yellow-600" : "bg-zinc-800";
 
+  const kitchenItems = getKitchenItems(order);
+  const drinkItems = getDrinkItems(order);
+  const displayItems = kitchenItems.length > 0 ? kitchenItems : order.items;
+
   return (
     <div className={`flex flex-col bg-zinc-900 border ${borderColor} rounded-2xl overflow-hidden shadow-xl ${isHot ? "shadow-red-900/30" : ""} transition-all`}>
 
@@ -47,12 +54,12 @@ function KdsCard({ order, onAdvance, advanceLabel, advanceColor }: {
 
       {/* Cliente */}
       <div className="px-4 pt-3 pb-2 border-b border-zinc-800/60">
-        <p className="font-bold text-sm text-zinc-300 truncate">{order.clientName}</p>
+        <p className="font-bold text-sm text-zinc-300 truncate">{order.clientFirstName} {order.clientLastName}</p>
       </div>
 
-      {/* Items */}
+      {/* Items para cocinar */}
       <div className="flex-1 p-3 space-y-2.5 min-h-[80px]">
-        {order.items.map((item, i) => (
+        {displayItems.map((item, i) => (
           <div key={i} className="flex items-start gap-3">
             <span className="shrink-0 w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center font-black text-white text-lg">
               {item.quantity}
@@ -60,6 +67,17 @@ function KdsCard({ order, onAdvance, advanceLabel, advanceColor }: {
             <p className="font-bold text-sm text-zinc-100 leading-tight pt-1.5">{item.name}</p>
           </div>
         ))}
+
+        {/* Bebidas / Acompañamiento informativo (no requiere cocción) */}
+        {drinkItems.length > 0 && (
+          <div className="mt-2.5 pt-2 border-t border-zinc-800/80 flex flex-wrap gap-1.5">
+            {drinkItems.map((d, i) => (
+              <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold">
+                🥤 {d.quantity}x {d.name}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Action — full width, large tap target for kitchen staff */}
@@ -100,16 +118,15 @@ function KdsColumn({ title, icon: Icon, count, accent, children }: {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function CocinaMonitorPage() {
-  const [orders, setOrders] = useState<MockOrder[]>([]);
+  const orders = useOrdersStore((s) => s.orders);
+  const updateOrderStatus = useOrdersStore((s) => s.updateOrderStatus);
   const [activeTab, setActiveTab] = useState<0 | 1 | 2>(0);
 
-  useEffect(() => {
-    setOrders(mockOrdersStore.getSnapshot());
-    return mockOrdersStore.subscribe(() => setOrders([...mockOrdersStore.getSnapshot()]));
-  }, []);
-
   const todayBusinessDayTime = getBusinessDay().getTime();
-  const currentShiftOrders = orders.filter(o => getBusinessDay(o.createdAt).getTime() === todayBusinessDayTime);
+  // Excluir pedidos que NO requieren cocina (solo bebidas o almacén)
+  const currentShiftOrders = orders.filter(
+    (o) => getBusinessDay(o.createdAt).getTime() === todayBusinessDayTime && orderRequiresKitchen(o)
+  );
 
   const pendientes  = currentShiftOrders.filter(o => o.status === "confirmado");
   const enCocina    = currentShiftOrders.filter(o => o.status === "en-cocina");
@@ -158,8 +175,8 @@ export default function CocinaMonitorPage() {
   ];
 
   return (
-    <div className="flex flex-col h-full bg-black overflow-hidden">
-
+    <ErrorBoundary moduleName="Monitor KDS Cocina">
+      <div className="flex flex-col h-full bg-black overflow-hidden">
 
 
       {/* ── MOBILE ONLY: Tab switcher ──────────────────────────────────── */}
@@ -203,7 +220,7 @@ export default function CocinaMonitorPage() {
                 <KdsCard
                   key={o.id}
                   order={o}
-                  onAdvance={() => mockOrdersStore.updateOrderStatus(o.id, col.nextStatus)}
+                  onAdvance={() => updateOrderStatus(o.id, col.nextStatus)}
                   advanceLabel={col.advanceLabel}
                   advanceColor={col.advanceColor}
                 />
@@ -227,7 +244,7 @@ export default function CocinaMonitorPage() {
               <KdsCard
                 key={o.id}
                 order={o}
-                onAdvance={() => mockOrdersStore.updateOrderStatus(o.id, col.nextStatus)}
+                onAdvance={() => updateOrderStatus(o.id, col.nextStatus)}
                 advanceLabel={col.advanceLabel}
                 advanceColor={col.advanceColor}
               />
@@ -235,6 +252,7 @@ export default function CocinaMonitorPage() {
           </KdsColumn>
         ))}
       </div>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }

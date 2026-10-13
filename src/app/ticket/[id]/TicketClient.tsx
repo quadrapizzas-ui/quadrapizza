@@ -1,17 +1,20 @@
 "use client"
 import React, { useEffect, useState } from "react";
-import { mockOrdersStore, MockOrder } from "@/lib/mockData";
+import { MockOrder } from "@/types/models";
+import { useOrdersStore } from "@/lib/store/ordersStore";
 import { useParams } from "next/navigation";
 
 export default function TicketClient() {
   const params = useParams();
   const [order, setOrder] = useState<MockOrder | null>(null);
 
+  const orders = useOrdersStore((s) => s.orders);
+
   useEffect(() => {
-    // Buscar la orden en el store local usando mockOrdersStore de memoria
-    const found = mockOrdersStore.getSnapshot().find(o => o.id === params.id);
+    // Buscar la orden en el store local
+    const found = orders.find(o => o.id === params.id);
     if (found) setOrder(found);
-  }, [params.id]);
+  }, [params.id, orders]);
 
   if (!order) {
     return (
@@ -50,7 +53,7 @@ export default function TicketClient() {
 
         {/* Datos Cliente */}
         <div className="mb-6 space-y-1">
-          <p className="text-sm"><strong>Cliente:</strong> {order.clientName}</p>
+          <p className="text-sm"><strong>Cliente:</strong> {order.clientFirstName} {order.clientLastName}</p>
           {order.phone && <p className="text-sm"><strong>WhatsApp:</strong> {order.phone}</p>}
           {order.address && <p className="text-sm"><strong>Entrega a:</strong> <span className="font-bold">{order.address}</span></p>}
           <p className="text-sm"><strong>Forma de pago:</strong> <span className="uppercase text-orange-600 font-bold">{order.paymentMethod}</span></p>

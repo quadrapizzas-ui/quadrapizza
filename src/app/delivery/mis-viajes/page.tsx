@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { mockOrdersStore, MockOrder } from "@/lib/mockData";
+import { MockOrder } from "@/types/models";
+import { useOrdersStore } from "@/lib/store/ordersStore";
 import { getBusinessDay } from "@/lib/businessDay";
 import {
   MapPin, Navigation, Package, CheckCircle2, Bike, Phone,
-  ChevronDown, ChevronUp, ChefHat,
+  ChevronDown, ChevronUp, ChefHat, AlertTriangle,
 } from "lucide-react";
 
 function fmtARS(n: number) {
@@ -17,23 +18,26 @@ function openMap(address: string) {
 }
 
 // ── Delivery Card ─────────────────────────────────────────────────────────────
-function DeliveryCard({
+const DeliveryCard = React.memo(function DeliveryCard({
   order,
   onAction,
   readonly = false,
 }: {
   order: MockOrder;
-  onAction?: (status: string) => void;
+  onAction?: (status: string, markPaid?: boolean) => void;
   readonly?: boolean;
 }) {
   const isEfectivo   = order.paymentMethod?.toLowerCase() === "efectivo";
   const isListo      = order.status === "listo";
-  const isEnCocina   = order.status === "en-cocina";
+  const isEnCocina   = order.status === "en-cocina" || order.status === "confirmado";
   const isCompletado = order.status === "completado";
+  const isPending    = order.paymentStatus === "pendiente";
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // Visual identity per status
-  const headerTheme = isEnCocina
+  // Visual identity per status & payment
+  const headerTheme = isPending
+    ? "bg-red-950/80 border-red-900/80"
+    : isEnCocina
     ? "bg-orange-950/40 border-orange-900/30"
     : isListo
     ? "bg-yellow-950/30 border-yellow-900/30"
@@ -41,7 +45,9 @@ function DeliveryCard({
     ? "bg-emerald-950/30 border-emerald-900/30"
     : "bg-sky-950/30 border-sky-900/30";
 
-  const cardBorder = isEnCocina
+  const cardBorder = isPending
+    ? "border-2 border-red-600 shadow-[0_0_20px_-3px_rgba(239,68,68,0.45)] ring-1 ring-red-500/50"
+    : isEnCocina
     ? "border-orange-900/40"
     : isListo
     ? "border-yellow-900/50"
@@ -65,7 +71,9 @@ function DeliveryCard({
     ? "✅ Entregado"
     : "🛵 En Camino";
 
-  const addressTheme = isEnCocina
+  const addressTheme = isPending
+    ? "bg-red-950/20 border-red-900/40"
+    : isEnCocina
     ? "bg-orange-950/20 border-orange-900/30"
     : isListo
     ? "bg-yellow-950/20 border-yellow-900/30"
@@ -73,7 +81,9 @@ function DeliveryCard({
     ? "bg-emerald-950/20 border-emerald-900/30"
     : "bg-sky-950/20 border-sky-900/30";
 
-  const pinColor = isEnCocina
+  const pinColor = isPending
+    ? "bg-red-500/10 border-red-500/20"
+    : isEnCocina
     ? "bg-orange-500/10 border-orange-500/20"
     : isListo
     ? "bg-yellow-500/10 border-yellow-500/20"
@@ -81,7 +91,9 @@ function DeliveryCard({
     ? "bg-emerald-500/10 border-emerald-500/20"
     : "bg-sky-500/10 border-sky-500/20";
 
-  const pinIconColor = isEnCocina
+  const pinIconColor = isPending
+    ? "text-red-400"
+    : isEnCocina
     ? "text-orange-400"
     : isListo
     ? "text-yellow-400"
@@ -90,7 +102,7 @@ function DeliveryCard({
     : "text-sky-400";
 
   return (
-    <div className={`bg-zinc-900 rounded-2xl overflow-hidden shadow-xl border ${cardBorder}`}>
+    <div className={`rounded-2xl overflow-hidden shadow-xl border ${cardBorder} ${isPending ? 'bg-gradient-to-b from-red-950/25 via-zinc-900 to-zinc-900' : 'bg-zinc-900'}`}>
 
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className={`px-4 py-3 border-b ${headerTheme}`}>
@@ -105,10 +117,16 @@ function DeliveryCard({
             </span>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide leading-none">
-              {isCompletado ? "Cobrado" : "A cobrar"}
-            </p>
-            <p className="font-black text-lg text-white tabular-nums leading-tight">{fmtARS(order.total)}</p>
+            {isPending ? (
+              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mb-1 bg-red-600 text-white animate-pulse inline-flex items-center gap-1 shadow-sm">
+                ⚠️ IMPAGO
+              </span>
+            ) : (
+              <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full mb-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 inline-block">
+                ✓ PAGADO
+              </span>
+            )}
+            <p className={`font-black text-lg tabular-nums leading-tight ${isPending ? 'text-red-400' : 'text-white'}`}>{fmtARS(order.total)}</p>
           </div>
         </div>
       </div>
@@ -119,7 +137,7 @@ function DeliveryCard({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">Cliente</p>
-            <p className="font-black text-xl text-white leading-tight truncate">{order.clientName}</p>
+            <p className="font-black text-xl text-white leading-tight truncate">{order.clientFirstName} {order.clientLastName}</p>
           </div>
           <div className="flex flex-col items-end gap-1 shrink-0">
             <span className={`text-xs font-black px-3 py-1 rounded-xl ${
@@ -222,37 +240,85 @@ function DeliveryCard({
 
       {/* ── Confirm bottom sheet ──────────────────────────────── */}
       {showConfirm && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-t-3xl sm:rounded-3xl p-6 w-full sm:max-w-xs shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-200">
-            <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-5 sm:hidden" />
-            <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 size={28} className="text-emerald-400" />
-            </div>
-            <h3 className="font-black text-xl text-white text-center mb-2">¿Pedido entregado?</h3>
-            <p className="text-zinc-400 text-sm text-center mb-6">
-              Confirmá que cobraste <span className="font-bold text-white">{fmtARS(order.total)}</span>
-              {order.paymentMethod && <span className="text-zinc-500"> ({order.paymentMethod})</span>}
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowConfirm(false)}
-                className="flex-1 py-3.5 rounded-xl bg-zinc-800 text-zinc-300 font-bold hover:bg-zinc-700 transition active:scale-95"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => { setShowConfirm(false); onAction?.("completado"); }}
-                className="flex-1 py-3.5 rounded-xl bg-emerald-600 text-white font-black hover:bg-emerald-500 transition active:scale-95 shadow-lg shadow-emerald-900/40"
-              >
-                Confirmar
-              </button>
-            </div>
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-200">
+            {order.paymentStatus === "pagado" ? (
+              <>
+                <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle2 size={28} className="text-emerald-400" />
+                </div>
+                <h3 className="font-black text-xl text-white text-center mb-2">¿Confirmar Entrega?</h3>
+                <p className="text-emerald-400 font-bold text-sm text-center mb-6 bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20">
+                  Este pedido YA ESTÁ PAGADO ({order.paymentMethod}).<br />Solo entregalo al cliente.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowConfirm(false)}
+                    className="flex-1 py-3.5 rounded-xl bg-zinc-800 text-zinc-300 font-bold hover:bg-zinc-700 transition active:scale-95"
+                  >
+                    Volver
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowConfirm(false);
+                      onAction?.("completado", true);
+                    }}
+                    className="flex-1 py-3.5 rounded-xl bg-emerald-600 text-white font-black hover:bg-emerald-500 transition active:scale-95 shadow-lg shadow-emerald-900/40"
+                  >
+                    Confirmar
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="w-14 h-14 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center mx-auto mb-3">
+                  <AlertTriangle size={28} className="text-red-400" />
+                </div>
+                <h3 className="font-black text-xl text-white text-center mb-1">Cobro y Entrega</h3>
+                <p className="text-zinc-400 text-xs text-center mb-3">
+                  Cliente: <span className="font-bold text-white">{order.clientFirstName} {order.clientLastName}</span>
+                </p>
+                <div className="text-red-300 text-xs text-center mb-5 font-bold bg-red-950/40 p-3 rounded-2xl border border-red-900/60 space-y-1">
+                  <p className="text-red-400 font-black uppercase tracking-wider text-[10px]">⚠️ PEDIDO A COBRAR</p>
+                  <p className="text-base font-black text-white">{fmtARS(order.total)}</p>
+                  <p className="text-zinc-400 font-medium text-[11px]">Medio acordado: {order.paymentMethod}</p>
+                </div>
+                <div className="flex flex-col gap-2.5">
+                  <button
+                    onClick={() => {
+                      setShowConfirm(false);
+                      onAction?.("completado", true);
+                    }}
+                    className="w-full py-3.5 rounded-xl bg-emerald-600 text-white font-black hover:bg-emerald-500 transition active:scale-95 shadow-lg shadow-emerald-900/40 flex items-center justify-center gap-2 text-sm"
+                  >
+                    <CheckCircle2 size={18} />
+                    Cobrado en Mano ({fmtARS(order.total)})
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowConfirm(false);
+                      onAction?.("completado", false);
+                    }}
+                    className="w-full py-3 rounded-xl bg-red-950 text-red-300 border border-red-800 hover:bg-red-900/60 font-black text-xs transition active:scale-95 flex items-center justify-center gap-1.5"
+                  >
+                    <AlertTriangle size={15} />
+                    Entregar Fiado (Queda Debiendo)
+                  </button>
+                  <button
+                    onClick={() => setShowConfirm(false)}
+                    className="w-full py-2.5 rounded-xl bg-zinc-800/80 text-zinc-400 font-bold text-xs hover:bg-zinc-800 hover:text-white transition"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
     </div>
   );
-}
+});
 
 // ── Tab config ────────────────────────────────────────────────────────────────
 const TABS = [
@@ -332,32 +398,37 @@ const TABS = [
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function MisViajesPage() {
-  const [orders, setOrders]   = useState<MockOrder[]>([]);
+  const orders = useOrdersStore((s) => s.orders);
+  const updateOrderStatus = useOrdersStore((s) => s.updateOrderStatus);
+  const updateOrderPaymentStatus = useOrdersStore((s) => s.updateOrderPaymentStatus);
   const [activeTab, setActiveTab] = useState<"en-cocina" | "listo" | "en-camino" | "completado">("listo");
-
-  useEffect(() => {
-    setOrders(mockOrdersStore.getSnapshot());
-    return mockOrdersStore.subscribe(() => setOrders([...mockOrdersStore.getSnapshot()]));
-  }, []);
 
   const isDelivery = (address: string) => {
     if (!address) return false;
-    const lower = address.toLowerCase();
-    return !lower.includes("retiro") && !lower.includes("local") && lower !== "envío";
+    const lower = address.toLowerCase().trim();
+    return lower !== "retiro en local" && lower !== "retira en local" && lower !== "local" && lower !== "retiro";
   };
 
-  const todayBusinessDayTime = getBusinessDay().getTime();
-  const currentShiftOrders = orders.filter(o => getBusinessDay(o.createdAt).getTime() === todayBusinessDayTime);
+  const { currentShiftOrders, byStatus } = React.useMemo(() => {
+    const todayTime = getBusinessDay().getTime();
+    const shiftOrders = orders.filter(o => getBusinessDay(o.createdAt).getTime() === todayTime);
+    
+    return {
+      currentShiftOrders: shiftOrders,
+      byStatus: {
+        "en-cocina": shiftOrders.filter(o => ["confirmado", "en-cocina"].includes(o.status) && isDelivery(o.address)),
+        listo:       shiftOrders.filter(o => o.status === "listo"       && isDelivery(o.address)),
+        "en-camino": shiftOrders.filter(o => o.status === "en-camino"   && isDelivery(o.address)),
+        completado:  shiftOrders.filter(o => o.status === "completado"  && isDelivery(o.address)),
+      }
+    };
+  }, [orders]);
 
-  const byStatus = {
-    "en-cocina": currentShiftOrders.filter(o => o.status === "en-cocina"  && isDelivery(o.address)),
-    listo:       currentShiftOrders.filter(o => o.status === "listo"       && isDelivery(o.address)),
-    "en-camino": currentShiftOrders.filter(o => o.status === "en-camino"   && isDelivery(o.address)),
-    completado:  currentShiftOrders.filter(o => o.status === "completado"  && isDelivery(o.address)),
-  };
-
-  function handleAction(id: string, newStatus: string) {
-    mockOrdersStore.updateOrderStatus(id, newStatus as any);
+  function handleAction(id: string, newStatus: string, markPaid?: boolean) {
+    updateOrderStatus(id, newStatus as any);
+    if (newStatus === "completado" && markPaid === true) {
+      updateOrderPaymentStatus(id, "pagado");
+    }
   }
 
   const current = TABS.find(t => t.key === activeTab)!;
@@ -420,7 +491,7 @@ export default function MisViajesPage() {
                 key={o.id}
                 order={o}
                 readonly={current.readonly}
-                onAction={(s) => handleAction(o.id, s)}
+                onAction={(s, markPaid) => handleAction(o.id, s, markPaid)}
               />
             ))}
           </div>

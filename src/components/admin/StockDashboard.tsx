@@ -1,18 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, AlertTriangle, CheckCircle2, Minus, Plus, TrendingDown, Package, Save, RotateCcw, MessageCircle, Settings, Edit2, Trash2, X, ChevronDown } from "lucide-react";
+import { Search, AlertTriangle, CheckCircle2, Minus, Plus, TrendingDown, Package, Save, RotateCcw, MessageCircle, Settings, Edit2, Trash2, X, ChevronDown, ChefHat } from "lucide-react";
 
-import { mockStockStore, StockItem } from "@/lib/mockData";
+import { useStockStore, StockItem } from "@/lib/store/stockStore";
 
 type SortKey = "name" | "status" | "category";
 
 export function StockDashboard() {
-  const [stock, setStock] = useState<StockItem[]>(() => mockStockStore.getSnapshot());
-
-  useEffect(() => {
-    return mockStockStore.subscribe(() => setStock([...mockStockStore.getSnapshot()]));
-  }, []);
+  const { stock, adjustStock, updateItem, addItem, deleteItem } = useStockStore();
   const [pendingChanges, setPendingChanges] = useState<Record<number, string | number>>({});
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>("status");
@@ -34,6 +30,7 @@ export function StockDashboard() {
   const [formCategory, setFormCategory] = useState("");
   const [formNewCategory, setFormNewCategory] = useState("");
   const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+  const [formRequiresKitchen, setFormRequiresKitchen] = useState<boolean>(true);
 
   // Delete confirmation modal
   const [deleteTarget, setDeleteTarget] = useState<StockItem | null>(null);
@@ -91,10 +88,12 @@ export function StockDashboard() {
   }
 
   const saveChanges = () => {
-    Object.entries(pendingChanges).forEach(([id, val]) => {
-      const numVal = typeof val === 'string' ? parseFloat(val) : val;
-      if (!isNaN(numVal)) {
-        mockStockStore.updateItem(Number(id), { current: numVal });
+    Object.entries(pendingChanges).forEach(([idStr, val]) => {
+      const id = parseInt(idStr);
+      const original = stock.find(s => s.id === id);
+      if (original) {
+        const diff = Number(val) - original.current;
+        if (diff !== 0) adjustStock(id, diff);
       }
     });
     setPendingChanges({});
@@ -123,6 +122,7 @@ export function StockDashboard() {
     setFormCategory("");
     setFormNewCategory("");
     setShowNewCategoryInput(false);
+    setFormRequiresKitchen(true);
     setIsEditing(false);
     setEditingId(null);
   }
@@ -142,6 +142,11 @@ export function StockDashboard() {
     setFormCategory(item.category);
     setFormNewCategory("");
     setShowNewCategoryInput(false);
+    setFormRequiresKitchen(
+      item.requiresKitchen !== undefined
+        ? item.requiresKitchen
+        : !item.category.toLowerCase().includes("bebida")
+    );
     setIsModalOpen(true);
   }
 
@@ -162,14 +167,15 @@ export function StockDashboard() {
       min: minVal,
       current: currVal,
       category: finalCategory,
-      cost: 0 // Default cost
+      cost: 0, // Default cost
+      requiresKitchen: formRequiresKitchen
     };
 
     if (isEditing && editingId !== null) {
-      mockStockStore.updateItem(editingId, newItemData);
+      updateItem(editingId, newItemData);
       setSuccessMessage("Insumo actualizado exitosamente");
     } else {
-      mockStockStore.addItem(newItemData);
+      addItem(newItemData);
       setSuccessMessage("Insumo agregado exitosamente");
     }
     
@@ -185,7 +191,7 @@ export function StockDashboard() {
 
   const executeDelete = () => {
     if (deleteTarget) {
-      mockStockStore.deleteItem(deleteTarget.id);
+      deleteItem(deleteTarget.id);
       setSuccessMessage("Insumo eliminado exitosamente");
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
@@ -284,7 +290,7 @@ export function StockDashboard() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
           <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl px-3 py-2.5 flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-sky-500/15 flex items-center justify-center">
               <Package size={16} className="text-sky-400" />
@@ -344,7 +350,7 @@ export function StockDashboard() {
       {/* Table/List */}
       <div className={`flex-1 overflow-y-auto no-scrollbar ${pendingCount > 0 ? "pb-20" : ""}`}>
         {/* Table Header */}
-        <div className="sticky top-0 z-10 bg-zinc-950/95 backdrop-blur-sm border-b border-zinc-800/60 px-5 py-2 hidden sm:grid sm:grid-cols-[1fr_100px_100px_60px_80px_140px_80px] gap-4 items-center">
+        <div className="sticky top-0 z-10 bg-zinc-950/95 backdrop-blur-sm border-b border-zinc-800/60 px-5 py-2 hidden md:grid md:grid-cols-[1fr_100px_100px_60px_80px_140px_80px] gap-4 items-center">
           <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Insumo</span>
           <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Categoria</span>
           <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Nivel</span>
@@ -368,7 +374,7 @@ export function StockDashboard() {
             return (
               <div key={item.id} className={`group px-5 py-3.5 transition-colors hover:bg-zinc-900/50 ${isCritical ? "bg-red-950/10" : ""} ${hasPending ? "!bg-orange-950/10 border-l-2 border-l-orange-500" : ""}`}>
                 {/* Desktop Row */}
-                <div className="hidden sm:grid sm:grid-cols-[1fr_100px_100px_60px_80px_140px_80px] gap-4 items-center">
+                <div className="hidden md:grid md:grid-cols-[1fr_100px_100px_60px_80px_140px_80px] gap-4 items-center">
                   {/* Name */}
                   <div className="flex items-center gap-3">
                     <div className={`w-1 h-8 rounded-full ${status.bg} shrink-0`} />
@@ -438,7 +444,7 @@ export function StockDashboard() {
                 </div>
 
                 {/* Mobile Card */}
-                <div className="sm:hidden">
+                <div className="md:hidden">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2.5">
                       <div className={`w-1 h-10 rounded-full ${status.bg} shrink-0`} />
@@ -576,7 +582,15 @@ export function StockDashboard() {
                     <div className="relative flex-1">
                       <select
                         value={formCategory}
-                        onChange={e => setFormCategory(e.target.value)}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setFormCategory(val);
+                          if (val.toLowerCase().includes("bebida") || val.toLowerCase().includes("almacen") || val.toLowerCase().includes("almacén")) {
+                            setFormRequiresKitchen(false);
+                          } else {
+                            setFormRequiresKitchen(true);
+                          }
+                        }}
                         className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-4 pr-10 py-2.5 appearance-none outline-none focus:border-orange-500/60 transition text-sm font-bold text-zinc-100"
                       >
                         <option value="" className="bg-zinc-900 text-zinc-100">Seleccionar categoría...</option>
@@ -600,7 +614,13 @@ export function StockDashboard() {
                     <input
                       type="text"
                       value={formNewCategory}
-                      onChange={e => setFormNewCategory(e.target.value)}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setFormNewCategory(val);
+                        if (val.toLowerCase().includes("bebida") || val.toLowerCase().includes("almacen") || val.toLowerCase().includes("almacén")) {
+                          setFormRequiresKitchen(false);
+                        }
+                      }}
                       className="flex-1 bg-zinc-800 border border-orange-500/40 rounded-xl px-4 py-2.5 outline-none focus:border-orange-500/60 transition text-sm font-bold text-zinc-100 placeholder:text-zinc-600"
                       placeholder="Nombre de la nueva categoría..."
                       autoFocus
@@ -614,6 +634,43 @@ export function StockDashboard() {
                     </button>
                   </div>
                 )}
+              </div>
+
+              {/* Destino Operativo (Sector Cocina vs Despacho Directo) */}
+              <div>
+                <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Destino Operativo</label>
+                <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-800/80 border border-zinc-700/80">
+                  <div className="flex items-center gap-2.5">
+                    {formRequiresKitchen ? (
+                      <ChefHat size={16} className="text-orange-400 shrink-0" />
+                    ) : (
+                      <Package size={16} className="text-sky-400 shrink-0" />
+                    )}
+                    <div>
+                      <p className={`font-bold text-xs ${formRequiresKitchen ? "text-orange-400" : "text-sky-400"}`}>
+                        {formRequiresKitchen ? "Sector Cocina" : "Despacho Directo"}
+                      </p>
+                      <p className="text-[10px] text-zinc-400 font-medium">
+                        {formRequiresKitchen
+                          ? "Visible en Visor de Insumos de Cocina"
+                          : "Solo control de stock (bebidas o artículos envasados)"}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFormRequiresKitchen(!formRequiresKitchen)}
+                    className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${
+                      formRequiresKitchen ? "bg-orange-500" : "bg-sky-600"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                        formRequiresKitchen ? "translate-x-5" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
 
               {/* Unit */}

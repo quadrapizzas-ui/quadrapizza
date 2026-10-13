@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect, useSyncExternalStore } from "react";
-import { formatBusinessDay } from "@/lib/businessDay";
+import { formatBusinessDay, getBusinessDay } from "@/lib/businessDay";
 import {
   CalendarClock, DollarSign, Wallet, CreditCard, Smartphone,
   CheckCircle2, AlertTriangle, ClipboardList, Banknote, X,
-  ReceiptText, ChevronDown, ChevronUp, Printer
+  ReceiptText, ChevronDown, ChevronUp, Printer, AlertCircle
 } from "lucide-react";
-import { mockOrdersStore, MockOrder } from "@/lib/mockData";
+import { MockOrder } from "@/types/models";
+import { useOrdersStore } from "@/lib/store/ordersStore";
 import { useAuthStore } from "@/lib/store/authStore";
 import { useCierresStore } from "@/lib/store/cierresStore";
 
@@ -25,36 +26,48 @@ export default function CierreCajaPage() {
   const [visibleOrders, setVisibleOrders] = useState(20);
   const [closedAt, setClosedAt] = useState<Date | null>(null);
 
-  const allOrdersStore = useSyncExternalStore(mockOrdersStore.subscribe, mockOrdersStore.getSnapshot);
+  const allOrdersStore = useOrdersStore((s) => s.orders);
   const { activeUser } = useAuthStore();
   const { addCierre } = useCierresStore();
   
-  // Filtrar solo los pedidos de este cajero
-  const allOrders = activeUser 
-    ? allOrdersStore.filter(o => o.cajero_id === activeUser.id) 
-    : [];
+  // Filtrar solo los pedidos de este cajero del día actual
+  const todayBusinessDay = getBusinessDay(now).getTime();
+  
+  const allOrders = allOrdersStore.filter(o => {
+    const isToday = getBusinessDay(o.createdAt).getTime() === todayBusinessDay;
+    const isMyShift = activeUser ? (activeUser.role === "Gerencia" || o.cajero_id === activeUser.id) : true;
+    return isToday && isMyShift;
+  });
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30000);
     return () => clearInterval(t);
   }, []);
 
+  // Un turno incluye todo pedido (excluye cancelados).
+  const shiftOrders = allOrders.filter(o => o.status !== "cancelado");
+  const paidOrders = shiftOrders.filter(o => o.paymentStatus === "pagado");
+  const pendingPaymentOrders = shiftOrders.filter(o => o.paymentStatus === "pendiente");
+
   const completedOrders = allOrders.filter(o => o.status === "completado");
   const canceledOrders  = allOrders.filter(o => o.status === "cancelado");
   const pendingOrders   = allOrders.filter(o => !["completado","cancelado"].includes(o.status));
 
-  // Payment breakdown
-  const byMethod = completedOrders.reduce<Record<string, number>>((acc, o) => {
-    const key = o.paymentMethod;
+  // Payment breakdown - Contabilizar solo pedidos PAGADOS
+  const byMethod = paidOrders.reduce<Record<string, number>>((acc, o) => {
+    const key = o.paymentMethod || "Efectivo";
     acc[key] = (acc[key] || 0) + o.total;
     return acc;
   }, {});
 
-  const totalVentas    = completedOrders.reduce((s, o) => s + o.total, 0);
+  const totalVentas    = shiftOrders.reduce((s, o) => s + o.total, 0);
+  const totalCobrado   = paidOrders.reduce((s, o) => s + o.total, 0);
+  const totalPendiente = pendingPaymentOrders.reduce((s, o) => s + o.total, 0);
+
   const totalEfectivo  = Object.entries(byMethod)
     .filter(([k]) => k.toLowerCase().includes("efectivo"))
     .reduce((s, [,v]) => s + v, 0);
-  const totalDigital   = totalVentas - totalEfectivo;
+  const totalDigital   = totalCobrado - totalEfectivo;
   const efectivoEnCaja = totalEfectivo + fondoFijo;
 
   const businessDateString = formatBusinessDay(now);
@@ -79,7 +92,8 @@ export default function CierreCajaPage() {
       monto_total: totalVentas,
       efectivo_total: totalEfectivo,
       otros_medios_total: totalDigital,
-      cantidad_pedidos: completedOrders.length
+      cantidad_pedidos: shiftOrders.length,
+      deuda_pendiente_total: totalPendiente,
     });
 
     setClosedAt(new Date());
@@ -105,20 +119,24 @@ export default function CierreCajaPage() {
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-left space-y-3">
             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Resumen del Turno</p>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-zinc-400">Pedidos completados</span>
-              <span className="font-black text-white">{completedOrders.length}</span>
+              <span className="text-sm text-zinc-400">Pedidos procesados</span>
+              <span className="font-black text-white">{shiftOrders.length}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-zinc-400">Total vendido</span>
+              <span className="text-sm text-zinc-400">Total ventas brutas</span>
               <span className="font-black text-emerald-400 text-lg">{fmtARS(totalVentas)}</span>
             </div>
             <div className="border-t border-zinc-800 pt-3 flex justify-between items-center">
-              <span className="text-sm text-zinc-400">Efectivo en caja</span>
+              <span className="text-sm text-zinc-400">Efectivo en caja (con fondo)</span>
               <span className="font-black text-orange-400">{fmtARS(efectivoEnCaja)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-zinc-400">Digital / Transferencias</span>
               <span className="font-black text-sky-400">{fmtARS(totalDigital)}</span>
+            </div>
+            <div className="border-t border-zinc-800 pt-3 flex justify-between items-center">
+              <span className="text-sm text-red-400 font-bold">Fiado / A Cobrar (Deuda)</span>
+              <span className="font-black text-red-400">{fmtARS(totalPendiente)}</span>
             </div>
             {notas && (
               <div className="border-t border-zinc-800 pt-3">
@@ -172,6 +190,7 @@ export default function CierreCajaPage() {
               <div className="flex justify-between"><span className="text-zinc-400">Pedidos completados</span><span className="font-black text-white">{completedOrders.length}</span></div>
               <div className="flex justify-between"><span className="text-zinc-400">Efectivo en caja</span><span className="font-black text-orange-400">{fmtARS(efectivoEnCaja)}</span></div>
               <div className="flex justify-between"><span className="text-zinc-400">Digital</span><span className="font-black text-sky-400">{fmtARS(totalDigital)}</span></div>
+              <div className="flex justify-between border-t border-zinc-800 pt-1.5"><span className="text-red-400 font-bold">Fiado / A Cobrar</span><span className="font-black text-red-400">{fmtARS(totalPendiente)}</span></div>
             </div>
 
             <div className="flex gap-3 pt-1">
@@ -216,14 +235,15 @@ export default function CierreCajaPage() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {[
-            { label: "Total Ventas",   value: fmtARS(totalVentas),    sub: `${completedOrders.length} pedidos`, icon: <DollarSign size={16}/>, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-            { label: "Efectivo Caja",  value: fmtARS(efectivoEnCaja), sub: `Fondo: ${fmtARS(fondoFijo)}`,     icon: <Wallet size={16}/>,     color: "text-orange-400",  bg: "bg-orange-500/10"  },
+            { label: "Ventas Brutas",  value: fmtARS(totalVentas),    sub: `${shiftOrders.length} pedidos`,     icon: <DollarSign size={16}/>, color: "text-zinc-300",    bg: "bg-zinc-800/50" },
+            { label: "Cobrado",        value: fmtARS(totalCobrado),   sub: "Efectivo + Digital",                icon: <CheckCircle2 size={16}/>, color: "text-emerald-400",bg: "bg-emerald-500/10" },
+            { label: "Fiado / A Cobrar", value: fmtARS(totalPendiente), sub: `${pendingPaymentOrders.length} impagos`, icon: <AlertCircle size={16}/>, color: "text-red-400",  bg: "bg-red-500/10"  },
+            { label: "Efectivo Caja",  value: fmtARS(efectivoEnCaja), sub: `Fondo: ${fmtARS(fondoFijo)}`,     icon: <Wallet size={16}/>,     color: "text-amber-400",   bg: "bg-amber-500/10"  },
             { label: "Digital",        value: fmtARS(totalDigital),   sub: "MP / Transferencia",                icon: <Smartphone size={16}/>, color: "text-sky-400",     bg: "bg-sky-500/10"     },
-            { label: "Cancelados",     value: String(canceledOrders.length), sub: "pedidos",                   icon: <X size={16}/>,          color: "text-red-400",     bg: "bg-red-500/10"     },
-          ].map(card => (
-            <div key={card.label} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+          ].map((card, idx) => (
+            <div key={card.label} className={`bg-zinc-900 border border-zinc-800 rounded-2xl p-4 ${idx === 4 ? "col-span-2 sm:col-span-1" : ""}`}>
               <div className={`w-8 h-8 rounded-lg ${card.bg} ${card.color} flex items-center justify-center mb-3`}>
                 {card.icon}
               </div>
@@ -241,7 +261,7 @@ export default function CierreCajaPage() {
             <h2 className="text-sm font-black text-zinc-200 uppercase tracking-widest">Desglose por Método de Pago</h2>
           </div>
           {Object.keys(byMethod).length === 0 ? (
-            <p className="text-zinc-600 text-sm text-center py-4">Sin ventas completadas aún.</p>
+            <p className="text-zinc-600 text-sm text-center py-4">Sin ventas procesadas aún.</p>
           ) : (
             <div className="divide-y divide-zinc-800">
               {Object.entries(byMethod).map(([method, amount]) => (
@@ -290,6 +310,57 @@ export default function CierreCajaPage() {
           </p>
         </div>
 
+        {/* Deuda / Fiado del Turno */}
+        <div className="bg-gradient-to-b from-red-950/30 to-zinc-900 border-2 border-red-800/60 rounded-2xl overflow-hidden shadow-lg shadow-red-950/20">
+          <div className="p-5 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <span className="w-8 h-8 rounded-xl bg-red-600/20 border border-red-600/30 flex items-center justify-center text-red-400">
+                <AlertCircle size={16} />
+              </span>
+              <div>
+                <h2 className="text-sm font-black text-red-200 uppercase tracking-widest">
+                  Fiado / A Cobrar del Turno ({pendingPaymentOrders.length})
+                </h2>
+                <p className="text-xs text-red-400/80 mt-0.5">
+                  Pedidos entregados o despachados sin cobrar. No suman al efectivo en cajón y pasan a Cuentas Corrientes.
+                </p>
+              </div>
+            </div>
+            <span className="font-black text-xl text-red-400 tabular-nums">
+              {fmtARS(totalPendiente)}
+            </span>
+          </div>
+
+          {pendingPaymentOrders.length > 0 && (
+            <div className="border-t border-red-900/40 divide-y divide-red-900/30 bg-zinc-950/40">
+              {pendingPaymentOrders.map(order => (
+                <div key={order.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-black text-xs text-white">#{order.id}</span>
+                      <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-600 text-white animate-pulse">
+                        IMPAGO
+                      </span>
+                      <span className="text-[10px] text-zinc-400">{order.status}</span>
+                    </div>
+                    <p className="text-sm font-bold text-red-200 mt-0.5">{order.clientFirstName} {order.clientLastName}</p>
+                    <p className="text-[11px] text-zinc-500">{order.phone || "Sin tel"} • {order.address}</p>
+                  </div>
+                  <div className="flex items-center gap-3 self-end sm:self-center">
+                    <span className="font-black text-red-400 tabular-nums text-sm">{fmtARS(order.total)}</span>
+                    <button
+                      onClick={() => useOrdersStore.getState().updateOrderPaymentStatus(order.id, "pagado")}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 text-xs font-black transition flex items-center gap-1"
+                    >
+                      <CheckCircle2 size={13} /> Cobrar ahora
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Orders Detail Accordion — solo completados */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
           <button
@@ -321,7 +392,7 @@ export default function CierreCajaPage() {
                           <span className="text-xs font-black text-zinc-500">#{order.id}</span>
                           <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full text-emerald-400 bg-emerald-500/10">Completado</span>
                         </div>
-                        <p className="text-sm font-bold text-zinc-200 mt-0.5">{order.clientName}</p>
+                        <p className="text-sm font-bold text-zinc-200 mt-0.5">{order.clientFirstName} {order.clientLastName}</p>
                         <p className="text-[11px] text-zinc-500">{order.paymentMethod}</p>
                       </div>
                       <span className="font-black text-white text-sm tabular-nums">{fmtARS(order.total)}</span>
