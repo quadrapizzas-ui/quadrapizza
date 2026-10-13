@@ -293,6 +293,24 @@ export function PinPadLogin({
               <ArrowRight size={17} />
             </button>
 
+            {/* Acceso Rápido Demo */}
+            <button
+              type="button"
+              onClick={() => {
+                const targetDni = "40299684";
+                setDni(targetDni);
+                const user = getUserByDni(targetDni, moduleName);
+                if (user) {
+                  setMatchedUser(user);
+                  setPin("1234");
+                  setStep("pin");
+                }
+              }}
+              className="mt-3 text-[11px] text-zinc-400 hover:text-white bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/60 px-3.5 py-1.5 rounded-full transition flex items-center gap-1.5 shadow-sm active:scale-95"
+            >
+              <span>Demo: DNI 40299684 • PIN 1234</span>
+            </button>
+
             {/* Teclado en pantalla (Solo en Tablets / Pantallas táctiles) */}
             {isTouchDevice && (
               <div className="grid grid-cols-3 gap-x-3 gap-y-2.5 w-full mt-4 pt-3 border-t border-zinc-800/80 animate-in fade-in duration-200">

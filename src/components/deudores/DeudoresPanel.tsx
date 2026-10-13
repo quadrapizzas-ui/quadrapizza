@@ -255,9 +255,8 @@ export default function DeudoresPanel({ moduleTitle = "Recepción" }: { moduleTi
   };
 
   const handleSettleAllForDebtor = (debtor: DebtorRecord) => {
-    debtor.orders.forEach((o) => {
-      updateOrderPaymentStatus(o.id, "pagado");
-    });
+    const orderIds = debtor.orders.map((o) => o.id);
+    applyCustomerPayment(orderIds, debtor.totalDebt, selectedPaymentMethod);
     setSettlingKey(null);
   };
 
@@ -592,6 +591,57 @@ export default function DeudoresPanel({ moduleTitle = "Recepción" }: { moduleTi
                   </p>
                 </div>
 
+                {/* Medio de Pago */}
+                <div className="mb-4">
+                  <label className="block text-xs font-bold text-zinc-300 mb-1.5 text-left">
+                    Medio de Pago
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {["Efectivo", "Transferencia", "Débito", "Tarjeta de crédito", "Mercado Pago"].map((method) => {
+                      const isSelected = selectedPaymentMethod === method;
+                      return (
+                        <button
+                          key={method}
+                          type="button"
+                          onClick={() => setSelectedPaymentMethod(method)}
+                          className={`p-2 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1 ${
+                            isSelected
+                              ? "bg-emerald-500/20 border-emerald-500/60 text-emerald-300 font-black shadow-sm"
+                              : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850"
+                          } ${method === "Tarjeta de crédito" ? "col-span-2" : ""}`}
+                        >
+                          <span>{method}</span>
+                          {method === "Tarjeta de crédito" && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-black">
+                              +15%
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Si es Tarjeta de crédito, desglose con 15% recargo */}
+                {selectedPaymentMethod === "Tarjeta de crédito" && (
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1 text-xs mb-4 text-left">
+                    <div className="flex justify-between text-zinc-300">
+                      <span>Deuda a saldar:</span>
+                      <span className="font-bold">{fmtARS(debtor.totalDebt)}</span>
+                    </div>
+                    <div className="flex justify-between text-amber-300">
+                      <span>Recargo Tarjeta (15%):</span>
+                      <span className="font-bold">+{fmtARS(Math.round(debtor.totalDebt * 0.15))}</span>
+                    </div>
+                    <div className="flex justify-between pt-1 border-t border-amber-500/20 text-white font-black">
+                      <span>Total a cobrar en tarjeta:</span>
+                      <span className="text-amber-400 font-black">
+                        {fmtARS(debtor.totalDebt + Math.round(debtor.totalDebt * 0.15))}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-3">
                   <button
                     onClick={() => setSettlingKey(null)}
@@ -599,12 +649,19 @@ export default function DeudoresPanel({ moduleTitle = "Recepción" }: { moduleTi
                   >
                     Cancelar
                   </button>
-                  <button
-                    onClick={() => handleSettleAllForDebtor(debtor)}
-                    className="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-black hover:bg-emerald-500 transition shadow-lg shadow-emerald-900/40"
-                  >
-                    Confirmar Cobro
-                  </button>
+                  {(() => {
+                    const isCredit = selectedPaymentMethod === "Tarjeta de crédito";
+                    const surcharge = isCredit ? Math.round(debtor.totalDebt * 0.15) : 0;
+                    const totalToPay = debtor.totalDebt + surcharge;
+                    return (
+                      <button
+                        onClick={() => handleSettleAllForDebtor(debtor)}
+                        className="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-black hover:bg-emerald-500 transition shadow-lg shadow-emerald-900/40"
+                      >
+                        Confirmar Cobro ({fmtARS(totalToPay)})
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
             );
@@ -699,33 +756,67 @@ export default function DeudoresPanel({ moduleTitle = "Recepción" }: { moduleTi
                   Medio de Pago
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  {["Efectivo", "Transferencia", "Débito", "Mercado Pago"].map((method) => (
-                    <button
-                      key={method}
-                      type="button"
-                      onClick={() => setPartialMethod(method)}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                        partialMethod === method
-                          ? "bg-amber-500/20 border-amber-500/60 text-amber-300 font-black shadow-sm"
-                          : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850"
-                      }`}
-                    >
-                      {method}
-                    </button>
-                  ))}
+                  {["Efectivo", "Transferencia", "Débito", "Tarjeta de crédito", "Mercado Pago"].map((method) => {
+                    const isSelected = partialMethod === method;
+                    return (
+                      <button
+                        key={method}
+                        type="button"
+                        onClick={() => setPartialMethod(method)}
+                        className={`p-2.5 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                          isSelected
+                            ? "bg-amber-500/20 border-amber-500/60 text-amber-300 font-black shadow-sm"
+                            : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850"
+                        } ${method === "Tarjeta de crédito" ? "col-span-2" : ""}`}
+                      >
+                        <span>{method}</span>
+                        {method === "Tarjeta de crédito" && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/25 text-amber-300 font-black">
+                            +15%
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Vista Previa del Saldo Restante */}
+              {/* Si es Tarjeta de crédito y hay monto, desglose matemático exacto (15% recargo) */}
               {(() => {
                 const entered = parseFloat(partialAmount) || 0;
+                const isCreditCard = partialMethod === "Tarjeta de crédito";
+                const surcharge = isCreditCard ? Math.round(entered * 0.15) : 0;
+                const totalToCharge = entered + surcharge;
                 const newBalance = Math.max(0, partialPaymentDebtor.totalDebt - entered);
+
                 return (
-                  <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-center justify-between text-xs">
-                    <span className="text-zinc-400 font-medium">Saldo restante tras la entrega:</span>
-                    <span className={`font-black tabular-nums ${newBalance === 0 ? "text-emerald-400" : "text-amber-400"}`}>
-                      {fmtARS(newBalance)} {newBalance === 0 && "(¡Deuda Saldada!)"}
-                    </span>
+                  <div className="space-y-3">
+                    {isCreditCard && entered > 0 && (
+                      <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-1.5 text-xs animate-in fade-in duration-150">
+                        <div className="flex justify-between items-center text-zinc-300">
+                          <span className="text-zinc-400">Entrega a cuenta (descuenta deuda):</span>
+                          <span className="font-bold tabular-nums">{fmtARS(entered)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-amber-300">
+                          <span className="font-semibold">Recargo Tarjeta de Crédito (15%):</span>
+                          <span className="font-black tabular-nums">+{fmtARS(surcharge)}</span>
+                        </div>
+                        <div className="flex justify-between items-center pt-2 border-t border-amber-500/25 text-white font-black">
+                          <span className="uppercase text-[11px] tracking-wider text-amber-200">
+                            Total a cobrar en posnet / tarjeta:
+                          </span>
+                          <span className="text-base text-amber-400 tabular-nums">{fmtARS(totalToCharge)}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Vista Previa del Saldo Restante */}
+                    <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-center justify-between text-xs">
+                      <span className="text-zinc-400 font-medium">Saldo restante tras la entrega:</span>
+                      <span className={`font-black tabular-nums ${newBalance === 0 ? "text-emerald-400" : "text-amber-400"}`}>
+                        {fmtARS(newBalance)} {newBalance === 0 && "(¡Deuda Saldada!)"}
+                      </span>
+                    </div>
                   </div>
                 );
               })()}
@@ -740,14 +831,22 @@ export default function DeudoresPanel({ moduleTitle = "Recepción" }: { moduleTi
               >
                 Cancelar
               </button>
-              <button
-                type="button"
-                disabled={!partialAmount || parseFloat(partialAmount) <= 0}
-                onClick={handleConfirmPartialPayment}
-                className="flex-1 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:hover:bg-amber-600 text-white font-black text-xs transition shadow-lg shadow-amber-900/30"
-              >
-                Confirmar Entrega {partialAmount && parseFloat(partialAmount) > 0 ? `(${fmtARS(parseFloat(partialAmount))})` : ""}
-              </button>
+              {(() => {
+                const entered = parseFloat(partialAmount) || 0;
+                const isCreditCard = partialMethod === "Tarjeta de crédito";
+                const surcharge = isCreditCard ? Math.round(entered * 0.15) : 0;
+                const totalToCharge = entered + surcharge;
+                return (
+                  <button
+                    type="button"
+                    disabled={!partialAmount || entered <= 0}
+                    onClick={handleConfirmPartialPayment}
+                    className="flex-1 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:hover:bg-amber-600 text-white font-black text-xs transition shadow-lg shadow-amber-900/30 flex items-center justify-center gap-1.5"
+                  >
+                    Confirmar Entrega {entered > 0 ? `(${fmtARS(isCreditCard ? totalToCharge : entered)})` : ""}
+                  </button>
+                );
+              })()}
             </div>
           </div>
         </div>

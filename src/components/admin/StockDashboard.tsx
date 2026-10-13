@@ -18,6 +18,7 @@ export function StockDashboard() {
   const [managerPhone, setManagerPhone] = useState("+5493513517493");
   const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [showPhoneConfirm, setShowPhoneConfirm] = useState(false);
+  const [showSummary, setShowSummary] = useState(true);
 
   // Modal state for create/edit
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -242,9 +243,9 @@ export function StockDashboard() {
         {successMessage}
       </div>
 
-      {/* Header */}
-      <div className="shrink-0 px-5 py-4 border-b border-zinc-800/60 bg-zinc-950">
-        <div className="flex items-center justify-between mb-4">
+      {/* Header (Slim, non-intrusive) */}
+      <div className="shrink-0 px-5 py-3.5 border-b border-zinc-800/60 bg-zinc-950">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-black text-white tracking-tight">Stock</h1>
             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">Consulta y ajuste de inventario</p>
@@ -257,6 +258,22 @@ export function StockDashboard() {
                 <span className="text-xs font-black text-red-400 sm:hidden">{criticalCount}</span>
               </div>
             )}
+
+            {/* Toggle Summary Cards */}
+            <button
+              onClick={() => setShowSummary((prev) => !prev)}
+              className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 ${
+                showSummary
+                  ? "bg-zinc-800/80 border-zinc-700 text-zinc-200"
+                  : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-white"
+              }`}
+              title={showSummary ? "Ocultar tarjetas de resumen" : "Mostrar tarjetas de resumen"}
+            >
+              <Package size={14} />
+              <span className="hidden sm:inline text-[11px] font-bold">
+                {showSummary ? "Ocultar resumen" : "Ver resumen"}
+              </span>
+            </button>
             
             <div className="flex items-center gap-1 bg-zinc-900 rounded-xl p-1 border border-zinc-800">
               <button 
@@ -280,7 +297,7 @@ export function StockDashboard() {
             {/* ── Nuevo Insumo Button ── */}
             <button
               onClick={openCreateModal}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-orange-600 hover:bg-orange-500 text-white text-[10px] sm:text-xs font-black rounded-xl transition active:scale-95 shadow-lg shadow-orange-900/30 uppercase tracking-widest"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-[10px] sm:text-xs font-black rounded-xl transition active:scale-95 shadow-lg shadow-orange-900/30 uppercase tracking-widest"
             >
               <Plus size={14} />
               <span className="hidden sm:inline">Nuevo Insumo</span>
@@ -288,69 +305,74 @@ export function StockDashboard() {
             </button>
           </div>
         </div>
-
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-          <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl px-3 py-2.5 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-sky-500/15 flex items-center justify-center">
-              <Package size={16} className="text-sky-400" />
-            </div>
-            <div>
-              <p className="text-lg font-black text-white leading-none tabular-nums">{totalItems}</p>
-              <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">Insumos</p>
-            </div>
-          </div>
-          <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl px-3 py-2.5 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-emerald-500/15 flex items-center justify-center">
-              <CheckCircle2 size={16} className="text-emerald-400" />
-            </div>
-            <div>
-              <p className="text-lg font-black text-emerald-400 leading-none tabular-nums">{healthyCount}</p>
-              <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">En Stock</p>
-            </div>
-          </div>
-          <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl px-3 py-2.5 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-red-500/15 flex items-center justify-center">
-              <TrendingDown size={16} className="text-red-400" />
-            </div>
-            <div>
-              <p className="text-lg font-black text-red-400 leading-none tabular-nums">{criticalCount}</p>
-              <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">Críticos</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Search + Filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar insumo..."
-              className="w-full pl-9 pr-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-sm font-bold text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-orange-500/60 transition" />
-          </div>
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-            <button
-              onClick={() => setActiveCategory(null)}
-              className={`shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold border transition ${!activeCategory ? "bg-orange-600 text-white border-orange-600" : "bg-transparent border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600"}`}
-            >
-              Todos
-            </button>
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
-                className={`shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold border transition ${activeCategory === cat ? "bg-zinc-700 text-white border-zinc-700" : "bg-transparent border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600"}`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
-      {/* Table/List */}
-      <div className={`flex-1 overflow-y-auto no-scrollbar ${pendingCount > 0 ? "pb-20" : ""}`}>
+      {/* Table/List & Content with Natural Scroll */}
+      <div className={`flex-1 overflow-y-auto no-scrollbar ${pendingCount > 0 ? "pb-24" : "pb-8"}`}>
+        {/* Top Summary & Filters inside scroll */}
+        <div className="px-5 pt-4 pb-3 space-y-3.5">
+          {/* Summary Cards */}
+          {showSummary && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-in fade-in duration-200">
+              <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl px-3 py-2.5 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-sky-500/15 flex items-center justify-center">
+                  <Package size={16} className="text-sky-400" />
+                </div>
+                <div>
+                  <p className="text-lg font-black text-white leading-none tabular-nums">{totalItems}</p>
+                  <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">Insumos</p>
+                </div>
+              </div>
+              <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl px-3 py-2.5 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-emerald-500/15 flex items-center justify-center">
+                  <CheckCircle2 size={16} className="text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-lg font-black text-emerald-400 leading-none tabular-nums">{healthyCount}</p>
+                  <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">En Stock</p>
+                </div>
+              </div>
+              <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl px-3 py-2.5 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-red-500/15 flex items-center justify-center">
+                  <TrendingDown size={16} className="text-red-400" />
+                </div>
+                <div>
+                  <p className="text-lg font-black text-red-400 leading-none tabular-nums">{criticalCount}</p>
+                  <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">Críticos</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Search + Filters */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar insumo..."
+                className="w-full pl-9 pr-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-sm font-bold text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-orange-500/60 transition" />
+            </div>
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+              <button
+                onClick={() => setActiveCategory(null)}
+                className={`shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold border transition ${!activeCategory ? "bg-orange-600 text-white border-orange-600" : "bg-transparent border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600"}`}
+              >
+                Todos
+              </button>
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+                  className={`shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold border transition ${activeCategory === cat ? "bg-zinc-700 text-white border-zinc-700" : "bg-transparent border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600"}`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Table Header */}
-        <div className="sticky top-0 z-10 bg-zinc-950/95 backdrop-blur-sm border-b border-zinc-800/60 px-5 py-2 hidden md:grid md:grid-cols-[1fr_100px_100px_60px_80px_140px_80px] gap-4 items-center">
+        <div className="sticky top-0 z-10 bg-zinc-950/95 backdrop-blur-sm border-y border-zinc-800/60 px-5 py-2 hidden md:grid md:grid-cols-[1fr_100px_100px_60px_80px_140px_80px] gap-4 items-center">
           <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Insumo</span>
           <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Categoria</span>
           <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Nivel</span>

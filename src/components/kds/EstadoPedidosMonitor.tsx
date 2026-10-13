@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { MockOrder } from "@/types/models";
 import { useOrdersStore } from "@/lib/store/ordersStore";
 import { getBusinessDay } from "@/lib/businessDay";
-import { Clock, ChefHat, Truck, CheckCircle2, XCircle, ShoppingBag, Eye, RefreshCw, AlertTriangle, Flame, Copy, Check } from "lucide-react";
+import { Clock, ChefHat, Truck, CheckCircle2, XCircle, ShoppingBag, Eye, RefreshCw, AlertTriangle, Flame, Copy, Check, ExternalLink } from "lucide-react";
 import { orderRequiresKitchen } from "@/lib/orderKitchenHelper";
 
 function fmtARS(n: number) {
@@ -53,7 +54,17 @@ const ReceptionCard = React.memo(function ReceptionCard({ order, expandedId, set
         }`}
       >
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-mono font-black text-white text-xs leading-none">#{order.id}</span>
+          <Link
+            href={`/estado-pedido/${order.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="font-mono font-black text-sky-400 hover:text-sky-300 text-xs leading-none flex items-center gap-1 hover:underline transition"
+            title="Abrir seguimiento en vivo del pedido"
+          >
+            #{order.id}
+            <ExternalLink size={10} className="opacity-70" />
+          </Link>
           <span className="shrink-0 text-[8px] font-black uppercase tracking-widest px-1 py-0.5 rounded bg-zinc-800 text-zinc-300">
             {isDelivery ? '🛵 Envío' : '🏪 Retiro'}
           </span>
@@ -111,18 +122,32 @@ const ReceptionCard = React.memo(function ReceptionCard({ order, expandedId, set
       {/* Expanded Details */}
       {isExpanded && (
         <div className="px-3 pb-3 pt-2 border-t border-zinc-800/60 bg-zinc-950/30 flex flex-col gap-2">
-           <button 
-             onClick={(e) => {
-               e.stopPropagation();
-               const url = `${window.location.origin}/estado-pedido/${order.id}`;
-               navigator.clipboard.writeText(url);
-               setCopied(true);
-               setTimeout(() => setCopied(false), 2000);
-             }}
-             className="mt-2 w-full text-[10px] font-black uppercase tracking-widest text-sky-400 bg-sky-500/10 border border-sky-500/20 py-1.5 rounded flex items-center justify-center gap-1.5 hover:bg-sky-500/20 transition"
-           >
-             {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? "Enlace copiado" : "Copiar enlace"}
-           </button>
+           <div className="grid grid-cols-2 gap-2 mt-2">
+             <Link
+               href={`/estado-pedido/${order.id}`}
+               target="_blank"
+               rel="noopener noreferrer"
+               onClick={(e) => e.stopPropagation()}
+               className="w-full text-[10px] font-black uppercase tracking-widest text-white bg-sky-600 hover:bg-sky-500 py-2 rounded-xl flex items-center justify-center gap-1.5 transition shadow-sm active:scale-95"
+             >
+               <ExternalLink size={13} /> Ver Estado
+             </Link>
+             <button 
+               type="button"
+               onClick={(e) => {
+                 e.stopPropagation();
+                 const url = `${window.location.origin}/estado-pedido/${order.id}`;
+                 if (navigator.clipboard) {
+                   navigator.clipboard.writeText(url);
+                 }
+                 setCopied(true);
+                 setTimeout(() => setCopied(false), 2000);
+               }}
+               className="w-full text-[10px] font-black uppercase tracking-widest text-sky-400 bg-sky-500/10 border border-sky-500/20 py-2 rounded-xl flex items-center justify-center gap-1.5 hover:bg-sky-500/20 transition active:scale-95"
+             >
+               {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? "Copiado" : "Copiar Link"}
+             </button>
+           </div>
 
            {/* Acción de avance según el estado actual del pedido */}
            {!readOnly && order.status === "confirmado" && (

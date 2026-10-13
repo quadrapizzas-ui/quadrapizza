@@ -28,35 +28,40 @@ export default function DeliveryLayout({ children }: { children: React.ReactNode
 
   useEffect(() => {
     if (pathname === "/delivery/login") {
-      if (activeUser) {
-        router.push("/delivery/mis-viajes");
-        return;
-      }
-      setIsAuthorized(true); 
-      return; 
+      setIsAuthorized(true);
+      return;
     }
-    if (!activeUser) { router.push("/delivery/login"); return; }
+    if (!activeUser) {
+      router.push("/delivery/login");
+      return;
+    }
     setIsAuthorized(true);
-    document.body.style.overflow = "auto";
+    document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = "auto"; };
   }, [pathname, router, activeUser]);
 
-  if (!isAuthorized) return (
-    <>
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-[9999]">
+  if (!isAuthorized) {
+    return (
+      <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center">
         <span className="w-6 h-6 border-2 border-zinc-800 border-t-emerald-500 rounded-full animate-spin" />
       </div>
-      <div className="hidden">{children}</div>
-    </>
-  );
+    );
+  }
+
+  if (pathname === "/delivery/login") {
+    return (
+      <div className="min-h-screen bg-black text-zinc-50">
+        <main className="w-full flex flex-col">{children}</main>
+      </div>
+    );
+  }
 
   const displayName = activeUser?.name || "Mario Rossi";
 
   return (
-    <div className={pathname === "/delivery/login" ? "min-h-screen bg-black text-zinc-50" : "fixed inset-0 bg-zinc-950 text-zinc-50 flex flex-col overflow-hidden"}>
+    <div className="fixed inset-0 bg-zinc-950 text-zinc-50 flex flex-col overflow-hidden">
       {/* ─── TOP NAV BAR ─────────────────────────────────────────────── */}
-      {pathname !== "/delivery/login" && (
-        <header className="shrink-0 h-14 bg-zinc-950 border-b border-zinc-800/70 px-4 flex items-center gap-4 z-40">
+      <header className="shrink-0 h-14 bg-zinc-950 border-b border-zinc-800/70 px-4 flex items-center gap-4 z-40">
           <div className="flex items-center gap-2.5 shrink-0">
             <Image src="/logo.jpg" alt="Logo" width={30} height={30} className="rounded-lg object-cover" />
             <div className="flex flex-col leading-none">
@@ -117,10 +122,9 @@ export default function DeliveryLayout({ children }: { children: React.ReactNode
             {mobileOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
         </header>
-      )}
 
       {/* ─── MOBILE NAV DRAWER ───────────────────────────────────────── */}
-      {mobileOpen && pathname !== "/delivery/login" && (
+      {mobileOpen && (
         <div className="lg:hidden absolute top-14 left-0 right-0 z-50 bg-zinc-950 border-b border-zinc-800 p-3 flex flex-col gap-1 shadow-2xl">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const active = pathname.startsWith(href);
@@ -132,7 +136,7 @@ export default function DeliveryLayout({ children }: { children: React.ReactNode
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
                   active
                     ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                    : "text-zinc-400 hover:text-white hover:bg-zinc-800 border border-transparent"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-850 border border-transparent"
                 }`}
               >
                 <Icon size={16} />
@@ -143,7 +147,7 @@ export default function DeliveryLayout({ children }: { children: React.ReactNode
         </div>
       )}
 
-      <main className={pathname === "/delivery/login" ? "" : "flex-1 flex flex-col overflow-hidden"}>
+      <main className="flex-1 flex flex-col overflow-hidden">
         {children}
       </main>
     </div>

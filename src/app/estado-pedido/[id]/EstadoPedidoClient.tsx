@@ -21,7 +21,49 @@ export default function EstadoPedidoPage() {
   const orders = useOrdersStore((s) => s.orders);
   
   useEffect(() => {
-    const found = orders.find((o) => o.id === id);
+    const rawId = Array.isArray(id) ? id[0] : id;
+    const cleanId = decodeURIComponent(rawId || "").replace(/^#/, "").trim();
+
+    // 1. Coincidencia directa en orders de Zustand
+    let found = orders.find(
+      (o) =>
+        o.id === cleanId ||
+        o.id.toLowerCase() === cleanId.toLowerCase() ||
+        o.id.endsWith(`-${cleanId}`) ||
+        o.id.endsWith(cleanId)
+    );
+
+    if (!found && cleanId.length > 0) {
+      found = orders.find((o) => o.id.includes(cleanId) || cleanId.includes(o.id));
+    }
+
+    // 2. Respaldo directo en localStorage si el store aún no rehidrató
+    if (!found && typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("quadra-mock-orders-v11");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          const localOrders: MockOrder[] = parsed?.state?.orders || [];
+          found = localOrders.find(
+            (o) =>
+              o.id === cleanId ||
+              o.id.toLowerCase() === cleanId.toLowerCase() ||
+              o.id.endsWith(`-${cleanId}`) ||
+              o.id.endsWith(cleanId) ||
+              o.id.includes(cleanId)
+          );
+          if (!found && cleanId === "demo") found = localOrders[0];
+        }
+      } catch {
+        // fallback
+      }
+    }
+
+    // 3. Fallback para 'demo' o primer pedido si no se encuentra
+    if (!found && (cleanId === "demo" || !cleanId)) {
+      found = orders[0] || null;
+    }
+
     setOrder(found || null);
     setLoading(false);
   }, [id, orders]);

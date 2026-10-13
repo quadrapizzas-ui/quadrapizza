@@ -396,6 +396,54 @@ const TABS = [
   },
 ];
 
+// ── Kanban Column Component (Multi-column view for landscape/desktop) ─────────
+function DeliveryColumn({
+  title,
+  icon: Icon,
+  count,
+  accent,
+  badgeBg,
+  emptyIcon,
+  emptyText,
+  emptySubtext,
+  children,
+}: {
+  title: string;
+  icon: React.ElementType;
+  count: number;
+  accent: string;
+  badgeBg: string;
+  emptyIcon: string;
+  emptyText: string;
+  emptySubtext: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={`flex flex-col rounded-2xl border ${accent} overflow-hidden bg-zinc-950/60 h-full min-w-0`}>
+      <div className="shrink-0 px-3.5 py-3 border-b border-inherit flex items-center justify-between bg-zinc-900/40">
+        <div className="flex items-center gap-2 min-w-0">
+          <Icon size={16} className="text-inherit opacity-80 shrink-0" />
+          <h2 className="font-black text-xs uppercase tracking-wider truncate text-zinc-100">{title}</h2>
+        </div>
+        <span className={`font-black text-xs min-w-[24px] h-6 px-1.5 rounded-full flex items-center justify-center shrink-0 ${badgeBg} tabular-nums`}>
+          {count}
+        </span>
+      </div>
+      <div className="flex-1 overflow-y-auto no-scrollbar p-2.5 space-y-3">
+        {count === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-zinc-700 font-bold text-xs uppercase tracking-widest py-14 gap-2 text-center">
+            <span className="text-3xl opacity-35">{emptyIcon}</span>
+            <span className="text-xs text-zinc-500 font-bold">{emptyText}</span>
+            <span className="text-[10px] text-zinc-700 font-medium max-w-[180px] normal-case">{emptySubtext}</span>
+          </div>
+        ) : (
+          children
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function MisViajesPage() {
   const orders = useOrdersStore((s) => s.orders);
@@ -435,12 +483,10 @@ export default function MisViajesPage() {
   const currentOrders = byStatus[activeTab];
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden bg-zinc-950">
 
-
-
-      {/* ── Tab switcher (4 tabs, scrollable if needed) ─────────── */}
-      <div className="shrink-0 flex border-b border-zinc-900 bg-zinc-950 overflow-x-auto no-scrollbar">
+      {/* ── MOBILE ONLY (Portrait): Tab switcher ─────────────────────────── */}
+      <div className="shrink-0 md:hidden flex border-b border-zinc-900 bg-zinc-950 overflow-x-auto no-scrollbar">
         {TABS.map(tab => {
           const isActive = activeTab === tab.key;
           const count = byStatus[tab.key].length;
@@ -466,10 +512,8 @@ export default function MisViajesPage() {
         })}
       </div>
 
-
-
-      {/* ── Content ────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto no-scrollbar p-4">
+      {/* ── MOBILE ONLY (Portrait): Single active column ─────────────────── */}
+      <div className="flex-1 overflow-y-auto no-scrollbar p-4 md:hidden">
         {currentOrders.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center py-20 gap-4 text-center max-w-xs mx-auto">
             <div className="w-20 h-20 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-4xl">
@@ -496,6 +540,36 @@ export default function MisViajesPage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* ── HORIZONTAL / LANDSCAPE PHONE & TABLET & DESKTOP: 4-column kanban ─ */}
+      <div className="hidden md:grid md:grid-cols-4 gap-3 p-3 flex-1 overflow-hidden">
+        {TABS.map(tab => {
+          const list = byStatus[tab.key];
+          const tabIcon = tab.key === "en-cocina" ? ChefHat : tab.key === "listo" ? Package : tab.key === "en-camino" ? Bike : CheckCircle2;
+          return (
+            <DeliveryColumn
+              key={tab.key}
+              title={tab.label}
+              icon={tabIcon}
+              count={list.length}
+              accent={tab.borderAccent}
+              badgeBg={tab.badgeBg}
+              emptyIcon={tab.emptyIcon}
+              emptyText={tab.emptyText}
+              emptySubtext={tab.emptySubtext}
+            >
+              {list.map(o => (
+                <DeliveryCard
+                  key={o.id}
+                  order={o}
+                  readonly={tab.readonly}
+                  onAction={(s, markPaid) => handleAction(o.id, s, markPaid)}
+                />
+              ))}
+            </DeliveryColumn>
+          );
+        })}
       </div>
     </div>
   );
