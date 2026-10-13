@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import Link from "next/link";
 import { Package, Tag, ArrowRight, Plus, AlertTriangle, Settings, PieChart, ShoppingBag, PlusCircle } from "lucide-react";
@@ -12,15 +12,23 @@ interface CatalogoDashboardProps {
   basePath: string; // e.g. "/recepcion/catalogo" or "/gerencia/catalogo"
 }
 
+const DEFAULT_CATALOG_PHONE = "+54 9 3513 05-9413";
+
 export default function CatalogoDashboard({ basePath }: CatalogoDashboardProps) {
-  const { products } = useProductsStore();
+  const { products, whatsappNumber, setWhatsappNumber } = useProductsStore();
   const { stock } = useStockStore();
   const stockRoute = basePath.startsWith("/gerencia") ? "/gerencia/stock" : "/recepcion/stock";
 
-  const [phoneNumber, setPhoneNumber] = useState("+5493518046223");
+  const [phoneNumber, setPhoneNumber] = useState(whatsappNumber || DEFAULT_CATALOG_PHONE);
   const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [tempPhone, setTempPhone] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
+
+  useEffect(() => {
+    if (whatsappNumber) {
+      setPhoneNumber(whatsappNumber);
+    }
+  }, [whatsappNumber]);
 
   const totalProducts = products.length;
   const offerProducts = products.filter(p => p.isOffer);
@@ -319,7 +327,7 @@ export default function CatalogoDashboard({ basePath }: CatalogoDashboardProps) 
                   className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 outline-none focus:border-sky-500/60 transition font-bold text-sm text-zinc-100 placeholder:text-zinc-600" 
                   value={tempPhone}
                   onChange={(e) => setTempPhone(e.target.value)}
-                  placeholder="+54 9 3518..."
+                  placeholder="+54 9 3513 05-9413"
                   autoFocus 
                 />
               </div>
@@ -386,7 +394,12 @@ export default function CatalogoDashboard({ basePath }: CatalogoDashboardProps) 
               </button>
               <button 
                 onClick={() => {
-                  setPhoneNumber(tempPhone);
+                  const finalNumber = tempPhone.trim() || DEFAULT_CATALOG_PHONE;
+                  setPhoneNumber(finalNumber);
+                  setWhatsappNumber(finalNumber);
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem("quadra_catalog_phone", finalNumber);
+                  }
                   setIsEditingPhone(false);
                   setShowConfirm(false);
                 }}

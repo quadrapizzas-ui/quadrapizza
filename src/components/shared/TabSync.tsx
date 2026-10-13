@@ -7,6 +7,7 @@ import { useCierresStore } from "@/lib/store/cierresStore";
 import { useGastosStore, generateMockGastos } from "@/lib/store/gastosStore";
 import { useStockStore } from "@/lib/store/stockStore";
 import { useAuthStore } from "@/lib/store/authStore";
+import { useProductsStore } from "@/lib/store/productsStore";
 import { logger } from "@/lib/logger";
 import { generateMockOrders } from "@/lib/mockOrders";
 import { MockCustomer } from "@/types/models";
@@ -41,6 +42,10 @@ export function TabSync() {
       if (e.key === "quadra-mock-stock-v2") {
         logger.info("Storage sync event received - Rehydrating stockStore");
         useStockStore.persist.rehydrate();
+      }
+      if (e.key === "quadra-products-storage-v1") {
+        logger.info("Storage sync event received - Rehydrating productsStore");
+        useProductsStore.persist.rehydrate();
       }
       if (e.key === "quadra-auth-storage-v5" || e.key === "quadra-auth-storage-v4" || e.key === "quadra-auth-storage-v3" || e.key === "quadra-auth-v1") {
         logger.info("Storage sync event received - Rehydrating authStore");

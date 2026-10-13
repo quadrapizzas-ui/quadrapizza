@@ -210,7 +210,11 @@ export function CartSidebar({
     message += `\n*Seguí tu pedido en vivo aquí:*\n${trackingUrl}`;
     message += `\n\n¡Muchas gracias!`;
 
-    const WHATSAPP_NUMBER = "5493518046223";
+    const storedPhone = useProductsStore.getState().whatsappNumber;
+    const savedPhone = typeof window !== "undefined" ? localStorage.getItem("quadra_catalog_phone") : null;
+    const rawPhone = storedPhone || savedPhone || "5493513059413";
+    const cleanNumber = rawPhone.replace(/\D/g, "");
+    const WHATSAPP_NUMBER = cleanNumber.startsWith("54") ? cleanNumber : `549${cleanNumber}`;
     const encodedMsg = encodeURIComponent(message);
     const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMsg}`;
     setLastWhatsAppUrl(waUrl);

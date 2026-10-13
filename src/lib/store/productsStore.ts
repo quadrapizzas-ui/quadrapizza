@@ -428,12 +428,16 @@ const INITIAL_PRODUCTS: Product[] = [
 
 import { persist } from "zustand/middleware";
 
+export const DEFAULT_CATALOG_PHONE = "+54 9 3513 05-9413";
+
 interface ProductsState {
   products: Product[];
   categories: Category[];
   neighborhoods: Neighborhood[];
   extras: Extra[];
   varieties: Variety[];
+  whatsappNumber: string;
+  setWhatsappNumber: (phone: string) => void;
   toggleProductStock: (id: number) => void;
   updateProduct: (id: number, data: Partial<Product>) => void;
   addProduct: (product: Omit<Product, "id">) => Product;
@@ -455,6 +459,9 @@ export const useProductsStore = create<ProductsState>()(
       neighborhoods: INITIAL_NEIGHBORHOODS,
       extras: INITIAL_EXTRAS,
       varieties: INITIAL_VARIETIES,
+      whatsappNumber: DEFAULT_CATALOG_PHONE,
+
+      setWhatsappNumber: (whatsappNumber) => set({ whatsappNumber }),
 
       toggleProductStock: (id) =>
         set((state) => ({
@@ -490,6 +497,11 @@ export const useProductsStore = create<ProductsState>()(
     }),
     {
       name: "quadra-products-storage-v1",
+      onRehydrateStorage: () => (state) => {
+        if (state && (!state.whatsappNumber || state.whatsappNumber.includes("8046223"))) {
+          state.whatsappNumber = DEFAULT_CATALOG_PHONE;
+        }
+      },
     }
   )
 );
