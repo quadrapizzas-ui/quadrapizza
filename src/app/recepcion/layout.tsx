@@ -94,31 +94,31 @@ export default function RecepcionLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        <div className="hidden xl:block w-px h-6 bg-zinc-800 shrink-0" />
+        <div className="hidden lg:block w-px h-6 bg-zinc-800 shrink-0" />
 
         {/* Nav links — desktop */}
-        <nav className="hidden xl:flex items-center gap-1 flex-1">
+        <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 flex-1 min-w-0 overflow-x-auto no-scrollbar">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const active = pathname.startsWith(href);
             return (
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                className={`flex items-center gap-1.5 px-2 xl:px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
                   active
                     ? "bg-sky-500/15 text-sky-400 border border-sky-500/30"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-800 border border-transparent"
                 }`}
               >
-                <Icon size={14} />
-                {label}
+                <Icon size={14} className="shrink-0" />
+                <span>{label}</span>
               </Link>
             );
           })}
         </nav>
 
         {/* Spacer */}
-        <div className="flex-1 xl:hidden" />
+        <div className="flex-1 lg:hidden" />
 
         {/* Reloj */}
         <span className="hidden sm:block font-mono text-sm font-bold text-zinc-300 shrink-0 tabular-nums">
@@ -147,7 +147,7 @@ export default function RecepcionLayout({ children }: { children: React.ReactNod
         {/* Mobile menu toggle */}
         <button
           onClick={() => setMobileOpen(o => !o)}
-          className="xl:hidden p-2 rounded-lg bg-zinc-900 text-zinc-400 hover:text-white transition"
+          className="lg:hidden p-2 rounded-lg bg-zinc-900 text-zinc-400 hover:text-white transition"
         >
           {mobileOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
@@ -155,7 +155,7 @@ export default function RecepcionLayout({ children }: { children: React.ReactNod
 
       {/* ─── MOBILE NAV DRAWER ───────────────────────────────────────── */}
       {mobileOpen && (
-        <div className="xl:hidden absolute top-14 left-0 right-0 z-50 bg-zinc-950 border-b border-zinc-800 p-3 flex flex-col gap-1 shadow-2xl">
+        <div className="lg:hidden absolute top-14 left-0 right-0 z-50 bg-zinc-950 border-b border-zinc-800 p-3 flex flex-col gap-1 shadow-2xl">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const active = pathname.startsWith(href);
             return (

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Package, Tag, ArrowRight, Plus, AlertTriangle, Settings, PieChart, ShoppingBag, PlusCircle } from "lucide-react";
 import Image from "next/image";
 import { useProductsStore } from "@/lib/store/productsStore";
+import { useStockStore } from "@/lib/store/stockStore";
 
 interface CatalogoDashboardProps {
   basePath: string; // e.g. "/recepcion/catalogo" or "/gerencia/catalogo"
@@ -13,6 +14,9 @@ interface CatalogoDashboardProps {
 
 export default function CatalogoDashboard({ basePath }: CatalogoDashboardProps) {
   const { products } = useProductsStore();
+  const { stock } = useStockStore();
+  const stockRoute = basePath.startsWith("/gerencia") ? "/gerencia/stock" : "/recepcion/stock";
+
   const [phoneNumber, setPhoneNumber] = useState("+5493518046223");
   const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [tempPhone, setTempPhone] = useState("");
@@ -22,6 +26,8 @@ export default function CatalogoDashboard({ basePath }: CatalogoDashboardProps) 
   const offerProducts = products.filter(p => p.isOffer);
   const activeOffers = offerProducts.length;
   const outOfStockProducts = products.filter(p => !p.stock);
+  const criticalStockItems = stock.filter(s => s.current <= s.min);
+  const totalStockAlerts = criticalStockItems.length + outOfStockProducts.length;
   
   const nonPromoProducts = products.filter(p => !p.isOffer);
   const totalBaseProducts = nonPromoProducts.length;
@@ -181,42 +187,92 @@ export default function CatalogoDashboard({ basePath }: CatalogoDashboardProps) 
             </div>
           </div>
 
-          {/* Sin Stock */}
+          {/* Stock Crítico / Sin Stock */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-black text-white flex items-center gap-2">
-                <AlertTriangle size={16} className="text-orange-500" /> Sin Stock
+                <AlertTriangle size={16} className={totalStockAlerts > 0 ? "text-amber-400" : "text-emerald-400"} />
+                <span>Stock Crítico / Alertas</span>
+                {totalStockAlerts > 0 && (
+                  <span className="bg-red-500/15 text-red-400 border border-red-500/25 px-1.5 py-0.5 rounded-full text-[9px] font-black">
+                    {totalStockAlerts}
+                  </span>
+                )}
               </h3>
-              <Link href={`${basePath}/productos`} className="text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-orange-400 flex items-center gap-1 transition">
-                Gestionar <ArrowRight size={10} />
+              <Link href={stockRoute} className="text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-orange-400 flex items-center gap-1 transition">
+                Gestionar Stock <ArrowRight size={10} />
               </Link>
             </div>
             
             <div className="space-y-2">
-              {outOfStockProducts.length > 0 ? (
-                outOfStockProducts.map((p) => (
-                  <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl bg-orange-500/5 border border-orange-500/20 transition group">
-                    <div className="w-12 h-12 rounded-lg overflow-hidden relative bg-zinc-950 shrink-0 opacity-60 grayscale">
-                      <Image src={p.image} alt={p.name} fill sizes="48px" className="object-cover" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <h4 className="font-bold text-xs text-zinc-100 truncate">{p.name}</h4>
-                        <span className="bg-orange-500/15 text-orange-400 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shrink-0 border border-orange-500/20">
-                          Agotado
-                        </span>
+              {totalStockAlerts > 0 ? (
+                <>
+                  {/* Insumos Críticos del Stock real */}
+                  {criticalStockItems.slice(0, 5).map((item) => {
+                    const isZero = item.current <= 0;
+                    const isUrgent = item.current <= item.min * 0.5;
+                    const badgeColor = isZero
+                      ? "bg-red-500/15 text-red-400 border-red-500/25"
+                      : isUrgent
+                      ? "bg-red-500/15 text-red-400 border-red-500/25"
+                      : "bg-amber-500/15 text-amber-400 border-amber-500/25";
+                    const badgeText = isZero ? "Agotado" : isUrgent ? "Urgente" : "Bajo";
+
+                    return (
+                      <div key={`stock-${item.id}`} className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 hover:border-zinc-700 transition group">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isZero ? "bg-red-500/10 text-red-400" : "bg-amber-500/10 text-amber-400"}`}>
+                            <Package size={15} />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-xs text-zinc-100 truncate">{item.name}</h4>
+                              <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shrink-0 border ${badgeColor}`}>
+                                {badgeText}
+                              </span>
+                            </div>
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+                              {item.category} • Mínimo: {item.min} {item.unit}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className={`text-xs font-black tabular-nums ${isZero || isUrgent ? "text-red-400" : "text-amber-400"}`}>
+                            {item.current} {item.unit}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                    );
+                  })}
+
+                  {/* Platos / Productos del menú desactivados por stock */}
+                  {outOfStockProducts.map((p) => (
+                    <div key={`prod-${p.id}`} className="flex items-center gap-3 p-2.5 rounded-xl bg-red-500/5 border border-red-500/20 transition group">
+                      <div className="w-8 h-8 rounded-lg overflow-hidden relative bg-zinc-950 shrink-0 opacity-60 grayscale">
+                        <Image src={p.image} alt={p.name} fill sizes="32px" className="object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-xs text-zinc-100 truncate">{p.name}</h4>
+                          <span className="bg-red-500/15 text-red-400 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shrink-0 border border-red-500/20">
+                            Plato Desactivado
+                          </span>
+                        </div>
                         <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">{p.category}</span>
-                        <span className="font-black text-xs text-zinc-500 line-through">{p.price}</span>
                       </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+
+                  {criticalStockItems.length > 5 && (
+                    <Link href={stockRoute} className="block text-center py-1 text-[10px] font-bold text-zinc-500 hover:text-zinc-300 transition">
+                      + Ver {criticalStockItems.length - 5} insumos críticos más en Stock
+                    </Link>
+                  )}
+                </>
               ) : (
                 <div className="py-8 flex flex-col items-center justify-center gap-2 text-emerald-500/60 bg-emerald-500/5 rounded-xl border border-dashed border-emerald-500/20">
                    <Package size={24} strokeWidth={1.5} />
-                   <p className="text-[10px] font-bold uppercase tracking-widest">Stock completo</p>
+                   <p className="text-[10px] font-bold uppercase tracking-widest">Stock completo y niveles óptimos</p>
                 </div>
               )}
             </div>

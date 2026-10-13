@@ -21,7 +21,7 @@ export default function CocinaLayout({ children }: { children: React.ReactNode }
   const { activeUser, logout } = useAuthStore();
 
   useEffect(() => {
-    const tick = () => setClock(new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+    const tick = () => setClock(new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }));
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
@@ -36,21 +36,23 @@ export default function CocinaLayout({ children }: { children: React.ReactNode }
   }, [pathname, router, activeUser]);
 
   if (!isAuthorized) return (
-    <div className="fixed inset-0 bg-black flex items-center justify-center">
+    <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center">
       <span className="w-6 h-6 border-2 border-zinc-800 border-t-orange-500 rounded-full animate-spin" />
     </div>
   );
 
   if (pathname === "/cocina/login") return (
-    <div className="fixed-layout bg-black text-zinc-50">
+    <div className="fixed-layout bg-zinc-950 text-zinc-50">
       <main className="flex-1 w-full overflow-hidden flex flex-col">{children}</main>
     </div>
   );
 
+  const displayName = activeUser?.name || "Carlos Gomez";
+
   return (
-    <div className="fixed inset-0 bg-black text-zinc-50 flex flex-col overflow-hidden">
-      {/* Top bar */}
-      <header className="shrink-0 h-14 bg-black border-b border-zinc-900 flex items-center px-4 gap-4 z-40">
+    <div className="fixed inset-0 bg-zinc-950 text-zinc-50 flex flex-col overflow-hidden">
+      {/* ─── TOP NAV BAR ─────────────────────────────────────────────── */}
+      <header className="shrink-0 h-14 bg-zinc-950 border-b border-zinc-800/70 flex items-center px-4 gap-4 z-40">
         <div className="flex items-center gap-2.5 shrink-0">
           <Image src="/logo.jpg" alt="Logo" width={30} height={30} className="rounded-lg object-cover" />
           <div className="flex flex-col leading-none">
@@ -58,42 +60,55 @@ export default function CocinaLayout({ children }: { children: React.ReactNode }
             <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest">Cocina</span>
           </div>
         </div>
-        <div className="hidden md:block w-px h-6 bg-zinc-800 shrink-0" />
-        <nav className="hidden md:flex items-center gap-1 flex-1 min-w-0">
+
+        <div className="hidden lg:block w-px h-6 bg-zinc-800 shrink-0" />
+
+        <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 flex-1 min-w-0">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const active = pathname?.startsWith(href);
             return (
               <Link key={href} href={href}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${active ? "bg-orange-500/15 text-orange-400 border border-orange-500/30" : "text-zinc-500 hover:text-white hover:bg-zinc-900 border border-transparent"}`}>
-                <Icon size={14} /><span>{label}</span>
+                className={`flex items-center gap-1.5 px-2 xl:px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                  active
+                    ? "bg-orange-500/15 text-orange-400 border border-orange-500/30"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800 border border-transparent"
+                }`}
+              >
+                <Icon size={14} className="shrink-0" />
+                <span>{label}</span>
               </Link>
             );
           })}
         </nav>
+
         {/* Spacer */}
-        <div className="flex-1 md:hidden" />
+        <div className="flex-1 lg:hidden" />
+
         {/* Live clock */}
-        <span className="hidden sm:block font-mono text-sm font-bold text-zinc-300 tabular-nums shrink-0">{clock}</span>
+        <span className="hidden sm:block font-mono text-sm font-bold text-zinc-300 shrink-0 tabular-nums">
+          {clock}
+        </span>
 
         {/* Active User Indicator */}
-        {activeUser && (
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-full shrink-0">
-            <div className="w-5 h-5 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-[10px] font-black">
-              {activeUser.name ? activeUser.name.charAt(0) : "U"}
-            </div>
-            <span className="text-xs font-bold text-zinc-300">{activeUser.name || "Usuario"}</span>
+        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-full shrink-0">
+          <div className="w-5 h-5 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-[10px] font-black">
+            {displayName.charAt(0)}
           </div>
-        )}
+          <span className="text-xs font-bold text-zinc-300">{displayName}</span>
+        </div>
 
-        <button onClick={() => { logout(); router.push("/cocina/login"); }}
+        <button
+          onClick={() => { logout(); router.push("/cocina/login"); }}
           title="Cerrar sesión"
-          className="shrink-0 p-2 rounded-lg text-zinc-500 hover:text-orange-400 hover:bg-zinc-900 transition">
+          className="shrink-0 p-2 rounded-lg text-zinc-500 hover:text-orange-400 hover:bg-zinc-800 transition"
+        >
           <LogOut size={16} />
         </button>
+
         {/* Mobile menu toggle */}
         <button
           onClick={() => setMobileOpen(o => !o)}
-          className="md:hidden p-2 rounded-lg bg-zinc-900 text-zinc-400 hover:text-white transition"
+          className="lg:hidden p-2 rounded-lg bg-zinc-900 text-zinc-400 hover:text-white transition"
         >
           {mobileOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
@@ -101,7 +116,7 @@ export default function CocinaLayout({ children }: { children: React.ReactNode }
 
       {/* ─── MOBILE NAV DRAWER ───────────────────────────────────────── */}
       {mobileOpen && (
-        <div className="md:hidden absolute top-14 left-0 right-0 z-50 bg-black border-b border-zinc-900 p-3 flex flex-col gap-1">
+        <div className="lg:hidden absolute top-14 left-0 right-0 z-50 bg-zinc-950 border-b border-zinc-800 p-3 flex flex-col gap-1 shadow-2xl">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const active = pathname.startsWith(href);
             return (
@@ -112,7 +127,7 @@ export default function CocinaLayout({ children }: { children: React.ReactNode }
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
                   active
                     ? "bg-orange-500/15 text-orange-400 border border-orange-500/30"
-                    : "text-zinc-400 hover:text-white hover:bg-zinc-900 border border-transparent"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800 border border-transparent"
                 }`}
               >
                 <Icon size={16} />
