@@ -1,6 +1,8 @@
 import TicketClient from "./TicketClient";
 
-export const runtime = 'edge';
+export function generateStaticParams() {
+  return [{ id: "demo" }];
+}
 
 export default function TicketPage() {
   return <TicketClient />;
