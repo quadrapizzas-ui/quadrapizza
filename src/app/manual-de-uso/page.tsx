@@ -188,7 +188,7 @@ export default function ManualDeUsoPage() {
           >
             <div className="relative w-8 h-8 rounded-xl overflow-hidden border border-zinc-700/60 shadow-md">
               <Image
-                src="/logo.jpg"
+                src="/logo.webp"
                 alt="Logo Quadra"
                 fill
                 className="object-cover"

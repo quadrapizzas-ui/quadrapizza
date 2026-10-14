@@ -961,7 +961,7 @@ export default function ProductosPage() {
                         saleType,
                         stock: inStock,
                         requiresKitchen,
-                        image: imageUrl.trim() || "/1.webp",
+                        image: imageUrl.trim() || "/products/quadra-pizza-signature.webp",
                         customVarieties: customVarieties.filter(v => v.name.trim() !== ""),
                         customExtras: customExtras.filter(e => e.name.trim() !== ""),
                         quadraConfig: isQuadra ? {

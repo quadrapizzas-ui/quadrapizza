@@ -11,8 +11,8 @@ export const generateTodayOrders = (): MockOrder[] => {
     {
       id: `${todayStr}-012`,
       items: [
-        { name: "Pizza Napolitana", quantity: 1, price: 7800 },
-        { name: "Docena de Empanadas Variadas", quantity: 1, price: 9500 },
+        { name: "Quadra 1 (1 Variedad Extra)", quantity: 1, price: 9000 },
+        { name: "Súper Lomito Quadra con Papas", quantity: 1, price: 9200 },
         { name: "Coca-Cola 1.5L", quantity: 1, price: 2500 }
       ],
       paymentMethod: "Mercado Pago",
@@ -21,7 +21,7 @@ export const generateTodayOrders = (): MockOrder[] => {
       clientLastName: "Gómez",
       phone: "3516123456",
       address: "B° Privado La Arboleda, Mz 3 Lote 12",
-      total: 20800,
+      total: 21700,
       deliveryFee: 1000,
       createdAt: getMinutesAgo(3),
       mockAge: "Hace 3 min",
@@ -32,7 +32,7 @@ export const generateTodayOrders = (): MockOrder[] => {
     {
       id: `${todayStr}-011`,
       items: [
-        { name: "Muzzarella Clásica", quantity: 1, price: 6500 },
+        { name: "Quadra 1 (1 Variedad Extra)", quantity: 1, price: 9000 },
         { name: "Coca-Cola 1.5L", quantity: 1, price: 2500 }
       ],
       paymentMethod: "Efectivo",
@@ -41,7 +41,7 @@ export const generateTodayOrders = (): MockOrder[] => {
       clientLastName: "López",
       phone: "3512987654",
       address: "Retiro en local",
-      total: 9000,
+      total: 11500,
       deliveryFee: 0,
       createdAt: getMinutesAgo(8),
       mockAge: "Hace 8 min",
@@ -72,7 +72,7 @@ export const generateTodayOrders = (): MockOrder[] => {
     {
       id: `${todayStr}-009`,
       items: [
-        { name: "Lomo Especial Quadra", quantity: 1, price: 12000 },
+        { name: "Súper Lomito Quadra con Papas", quantity: 1, price: 9200 },
         { name: "Coca-Cola 1.5L", quantity: 1, price: 2500 }
       ],
       paymentMethod: "Efectivo",
@@ -81,7 +81,7 @@ export const generateTodayOrders = (): MockOrder[] => {
       clientLastName: "Cabrera",
       phone: "3514433221",
       address: "Retiro en local",
-      total: 14500,
+      total: 11700,
       deliveryFee: 0,
       createdAt: getMinutesAgo(22),
       mockAge: "Hace 22 min",
@@ -92,8 +92,8 @@ export const generateTodayOrders = (): MockOrder[] => {
     {
       id: `${todayStr}-008`,
       items: [
-        { name: "Pizza Calabresa", quantity: 1, price: 7500 },
-        { name: "Empanada de Carne a Cuchillo (Docena)", quantity: 1, price: 10500 }
+        { name: "Quadra 3 (3 Variedades)", quantity: 1, price: 12000 },
+        { name: "Burger Quadra Egg Special", quantity: 1, price: 7200 }
       ],
       paymentMethod: "Efectivo",
       paymentStatus: "pendiente",
@@ -101,7 +101,7 @@ export const generateTodayOrders = (): MockOrder[] => {
       clientLastName: "Pérez",
       phone: "3515112233",
       address: "Av. San Martín 1250, Depto 4A",
-      total: 19000,
+      total: 20200,
       deliveryFee: 1000,
       createdAt: getMinutesAgo(32),
       mockAge: "Hace 32 min",
@@ -112,7 +112,7 @@ export const generateTodayOrders = (): MockOrder[] => {
     {
       id: `${todayStr}-007`,
       items: [
-        { name: "Hamburguesa Quadra Triple", quantity: 1, price: 9500 },
+        { name: "Burger Doble Bacon Beast", quantity: 1, price: 8600 },
         { name: "Coca-Cola 1.5L", quantity: 1, price: 2500 }
       ],
       paymentMethod: "Mercado Pago",
@@ -121,7 +121,7 @@ export const generateTodayOrders = (): MockOrder[] => {
       clientLastName: "Martínez",
       phone: "3517998877",
       address: "Retiro en local",
-      total: 12000,
+      total: 11100,
       deliveryFee: 0,
       createdAt: getMinutesAgo(40),
       mockAge: "Hace 40 min",
@@ -132,7 +132,7 @@ export const generateTodayOrders = (): MockOrder[] => {
     {
       id: `${todayStr}-006`,
       items: [
-        { name: "Promo 2 Muzzarellas", quantity: 1, price: 11000 },
+        { name: "Quadra 2 (2 Variedades Extra)", quantity: 1, price: 10500 },
         { name: "Coca-Cola 1.5L", quantity: 1, price: 2500 }
       ],
       paymentMethod: "Efectivo",
@@ -141,7 +141,7 @@ export const generateTodayOrders = (): MockOrder[] => {
       clientLastName: "Benítez",
       phone: "3518223344",
       address: "Belgrano 740, B° Yocsina",
-      total: 14000,
+      total: 13500,
       deliveryFee: 500,
       createdAt: getMinutesAgo(48),
       mockAge: "Hace 48 min",
@@ -152,8 +152,8 @@ export const generateTodayOrders = (): MockOrder[] => {
     {
       id: `${todayStr}-005`,
       items: [
-        { name: "Pizza de Jamón y Morrones", quantity: 1, price: 8200 },
-        { name: "Flan con Dulce de Leche", quantity: 2, price: 1500 }
+        { name: "Quadra 1 (1 Variedad Extra)", quantity: 1, price: 9000 },
+        { name: "Tiramisú Artesanal", quantity: 2, price: 2400 }
       ],
       paymentMethod: "Transferencia",
       paymentStatus: "pagado",
@@ -161,7 +161,7 @@ export const generateTodayOrders = (): MockOrder[] => {
       clientLastName: "Díaz",
       phone: "3519334455",
       address: "Calle 9 de Julio 180",
-      total: 12200,
+      total: 14800,
       deliveryFee: 1000,
       createdAt: getMinutesAgo(58),
       mockAge: "Hace 58 min",
@@ -172,7 +172,7 @@ export const generateTodayOrders = (): MockOrder[] => {
     {
       id: `${todayStr}-004`,
       items: [
-        { name: "Muzzarella Clásica", quantity: 1, price: 6500 },
+        { name: "Quadra 1 (1 Variedad Extra)", quantity: 1, price: 9000 },
         { name: "Cerveza Quilmes 1L", quantity: 1, price: 3200 }
       ],
       paymentMethod: "Efectivo",
@@ -181,7 +181,7 @@ export const generateTodayOrders = (): MockOrder[] => {
       clientLastName: "Torres",
       phone: "3514778899",
       address: "Retiro en local",
-      total: 9700,
+      total: 12200,
       deliveryFee: 0,
       createdAt: getMinutesAgo(75),
       mockAge: "Hace 1 hora",
@@ -192,8 +192,8 @@ export const generateTodayOrders = (): MockOrder[] => {
     {
       id: `${todayStr}-003`,
       items: [
-        { name: "Lomo Especial Quadra", quantity: 1, price: 12000 },
-        { name: "Docena de Empanadas Variadas", quantity: 1, price: 9500 }
+        { name: "Súper Lomito Quadra con Papas", quantity: 1, price: 9200 },
+        { name: "Burger Quadra Egg Special", quantity: 1, price: 7200 }
       ],
       paymentMethod: "Mercado Pago",
       paymentStatus: "pagado",
@@ -201,7 +201,7 @@ export const generateTodayOrders = (): MockOrder[] => {
       clientLastName: "Rossi",
       phone: "3513114477",
       address: "Av. Colón 2340",
-      total: 22500,
+      total: 17400,
       deliveryFee: 1000,
       createdAt: getMinutesAgo(95),
       mockAge: "Hace 1 hora y media",
@@ -212,7 +212,7 @@ export const generateTodayOrders = (): MockOrder[] => {
     {
       id: `${todayStr}-002`,
       items: [
-        { name: "Pizza Quadra Integral", quantity: 1, price: 10500 },
+        { name: "Quadra 3 (3 Variedades)", quantity: 1, price: 12000 },
         { name: "Coca-Cola 1.5L", quantity: 1, price: 2500 }
       ],
       paymentMethod: "Transferencia",
@@ -221,7 +221,7 @@ export const generateTodayOrders = (): MockOrder[] => {
       clientLastName: "Vega",
       phone: "3517332211",
       address: "Rivadavia 560",
-      total: 14000,
+      total: 15500,
       deliveryFee: 1000,
       createdAt: getMinutesAgo(120),
       mockAge: "Hace 2 horas",
@@ -232,7 +232,7 @@ export const generateTodayOrders = (): MockOrder[] => {
     {
       id: `${todayStr}-001`,
       items: [
-        { name: "Empanada de Jamón y Queso (Docena)", quantity: 1, price: 9500 }
+        { name: "Lomito Cordobés en Pan Árabe", quantity: 1, price: 8400 }
       ],
       paymentMethod: "Efectivo",
       paymentStatus: "pendiente",
@@ -240,7 +240,7 @@ export const generateTodayOrders = (): MockOrder[] => {
       clientLastName: "Rodríguez",
       phone: "3516554433",
       address: "Calle Falsa 123",
-      total: 10500,
+      total: 9400,
       deliveryFee: 1000,
       createdAt: getMinutesAgo(150),
       mockAge: "Hace 2 horas y media",
@@ -273,15 +273,15 @@ export const generateMockOrders = (): MockOrder[] => {
   ];
 
   const catalogItems = [
-    { name: "Muzzarella Clásica", price: 6500 },
-    { name: "Pizza Napolitana", price: 7800 },
-    { name: "Pizza de Jamón y Morrones", price: 8200 },
+    { name: "Quadra 1 (1 Variedad Extra)", price: 9000 },
     { name: "Quadra 2 (2 Variedades Extra)", price: 10500 },
-    { name: "Promo 2 Muzzarellas", price: 11000 },
-    { name: "Pizza Calabresa", price: 7500 },
-    { name: "Docena de Empanadas Variadas", price: 9500 },
-    { name: "Empanada de Carne a Cuchillo (Docena)", price: 10500 },
-    { name: "Sándwich de Milanesa Completo", price: 7000 },
+    { name: "Quadra 3 (3 Variedades)", price: 12000 },
+    { name: "Burger Quadra Egg Special", price: 7200 },
+    { name: "Burger Doble Bacon Beast", price: 8600 },
+    { name: "Lomito Cordobés en Pan Árabe", price: 8400 },
+    { name: "Súper Lomito Quadra con Papas", price: 9200 },
+    { name: "Copa Quadra Mini Burgers (x4)", price: 6800 },
+    { name: "Sándwich de Milanesa Completo", price: 7500 },
     { name: "Coca-Cola 1.5L", price: 2500 },
     { name: "Cerveza Quilmes 1L", price: 3200 }
   ];

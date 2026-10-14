@@ -219,7 +219,7 @@ export function PinPadLogin({
         <div className="flex flex-col items-center text-center w-full mb-6">
           <div className="w-16 h-16 rounded-2xl overflow-hidden mb-3 border border-zinc-800 shadow-[0_0_25px_rgba(234,88,12,0.2)]">
             <Image
-              src="/logo.jpg"
+              src="/logo.webp"
               alt="Quadra Logo"
               width={64}
               height={64}

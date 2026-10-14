@@ -14,7 +14,7 @@ export default function Header() {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl tracking-tighter text-white mr-2">
-            <Image src="/logo.jpg" alt="Quadra Pizza Logo" width={32} height={32} className="rounded-lg object-cover shadow-sm" />
+            <Image src="/logo.webp" alt="Quadra Pizza Logo" width={32} height={32} className="rounded-lg object-cover shadow-sm" />
             <span>QUADRA <span className="text-orange-500">PIZZA</span></span>
           </Link>
           <Badge variant="openStatus" className="hidden sm:inline-flex">Abierto</Badge>

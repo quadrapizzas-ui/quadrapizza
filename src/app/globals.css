@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,35 +6,31 @@
 
 @layer base {
   :root {
-    --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --background: 240 10% 4%;
-    --foreground: 0 0% 98%;
+    --background: 24 95% 53%;
+    --foreground: 0 0% 100%;
   }
 
   html {
     font-size: 16px;
     line-height: 1.5;
+    scroll-behavior: smooth;
   }
 
   html,
   body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #ea580c;
+    color: #ffffff;
     margin: 0;
     padding: 0;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-}
 
-/* Fixed full-screen layout (for admin panel) */
-.fixed-layout {
-  height: 100vh;
-  width: 100%;
-  overflow: hidden;
-  display: flex;
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  }
 }
 
 /* Hide scrollbars */
@@ -46,3 +42,84 @@
   scrollbar-width: none;
 }
 
+/* ─── Full Quadra Orange Studio Canvas ───────────────────────────────────── */
+.bg-quadra-orange {
+  background-color: #ea580c;
+  background-image: 
+    radial-gradient(ellipse 90% 50% at 50% -5%, #ff7300 0%, #ea580c 45%, #c2410c 100%);
+  background-attachment: fixed;
+}
+
+/* ─── Dual-Layer 3D Floating Food Shadows & Levitación ───────────────────── */
+.floating-food {
+  filter: drop-shadow(0 20px 18px rgba(0, 0, 0, 0.28)) drop-shadow(0 6px 6px rgba(0, 0, 0, 0.16));
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.4s ease-out;
+  will-change: transform, filter;
+  transform: translateZ(0);
+}
+
+.group:hover .floating-food,
+.floating-food:hover {
+  transform: translateY(-9px) scale(1.04) translateZ(0);
+  filter: drop-shadow(0 28px 24px rgba(0, 0, 0, 0.38)) drop-shadow(0 10px 10px rgba(0, 0, 0, 0.22));
+}
+
+/* ─── GPU-Accelerated Micro-Animations ────────────────────────────────────── */
+
+@keyframes fire-shimmer {
+  0% {
+    transform: translateX(-100%) skewX(-20deg) translateZ(0);
+  }
+  35%, 100% {
+    transform: translateX(260%) skewX(-20deg) translateZ(0);
+  }
+}
+
+@keyframes live-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1) translateZ(0);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.8) translateZ(0);
+  }
+}
+
+@keyframes cart-bounce {
+  0% {
+    transform: scale(1) translateZ(0);
+  }
+  30% {
+    transform: scale(1.4) rotate(-10deg) translateZ(0);
+  }
+  60% {
+    transform: scale(0.9) rotate(6deg) translateZ(0);
+  }
+  100% {
+    transform: scale(1) rotate(0deg) translateZ(0);
+  }
+}
+
+.animate-fire-shimmer {
+  animation: fire-shimmer 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.animate-live-pulse {
+  animation: live-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-cart-bounce {
+  animation: cart-bounce 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 400px;
+}

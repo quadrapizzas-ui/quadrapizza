@@ -19,7 +19,7 @@ export default function Sidebar({ isOpen = false, onClose }: { isOpen?: boolean;
     )}>
        <div className="mb-10 flex items-center justify-between">
          <div className="flex items-center gap-2">
-           <Image src="/logo.jpg" alt="Quadra Pizza Logo" width={32} height={32} className="rounded-lg object-cover shadow-md" />
+           <Image src="/logo.webp" alt="Quadra Pizza Logo" width={32} height={32} className="rounded-lg object-cover shadow-md" />
            <span className="font-black text-xl tracking-tight">Quadra <span className="text-orange-500">Pizza</span></span>
          </div>
          {/* Boton Cerrar solo visible en mobil */}

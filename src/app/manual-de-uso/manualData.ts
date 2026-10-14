@@ -476,7 +476,6 @@ export const MODULES_DATA: DocModule[] = [
             ],
             controlsOrButtons: [
               "Enlace #{order.id}: Abre /estado-pedido?id=... en pestaña nueva.",
-              "Botón 'Ver Estado': Abre el seguimiento en vivo del cliente.",
               "Botón 'Copiar Link': Copia el link de tracking con snapshot completo.",
               "Botón 'Enviar Seguimiento por WhatsApp': Abre chat con el cliente con mensaje automático.",
               "Botón 'Pasar a Cocina': Avanza pedidos confirmados a elaboración.",

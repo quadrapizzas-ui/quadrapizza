@@ -123,130 +123,146 @@ const ReceptionCard = React.memo(function ReceptionCard({ order, expandedId, set
       {/* Expanded Details */}
       {isExpanded && (
         <div className="px-3 pb-3 pt-2 border-t border-zinc-800/60 bg-zinc-950/30 flex flex-col gap-2">
-           <div className="grid grid-cols-2 gap-2 mt-2">
-             <a
-               href={getTrackingUrl(order)}
-               target="_blank"
-               rel="noopener noreferrer"
-               onClick={(e) => e.stopPropagation()}
-               className="w-full text-[10px] font-black uppercase tracking-widest text-white bg-sky-600 hover:bg-sky-500 py-2 rounded-xl flex items-center justify-center gap-1.5 transition shadow-sm active:scale-95"
-             >
-               <ExternalLink size={13} /> Ver Estado
-             </a>
-             <button 
-               type="button"
-               onClick={(e) => {
-                 e.stopPropagation();
-                 const url = getTrackingUrl(order);
-                 if (navigator.clipboard) {
-                   navigator.clipboard.writeText(url);
-                 }
-                 setCopied(true);
-                 setTimeout(() => setCopied(false), 2000);
-               }}
-               className="w-full text-[10px] font-black uppercase tracking-widest text-sky-400 bg-sky-500/10 border border-sky-500/20 py-2 rounded-xl flex items-center justify-center gap-1.5 hover:bg-sky-500/20 transition active:scale-95"
-             >
-               {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? "Copiado" : "Copiar Link"}
-             </button>
-           </div>
+            {/* Quick Share / Tracking Bar (Sin botón 'Ver Estado') */}
+            <div className="flex items-center gap-2 mt-1">
+              {order.phone ? (
+                <>
+                  <button 
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const url = getTrackingUrl(order);
+                      const text = `¡Hola ${order.clientFirstName || "Cliente"}! 👋 Acá tenés el link para seguir tu pedido #${order.id} en vivo: ${url}`;
+                      const phoneDigits = order.phone!.replace(/\D/g, "");
+                      const cleanPhone = phoneDigits.startsWith("54") ? phoneDigits : `549${phoneDigits}`;
+                      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
+                    }}
+                    className="flex-1 text-[11px] font-bold text-[#25D366] bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/25 py-2 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition active:scale-95"
+                    title="Enviar seguimiento por WhatsApp"
+                  >
+                    <MessageSquare size={13} className="shrink-0" />
+                    <span>WhatsApp</span>
+                  </button>
 
-           {order.phone && (
-             <button 
-               type="button"
-               onClick={(e) => {
-                 e.stopPropagation();
-                 const url = getTrackingUrl(order);
-                 const text = `¡Hola ${order.clientFirstName || "Cliente"}! 👋 Acá tenés el link para seguir tu pedido #${order.id} en vivo: ${url}`;
-                 const phoneDigits = order.phone!.replace(/\D/g, "");
-                 const cleanPhone = phoneDigits.startsWith("54") ? phoneDigits : `549${phoneDigits}`;
-                 window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
-               }}
-               className="w-full text-[10px] font-black uppercase tracking-widest text-[#25D366] bg-[#25D366]/10 border border-[#25D366]/30 py-2 rounded-xl flex items-center justify-center gap-1.5 hover:bg-[#25D366]/20 transition active:scale-95"
-             >
-               <MessageSquare size={13} /> Enviar Seguimiento por WhatsApp
-             </button>
-           )}
+                  <button 
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const url = getTrackingUrl(order);
+                      if (navigator.clipboard) {
+                        navigator.clipboard.writeText(url);
+                      }
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    className="flex-1 text-[11px] font-bold text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/20 py-2 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition active:scale-95"
+                    title="Copiar enlace de seguimiento"
+                  >
+                    {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                    <span>{copied ? "¡Copiado!" : "Copiar Link"}</span>
+                  </button>
+                </>
+              ) : (
+                <button 
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const url = getTrackingUrl(order);
+                    if (navigator.clipboard) {
+                      navigator.clipboard.writeText(url);
+                    }
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                  className="w-full text-[11px] font-bold text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/20 py-2 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition active:scale-95"
+                  title="Copiar enlace de seguimiento"
+                >
+                  {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                  <span>{copied ? "¡Copiado al portapapeles!" : "Copiar Link de Seguimiento"}</span>
+                </button>
+              )}
+            </div>
 
-           {/* Acción de avance según el estado actual del pedido */}
-           {!readOnly && order.status === "confirmado" && (
-             requiresKitchen ? (
-               <button 
-                 onClick={() => updateOrderStatus(order.id, "en-cocina")}
-                 className="w-full text-[10px] font-black uppercase tracking-widest text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 py-2 rounded-xl flex items-center justify-center gap-1.5 hover:bg-yellow-500/20 transition active:scale-95"
-               >
-                 <ChefHat size={14} /> Pasar a Cocina
-               </button>
-             ) : (
-               <button 
-                 onClick={() => updateOrderStatus(order.id, "listo")}
-                 className="w-full text-[10px] font-black uppercase tracking-widest text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 py-2 rounded-xl flex items-center justify-center gap-1.5 hover:bg-cyan-500/20 transition active:scale-95"
-               >
-                 <ShoppingBag size={14} /> Marcar como Listo (Bebidas)
-               </button>
-             )
-           )}
+            {/* Acción de avance según el estado actual del pedido */}
+            {!readOnly && order.status === "confirmado" && (
+              requiresKitchen ? (
+                <button 
+                  onClick={() => updateOrderStatus(order.id, "en-cocina")}
+                  className="w-full text-xs font-bold text-yellow-300 bg-yellow-500/15 hover:bg-yellow-500/25 border border-yellow-500/30 py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition active:scale-95 shadow-sm"
+                >
+                  <ChefHat size={15} /> Pasar a Cocina
+                </button>
+              ) : (
+                <button 
+                  onClick={() => updateOrderStatus(order.id, "listo")}
+                  className="w-full text-xs font-bold text-cyan-300 bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition active:scale-95 shadow-sm"
+                >
+                  <ShoppingBag size={15} /> Marcar como Listo (Bebidas)
+                </button>
+              )
+            )}
 
-           {!readOnly && order.status === "en-cocina" && (
-             <button 
-               onClick={() => updateOrderStatus(order.id, "listo")}
-               className="w-full text-[10px] font-black uppercase tracking-widest text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 py-2 rounded-xl flex items-center justify-center gap-1.5 hover:bg-indigo-500/20 transition active:scale-95"
-             >
-               <ShoppingBag size={14} /> Marcar como Listo
-             </button>
-           )}
+            {!readOnly && order.status === "en-cocina" && (
+              <button 
+                onClick={() => updateOrderStatus(order.id, "listo")}
+                className="w-full text-xs font-bold text-indigo-300 bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition active:scale-95 shadow-sm"
+              >
+                <ShoppingBag size={15} /> Marcar como Listo
+              </button>
+            )}
 
-           {!readOnly && order.status === "listo" && (
-             isDelivery ? (
-               <div className="flex flex-col gap-1.5 w-full">
-                 <button 
-                   onClick={() => updateOrderStatus(order.id, "en-camino")}
-                   className="w-full text-[10px] font-black uppercase tracking-widest text-sky-400 bg-sky-500/10 border border-sky-500/20 py-2 rounded-xl flex items-center justify-center gap-1.5 hover:bg-sky-500/20 transition active:scale-95"
-                 >
-                   <Truck size={14} /> Despachar (En Camino)
-                 </button>
-                 <button 
-                   onClick={() => updateOrderStatus(order.id, "completado")}
-                   className="w-full text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 py-2 rounded-xl flex items-center justify-center gap-1.5 hover:bg-emerald-500/20 transition active:scale-95"
-                 >
-                   <CheckCircle2 size={13} /> Entregar en Mostrador
-                 </button>
-               </div>
-             ) : (
-               <button 
-                 onClick={() => updateOrderStatus(order.id, "completado")}
-                 className="w-full text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 py-2 rounded-xl flex items-center justify-center gap-1.5 hover:bg-emerald-500/20 transition active:scale-95"
-               >
-                 <CheckCircle2 size={14} /> Entregar al Cliente
-               </button>
-             )
-           )}
+            {!readOnly && order.status === "listo" && (
+              isDelivery ? (
+                <div className="flex flex-col gap-1.5 w-full">
+                  <button 
+                    onClick={() => updateOrderStatus(order.id, "en-camino")}
+                    className="w-full text-xs font-bold text-sky-300 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition active:scale-95 shadow-sm"
+                  >
+                    <Truck size={15} /> Despachar (En Camino)
+                  </button>
+                  <button 
+                    onClick={() => updateOrderStatus(order.id, "completado")}
+                    className="w-full text-xs font-bold text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition active:scale-95 shadow-sm"
+                  >
+                    <CheckCircle2 size={15} /> Entregar en Mostrador
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => updateOrderStatus(order.id, "completado")}
+                  className="w-full text-xs font-bold text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition active:scale-95 shadow-sm"
+                >
+                  <CheckCircle2 size={15} /> Entregar al Cliente
+                </button>
+              )
+            )}
 
-           {!readOnly && order.status === "en-camino" && (
-             <button 
-               onClick={() => updateOrderStatus(order.id, "completado")}
-               className="w-full text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 py-2 rounded-xl flex items-center justify-center gap-1.5 hover:bg-emerald-500/20 transition active:scale-95"
-             >
-               <CheckCircle2 size={14} /> Marcar como Entregado
-             </button>
-           )}
+            {!readOnly && order.status === "en-camino" && (
+              <button 
+                onClick={() => updateOrderStatus(order.id, "completado")}
+                className="w-full text-xs font-bold text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition active:scale-95 shadow-sm"
+              >
+                <CheckCircle2 size={15} /> Marcar como Entregado
+              </button>
+            )}
 
-           {!readOnly && isPending && (
-             <button 
-               onClick={() => updateOrderPaymentStatus(order.id, "pagado")}
-               className="w-full text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 py-1.5 rounded flex items-center justify-center gap-1.5 hover:bg-emerald-500/20 transition mt-1"
-             >
-               <CheckCircle2 size={14} /> Marcar como Pagado
-             </button>
-           )}
+            {!readOnly && isPending && (
+              <button 
+                onClick={() => updateOrderPaymentStatus(order.id, "pagado")}
+                className="w-full text-[11px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 py-2 rounded-xl flex items-center justify-center gap-1.5 transition active:scale-95"
+              >
+                <CheckCircle2 size={14} /> Marcar como Pagado
+              </button>
+            )}
 
-           {!readOnly && order.status !== "cancelado" && order.status !== "completado" && (
-             <button 
-               onClick={() => updateOrderStatus(order.id, "cancelado")}
-               className="w-full text-[10px] font-black uppercase tracking-widest text-red-400 bg-red-500/10 border border-red-500/20 py-1.5 rounded flex items-center justify-center gap-1.5 hover:bg-red-500/20 transition mt-1"
-             >
-               <XCircle size={14} /> Cancelar Pedido
-             </button>
-           )}
+            {!readOnly && order.status !== "cancelado" && order.status !== "completado" && (
+              <button 
+                onClick={() => updateOrderStatus(order.id, "cancelado")}
+                className="w-full text-[11px] font-semibold text-red-400/80 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition active:scale-95"
+              >
+                <XCircle size={14} /> Cancelar Pedido
+              </button>
+            )}
         </div>
       )}
 
@@ -266,15 +282,17 @@ const KanbanColumn = React.memo(function KanbanColumn({ title, icon: Icon, count
   title: string; icon: React.ElementType; count: number; color: string; bg: string; border: string; children: React.ReactNode;
 }) {
   return (
-    <div className={`flex flex-col rounded-2xl border ${border} overflow-hidden bg-zinc-950/60 h-full w-full min-w-0`}>
-      <div className={`shrink-0 px-4 py-3 border-b ${border} ${bg} flex items-center justify-between`}>
-        <div className={`flex items-center gap-2 ${color}`}>
-          <Icon size={16} />
-          <h2 className="font-black text-sm uppercase tracking-widest">{title}</h2>
+    <div className={`flex flex-col rounded-2xl border ${border} overflow-hidden bg-zinc-950/60 h-full w-full min-w-0 shadow-sm`}>
+      <div className={`shrink-0 px-3.5 py-2.5 border-b ${border} ${bg} flex items-center justify-between`}>
+        <div className={`flex items-center gap-2 ${color} min-w-0`}>
+          <Icon size={16} className="shrink-0" />
+          <h2 className="font-black text-xs sm:text-sm uppercase tracking-wider truncate">{title}</h2>
         </div>
-        <span className={`font-black text-xs w-6 h-6 rounded-full flex items-center justify-center bg-black/40 border ${border} ${color} tabular-nums`}>{count}</span>
+        <span className={`font-black text-xs px-2 py-0.5 rounded-full flex items-center justify-center bg-black/40 border ${border} ${color} tabular-nums shrink-0 ml-2`}>
+          {count}
+        </span>
       </div>
-      <div className="flex-1 overflow-y-auto no-scrollbar p-3 space-y-3">
+      <div className="flex-1 overflow-y-auto no-scrollbar p-2.5 sm:p-3 space-y-2.5 sm:space-y-3">
         {count === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-zinc-700 font-bold text-[10px] uppercase tracking-widest py-10 gap-2">
              <span className="text-2xl opacity-20"><Icon size={24} /></span>
@@ -311,72 +329,86 @@ const EstadoPedidosMonitor = React.memo(function EstadoPedidosMonitor({ readOnly
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="shrink-0 px-5 py-4 border-b border-zinc-800/60 bg-zinc-950 flex items-center justify-between">
+      <div className="shrink-0 px-4 sm:px-5 py-3 sm:py-3.5 border-b border-zinc-800/60 bg-zinc-950 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-black text-white tracking-tight">Estado de Pedidos</h1>
-          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">Monitor Kanban {readOnly && "(Solo Lectura)"}</p>
+          <h1 className="text-lg sm:text-xl font-black text-white tracking-tight">Estado de Pedidos</h1>
+          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">
+            Monitor Kanban {readOnly && "(Solo Lectura)"} • {currentShiftOrders.length} {currentShiftOrders.length === 1 ? "pedido hoy" : "pedidos hoy"}
+          </p>
         </div>
-        <button onClick={() => window.location.reload()} className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-white transition" title="Refrescar">
-          <RefreshCw size={16} />
+        <button onClick={() => window.location.reload()} className="p-2 sm:p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-white transition active:scale-95" title="Refrescar">
+          <RefreshCw size={15} />
         </button>
       </div>
 
       {/* MOBILE (< md): Tab switcher */}
-      <div className="shrink-0 md:hidden flex overflow-x-auto no-scrollbar border-b border-zinc-900 bg-zinc-950">
+      <div className="shrink-0 md:hidden flex overflow-x-auto no-scrollbar border-b border-zinc-900 bg-zinc-950 px-1 py-1 gap-1">
         {columns.map((col, idx) => {
           const isActive = activeTab === idx;
           return (
             <button
               key={col.title}
               onClick={() => setActiveTab(idx as any)}
-              className={`relative flex-1 min-w-[64px] shrink-0 flex flex-col items-center justify-center py-3 gap-1 text-[9px] font-black uppercase tracking-widest transition-colors ${
-                isActive ? `${col.color} ${col.bg}` : "text-zinc-600 hover:text-zinc-400"
+              className={`relative flex-1 min-w-[62px] shrink-0 flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all ${
+                isActive ? `${col.color} ${col.bg} border border-current shadow-sm` : "text-zinc-500 hover:text-zinc-300"
               }`}
             >
-              <col.icon size={15} className={isActive ? "opacity-100" : "opacity-50"} />
-              <span className="leading-none mt-1 text-center">{col.title}</span>
-              <span className="text-[10px] opacity-70 tabular-nums">{col.orders.length}</span>
-              {isActive && <span className={`absolute bottom-0 left-0 right-0 h-0.5 ${col.color.replace('text-', 'bg-')}`} />}
+              <col.icon size={15} className={isActive ? "opacity-100" : "opacity-60"} />
+              <span className="leading-tight mt-1 text-center truncate max-w-[60px]">{col.title}</span>
+              <span className="text-[10px] font-mono mt-0.5 tabular-nums opacity-80">{col.orders.length}</span>
             </button>
           );
         })}
       </div>
 
       {/* MOBILE (< md): Active Column */}
-      <div className="flex-1 overflow-y-auto no-scrollbar md:hidden p-4">
-        <div className="space-y-3">
-          {activeColumn.orders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-zinc-700 gap-2">
-              <span className="text-3xl opacity-20"><activeColumn.icon size={32} /></span>
-              <p className="font-bold text-xs uppercase tracking-widest">Sin pedidos</p>
-            </div>
-          ) : (
-            activeColumn.orders.map(o => (
-              <ReceptionCard key={o.id} order={o} expandedId={expandedId} setExpandedId={setExpandedId} readOnly={readOnly} />
-            ))
-          )}
-        </div>
+      <div className="flex-1 overflow-y-auto no-scrollbar md:hidden p-3 sm:p-4">
+        <KanbanColumn
+          title={activeColumn.title}
+          icon={activeColumn.icon}
+          count={activeColumn.orders.length}
+          color={activeColumn.color}
+          bg={activeColumn.bg}
+          border={activeColumn.border}
+        >
+          {activeColumn.orders.map(o => (
+            <ReceptionCard
+              key={o.id}
+              order={o}
+              expandedId={expandedId}
+              setExpandedId={setExpandedId}
+              readOnly={readOnly}
+            />
+          ))}
+        </KanbanColumn>
       </div>
 
-      {/* TABLET (md to lg): 2-column grid */}
-      <div className="hidden md:grid lg:hidden grid-cols-2 flex-1 overflow-y-auto p-4 gap-3 bg-zinc-950/30">
+      {/* TABLET & DESKTOP (>= md): Responsive Fluid Kanban Track with min-width and horizontal scroll */}
+      <div className="hidden md:flex flex-1 overflow-x-auto overflow-y-hidden p-3.5 lg:p-4 gap-3.5 bg-zinc-950/40 no-scrollbar">
         {columns.map(col => (
-          <KanbanColumn key={col.id} title={col.title} icon={col.icon} count={col.orders.length} color={col.color} bg={col.bg} border={col.border}>
-            {col.orders.map(o => (
-              <ReceptionCard key={o.id} order={o} expandedId={expandedId} setExpandedId={setExpandedId} readOnly={readOnly} />
-            ))}
-          </KanbanColumn>
-        ))}
-      </div>
-
-      {/* DESKTOP (lg+): Full 5-column Kanban */}
-      <div className="hidden lg:grid lg:grid-cols-5 flex-1 overflow-hidden p-4 gap-3 bg-zinc-950/30">
-        {columns.map(col => (
-          <KanbanColumn key={col.id} title={col.title} icon={col.icon} count={col.orders.length} color={col.color} bg={col.bg} border={col.border}>
-            {col.orders.map(o => (
-              <ReceptionCard key={o.id} order={o} expandedId={expandedId} setExpandedId={setExpandedId} readOnly={readOnly} />
-            ))}
-          </KanbanColumn>
+          <div 
+            key={col.id} 
+            className="w-[280px] lg:w-[290px] xl:w-[310px] 2xl:w-auto 2xl:flex-1 shrink-0 h-full flex flex-col min-w-0"
+          >
+            <KanbanColumn
+              title={col.title}
+              icon={col.icon}
+              count={col.orders.length}
+              color={col.color}
+              bg={col.bg}
+              border={col.border}
+            >
+              {col.orders.map(o => (
+                <ReceptionCard
+                  key={o.id}
+                  order={o}
+                  expandedId={expandedId}
+                  setExpandedId={setExpandedId}
+                  readOnly={readOnly}
+                />
+              ))}
+            </KanbanColumn>
+          </div>
         ))}
       </div>
     </div>

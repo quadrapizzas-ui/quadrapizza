@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { X, Minus, Plus, ShoppingCart } from "lucide-react";
 import type { Product, Extra, Variety } from "@/lib/store/productsStore";
 import { formatPrice, parsePrice } from "@/hooks/useCart";
@@ -55,17 +56,34 @@ export function AddToCartModal({ product, extras, varieties, onConfirm, onClose 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
-      <div className="relative bg-zinc-950 rounded-2xl w-full max-w-sm shadow-2xl animate-in fade-in zoom-in-95 duration-200 border border-zinc-900 flex flex-col max-h-[90vh]">
-        <div className="px-6 pt-6 sm:px-8 sm:pt-8 shrink-0">
+      <div className="absolute inset-0 bg-black/75 backdrop-blur-md" onClick={onClose}></div>
+      <div className="relative bg-zinc-950/95 backdrop-blur-2xl rounded-3xl w-full max-w-sm shadow-[0_25px_60px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-200 border border-orange-500/20 flex flex-col max-h-[90vh]">
+        <div className="px-6 pt-6 sm:px-8 sm:pt-7 shrink-0 border-b border-zinc-900 pb-4">
           <button
             onClick={onClose}
-            className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-900 hover:bg-zinc-800 transition text-zinc-400 hover:text-white"
+            className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-xl bg-zinc-900 hover:bg-zinc-800 transition text-zinc-400 hover:text-white"
           >
             <X size={18} />
           </button>
-          <h2 className="text-xl font-black tracking-tight pr-8 leading-tight mb-1">Agregar al Pedido</h2>
-          <p className="text-sm font-semibold text-zinc-400 mb-4">{product.name}</p>
+          
+          <div className="flex items-center gap-3.5 pr-8">
+            {product.image && (
+              <div className="relative w-14 h-14 shrink-0 flex items-center justify-center">
+                <Image
+                  src={product.image}
+                  alt={product.name}
+                  width={56}
+                  height={56}
+                  className="object-contain max-h-14 floating-food"
+                />
+              </div>
+            )}
+            <div className="min-w-0">
+              <span className="text-[10px] font-black uppercase tracking-wider text-orange-400">Agregar al Pedido</span>
+              <h2 className="text-base sm:text-lg font-black tracking-tight leading-tight text-white truncate">{product.name}</h2>
+              <p className="text-xs font-bold text-zinc-400 font-mono mt-0.5">{product.price}</p>
+            </div>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 sm:px-8 space-y-5 no-scrollbar min-h-0">

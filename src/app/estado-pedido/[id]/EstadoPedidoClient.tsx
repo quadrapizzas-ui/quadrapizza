@@ -280,7 +280,7 @@ export default function EstadoPedidoPage() {
       {/* Header */}
       <header className="shrink-0 h-16 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-900 px-4 flex items-center justify-between z-40 sticky top-0">
         <div className="flex items-center gap-3">
-          <Image src="/logo.jpg" alt="Logo" width={36} height={36} className="rounded-xl object-cover shadow-sm" />
+          <Image src="/logo.webp" alt="Logo" width={36} height={36} className="rounded-xl object-cover shadow-sm" />
           <div className="flex flex-col leading-none">
             <span className="font-black text-base tracking-tight">Quadra <span className="text-orange-500">Pizza</span></span>
             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">Seguimiento</span>

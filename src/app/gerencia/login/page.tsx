@@ -62,7 +62,7 @@ export default function GerenciaLoginPage() {
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 rounded-2xl overflow-hidden mb-4 border-2 border-zinc-800/80 shadow-lg">
-            <Image src="/logo.jpg" alt="Logo" width={64} height={64} className="object-cover w-full h-full" />
+            <Image src="/logo.webp" alt="Logo" width={64} height={64} className="object-cover w-full h-full" />
           </div>
           <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
             Quadra <span className="text-orange-500">Pizza</span>

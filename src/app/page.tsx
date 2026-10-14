@@ -2,14 +2,20 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { Tag, Utensils, ShoppingBasket, Coffee } from "lucide-react";
+import { FlameKindling, Crown, Beer } from "lucide-react";
 import { useProductsStore } from "@/lib/store/productsStore";
 import type { Product } from "@/lib/store/productsStore";
 import { useCart } from "@/hooks/useCart";
 import { CatalogHeader } from "@/components/pos/CatalogHeader";
+import { CatalogHero } from "@/components/pos/CatalogHero";
 import { SearchBar } from "@/components/pos/SearchBar";
 import { ProductSection } from "@/components/pos/ProductSection";
 import { ProductGrid } from "@/components/pos/ProductGrid";
+import { LocalShowcase } from "@/components/pos/LocalShowcase";
+import { MobileCartBar } from "@/components/pos/MobileCartBar";
+import { CatalogFooter } from "@/components/pos/CatalogFooter";
+import { RestaurantJsonLd } from "@/components/seo/RestaurantJsonLd";
+
 const AddToCartModal = dynamic(() => import("@/components/pos/AddToCartModal").then(mod => mod.AddToCartModal), { ssr: false });
 const CartSidebar = dynamic(() => import("@/components/pos/CartSidebar").then(mod => mod.CartSidebar), { ssr: false });
 
@@ -42,33 +48,80 @@ export default function CatalogPage() {
   };
 
   const offers = products.filter((p) => p.isOffer && p.stock).filter(filterBySearch);
-  const menuDelDia = products.filter((p) => p.categoryId === 6 && p.stock).filter(filterBySearch);
   const almacen = products.filter((p) => [5, 7].includes(p.categoryId || 0) && p.stock).filter(filterBySearch);
   const bebidas = products.filter((p) => p.categoryId === 4 && p.stock).filter(filterBySearch);
 
   // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col min-h-screen bg-zinc-950 text-white selection:bg-orange-600 selection:text-white pb-20 overflow-x-hidden">
+    <div className="flex flex-col min-h-screen text-white selection:bg-zinc-950 selection:text-amber-400 overflow-x-hidden bg-quadra-orange">
+      {/* Schema.org Structured Data para Google Rich Snippets */}
+      <RestaurantJsonLd />
       
+      {/* Header Sticky con logo original, nombre intacto y animaciones GPU */}
       <CatalogHeader cartItemCount={cartItems.length} onOpenCart={() => setIsCartOpen(true)} />
 
-      <main className="flex-1 container mx-auto px-4 py-8">
-        {/* Título Principal y Buscador */}
-        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tighter shrink-0">Nuestro Catálogo</h2>
+      <main className="flex-1 container mx-auto px-4 py-6 sm:py-8 max-w-7xl">
+        {/* Banner Hero Compacto con H1 Semántico e Identidad Quadra */}
+        <CatalogHero />
+
+        {/* Barra de Búsqueda y Título de Catálogo */}
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white font-display drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)]">
+              Explorá Nuestro Menú
+            </h2>
+            <p className="text-xs text-orange-100 font-medium drop-shadow-sm">
+              Pizzas rectangulares exclusivas, lomos, burgers y delicias para compartir.
+            </p>
+          </div>
           <SearchBar value={searchQuery} onChange={setSearchQuery} />
         </div>
 
-        {/* Secciones Destacadas */}
-        <ProductSection title="En Oferta" icon={<Tag fill="currentColor" size={20} />} color="red" products={offers} onAddToCart={setSelectedProductForCart} isOffer />
-        <ProductSection title="Menú del Día" icon={<Utensils size={20} />} color="emerald" products={menuDelDia} onAddToCart={setSelectedProductForCart} />
-        <ProductSection title="Déjate Tentar" icon={<ShoppingBasket size={20} />} color="purple" products={almacen} onAddToCart={setSelectedProductForCart} />
-        <ProductSection title="Bebidas" icon={<Coffee size={20} />} color="blue" products={bebidas} onAddToCart={setSelectedProductForCart} />
+        {/* Secciones Destacadas con Personalidad Quadra y Shimmer */}
+        <ProductSection 
+          title="Ofertas de la Casa" 
+          icon={<FlameKindling size={20} className="text-amber-400 animate-pulse" />} 
+          products={offers} 
+          onAddToCart={setSelectedProductForCart} 
+          isOffer 
+        />
+        
+        <ProductSection 
+          title="Tentaciones & Postres" 
+          icon={<Crown size={20} className="text-amber-300" />} 
+          products={almacen} 
+          onAddToCart={setSelectedProductForCart} 
+        />
+        
+        <ProductSection 
+          title="Bebidas Frías" 
+          icon={<Beer size={20} className="text-sky-300" />} 
+          products={bebidas} 
+          onAddToCart={setSelectedProductForCart} 
+        />
 
-        {/* Catálogo Completo con Filtros */}
-        <ProductGrid products={products} categories={categories} searchQuery={searchQuery} onAddToCart={setSelectedProductForCart} />
+        {/* Catálogo Completo con Liquid Sliding Pill Filters */}
+        <ProductGrid 
+          products={products} 
+          categories={categories} 
+          searchQuery={searchQuery} 
+          onAddToCart={setSelectedProductForCart} 
+        />
+
+        {/* Sección de Nuestro Local Auténtico en Yocsina */}
+        <LocalShowcase />
       </main>
+
+      {/* Barra Flotante de Carrito en Móviles */}
+      <MobileCartBar 
+        cartItemCount={cartItems.length}
+        cartTotal={cartTotal}
+        onOpenCart={() => setIsCartOpen(true)}
+      />
+
+      {/* Pie de Página Semántico con Enfoque SEO Local */}
+      <CatalogFooter />
 
       {/* Modal: Agregar al Carrito */}
       {selectedProductForCart && (

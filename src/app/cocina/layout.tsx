@@ -54,7 +54,7 @@ export default function CocinaLayout({ children }: { children: React.ReactNode }
       {/* ─── TOP NAV BAR ─────────────────────────────────────────────── */}
       <header className="shrink-0 h-14 bg-zinc-950 border-b border-zinc-800/70 flex items-center px-4 gap-4 z-40">
         <div className="flex items-center gap-2.5 shrink-0">
-          <Image src="/logo.jpg" alt="Logo" width={30} height={30} className="rounded-lg object-cover" />
+          <Image src="/logo.webp" alt="Logo" width={30} height={30} className="rounded-lg object-cover" />
           <div className="flex flex-col leading-none">
             <span className="font-black text-sm tracking-tight">Quadra <span className="text-orange-500">Pizza</span></span>
             <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest">Cocina</span>

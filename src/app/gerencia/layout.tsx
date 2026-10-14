@@ -94,7 +94,7 @@ export default function GerenciaLayout({ children }: { children: React.ReactNode
 
         {/* Logo + módulo */}
         <div className="flex items-center gap-2 xl:gap-2.5 shrink-0">
-          <Image src="/logo.jpg" alt="Logo" width={30} height={30} className="rounded-lg object-cover" />
+          <Image src="/logo.webp" alt="Logo" width={30} height={30} className="rounded-lg object-cover" />
           <div className="flex flex-col leading-none">
             <span className="font-black text-sm tracking-tight">Quadra <span className="text-orange-500">Pizza</span></span>
             <span className="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Gerencia</span>
