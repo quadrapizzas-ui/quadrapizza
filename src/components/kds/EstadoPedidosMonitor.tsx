@@ -8,6 +8,7 @@ import { getBusinessDay } from "@/lib/businessDay";
 import { Clock, ChefHat, Truck, CheckCircle2, XCircle, ShoppingBag, Eye, RefreshCw, AlertTriangle, Flame, Copy, Check, ExternalLink, MessageSquare } from "lucide-react";
 import { orderRequiresKitchen } from "@/lib/orderKitchenHelper";
 import { getTrackingUrl } from "@/lib/trackingHelper";
+import { buildWhatsAppUrl } from "@/lib/utils";
 
 function fmtARS(n: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
@@ -134,8 +135,7 @@ const ReceptionCard = React.memo(function ReceptionCard({ order, expandedId, set
                       const url = getTrackingUrl(order);
                       const text = `¡Hola ${order.clientFirstName || "Cliente"}! 👋 Acá tenés el link para seguir tu pedido #${order.id} en vivo: ${url}`;
                       const phoneDigits = order.phone!.replace(/\D/g, "");
-                      const cleanPhone = phoneDigits.startsWith("54") ? phoneDigits : `549${phoneDigits}`;
-                      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
+                      window.open(buildWhatsAppUrl(phoneDigits, text), "_blank");
                     }}
                     className="flex-1 text-[11px] font-bold text-[#25D366] bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/25 py-2 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition active:scale-95"
                     title="Enviar seguimiento por WhatsApp"

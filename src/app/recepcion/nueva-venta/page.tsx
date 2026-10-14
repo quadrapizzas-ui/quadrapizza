@@ -8,6 +8,7 @@ import { MockCustomer } from "@/types/models";
 import { useCustomersStore } from "@/lib/store/customersStore";
 import { useOrdersStore } from "@/lib/store/ordersStore";
 import { useAuthStore } from "@/lib/store/authStore";
+import { buildWhatsAppUrl } from "@/lib/utils";
 
 type UnitType = "unidad" | "media_docena" | "docena";
 
@@ -508,8 +509,7 @@ export default function NuevaVentaPage() {
                       const url = createdOrder.trackingUrl || `${window.location.origin}/estado-pedido?id=${encodeURIComponent(createdOrder.id)}`;
                       const text = `¡Hola ${createdOrder.firstName}! 👋 Acá te dejamos el enlace para que sigas el estado de tu pedido: ${url}`;
                       const phoneDigits = createdOrder.phone ? createdOrder.phone.replace(/\D/g, "") : "";
-                      const phone = phoneDigits ? (phoneDigits.startsWith("54") ? phoneDigits : `549${phoneDigits}`) : "";
-                      const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+                      const waUrl = buildWhatsAppUrl(phoneDigits, text);
                       window.open(waUrl, '_blank');
                     }}
                     className="w-full py-4 rounded-xl bg-[#25D366]/20 hover:bg-[#25D366]/30 text-[#25D366] border border-[#25D366]/30 font-bold text-sm transition flex items-center justify-center gap-2 active:scale-95"

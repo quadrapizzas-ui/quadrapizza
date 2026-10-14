@@ -28,6 +28,7 @@ import { useProductsStore, type Neighborhood } from "@/lib/store/productsStore";
 import { useOrdersStore } from "@/lib/store/ordersStore";
 import { useCustomersStore } from "@/lib/store/customersStore";
 import { getTrackingUrl } from "@/lib/trackingHelper";
+import { buildWhatsAppUrl } from "@/lib/utils";
 
 interface CartSidebarProps {
   cartItems: CartItem[];
@@ -61,7 +62,9 @@ export function CartSidebar({
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
   const [createdTrackingUrl, setCreatedTrackingUrl] = useState<string>("");
   const [lastWhatsAppUrl, setLastWhatsAppUrl] = useState<string>("");
+  const [lastOrderMessage, setLastOrderMessage] = useState<string>("");
   const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedMessage, setCopiedMessage] = useState(false);
 
   const addOrder = useOrdersStore((s) => s.addOrder);
   const { customers, addCustomer, updateCustomer } = useCustomersStore();
@@ -225,11 +228,9 @@ export function CartSidebar({
     const storedPhone = useProductsStore.getState().whatsappNumber;
     const savedPhone = typeof window !== "undefined" ? localStorage.getItem("quadra_catalog_phone") : null;
     const rawPhone = storedPhone || savedPhone || "5493513059413";
-    const cleanNumber = rawPhone.replace(/\D/g, "");
-    const WHATSAPP_NUMBER = cleanNumber.startsWith("54") ? cleanNumber : `549${cleanNumber}`;
-    const encodedMsg = encodeURIComponent(message);
-    const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMsg}`;
+    const waUrl = buildWhatsAppUrl(rawPhone, message);
     setLastWhatsAppUrl(waUrl);
+    setLastOrderMessage(message);
     window.open(waUrl, "_blank");
 
     // 5. Pasar a pantalla de confirmación exitosa y limpiar carrito
@@ -342,6 +343,20 @@ export function CartSidebar({
                   >
                     <MessageSquare size={14} />
                     <span>Reabrir chat de WhatsApp</span>
+                  </button>
+                )}
+
+                {lastOrderMessage && (
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(lastOrderMessage);
+                      setCopiedMessage(true);
+                      setTimeout(() => setCopiedMessage(false), 2000);
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl bg-zinc-900/60 hover:bg-zinc-800 text-zinc-400 hover:text-white font-medium text-[11px] border border-zinc-800/80 transition flex items-center justify-center gap-2 active:scale-95"
+                  >
+                    {copiedMessage ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                    <span>{copiedMessage ? "¡Texto del pedido copiado!" : "Copiar texto del pedido con emojis"}</span>
                   </button>
                 )}
 

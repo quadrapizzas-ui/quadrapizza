@@ -4,11 +4,12 @@ import Image from "next/image";
 import { MapPin, Clock, Flame, Bike, Phone, Star, ExternalLink } from "lucide-react";
 import { useProductsStore } from "@/lib/store/productsStore";
 import { InstagramIcon } from "@/components/ui/InstagramIcon";
+import { buildWhatsAppUrl } from "@/lib/utils";
 
 export function LocalShowcase() {
   const whatsappNumber = useProductsStore((state) => state.whatsappNumber);
   const cleanPhone = (whatsappNumber || "+54 9 3513 05-9413").replace(/[^0-9]/g, "");
-  const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent("Hola Quadra Pizza! Quiero hacer una consulta para retirar")}`;
+  const waUrl = buildWhatsAppUrl(cleanPhone, "¡Hola Quadra Pizza! Quiero hacer una consulta para retirar");
 
   return (
     <section className="my-14 sm:my-20 relative">

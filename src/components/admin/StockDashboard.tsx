@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Search, AlertTriangle, CheckCircle2, Minus, Plus, TrendingDown, Package, Save, RotateCcw, MessageCircle, Settings, Edit2, Trash2, X, ChevronDown, ChefHat } from "lucide-react";
 
 import { useStockStore, StockItem } from "@/lib/store/stockStore";
+import { buildWhatsAppUrl } from "@/lib/utils";
 
 type SortKey = "name" | "status" | "category";
 
@@ -205,8 +206,7 @@ export function StockDashboard() {
     if (criticalItems.length === 0) return;
 
     const message = `Hola Hector, te paso el reporte de stock critico actual:\n\n${criticalItems.map(item => `• ${item.name}: ${item.current} ${item.unit} (Min: ${item.min})`).join("\n")}\n\nPor favor, revisar para reposicion.`;
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/${managerPhone.replace(/\D/g, "")}?text=${encodedMessage}`, "_blank");
+    window.open(buildWhatsAppUrl(managerPhone, message), "_blank");
   };
 
   const getPercentage = (current: number, min: number) => Math.min(100, (current / (min * 2)) * 100);

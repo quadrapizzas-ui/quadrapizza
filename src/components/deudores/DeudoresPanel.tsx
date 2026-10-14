@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import { useOrdersStore } from "@/lib/store/ordersStore";
 import { useCustomersStore, normalizePhone } from "@/lib/store/customersStore";
 import { MockOrder, MockCustomer } from "@/types/models";
+import { buildWhatsAppUrl } from "@/lib/utils";
 import {
   AlertCircle,
   Search,
@@ -273,7 +274,7 @@ export default function DeudoresPanel({ moduleTitle = "Recepción" }: { moduleTi
       debtor.orders.length === 1 ? `tu pedido ${orderIds}` : `tus pedidos ${orderIds}`
     }.\n\nPodés abonarlo por transferencia bancaria / Mercado Pago al alias: *quadra.pizza.mp*\n\n¡Muchas gracias y que disfrutes! 🍕`;
 
-    const url = `https://wa.me/549${clean}?text=${encodeURIComponent(text)}`;
+    const url = buildWhatsAppUrl(clean, text);
     window.open(url, "_blank");
   };
 
